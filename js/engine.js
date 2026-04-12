@@ -1214,18 +1214,35 @@
     // ── Two-Column Layout: Reference Panel + Main Content ───────────────
     html += '<div class="trial-layout">';
 
-    // LEFT: Reference Panel (always visible)
+    // LEFT: Reference Panel (always visible) with mini pie charts
     html += '<div class="reference-panel">';
-    html += '<div class="reference-title">Reference: Transaction Distributions</div>';
-    html += '<table class="reference-table">';
-    html += '<thead><tr><th></th><th>Non-Fraud<br>Firm</th><th>Fraud<br>Firm</th></tr></thead>';
-    html += '<tbody>';
-    html += '<tr><td class="ref-type-normal">Normal</td><td>60%</td><td>40%</td></tr>';
-    html += '<tr><td class="ref-type-unusual">Unusual</td><td>30%</td><td>30%</td></tr>';
-    html += '<tr><td class="ref-type-hu">Highly Unusual</td><td>10%</td><td>30%</td></tr>';
-    html += '</tbody>';
-    html += '</table>';
-    html += '<div class="reference-prior">Prior: Each firm has a 50% chance of being fraudulent</div>';
+    html += '<div class="reference-title">Reference Distributions</div>';
+
+    // Non-fraud pie: 60% Normal, 30% Unusual, 10% HU
+    html += '<div class="ref-pie-section">';
+    html += '<div class="ref-pie-label">Non-Fraudulent Firm</div>';
+    html += '<div class="ref-pie-row">';
+    html += '<div class="ref-pie" style="background:conic-gradient(#4CAF50 0deg 216deg, #FF9800 216deg 324deg, #ef4444 324deg 360deg);"></div>';
+    html += '<div class="ref-pie-legend">';
+    html += '<div class="ref-legend-item"><span class="ref-swatch" style="background:#4CAF50;"></span><span>Normal 60%</span></div>';
+    html += '<div class="ref-legend-item"><span class="ref-swatch" style="background:#FF9800;"></span><span>Unusual 30%</span></div>';
+    html += '<div class="ref-legend-item"><span class="ref-swatch" style="background:#ef4444;"></span><span>HU 10%</span></div>';
+    html += '</div>';
+    html += '</div></div>';
+
+    // Fraud pie: 40% Normal, 30% Unusual, 30% HU
+    html += '<div class="ref-pie-section">';
+    html += '<div class="ref-pie-label">Fraudulent Firm</div>';
+    html += '<div class="ref-pie-row">';
+    html += '<div class="ref-pie" style="background:conic-gradient(#4CAF50 0deg 144deg, #FF9800 144deg 252deg, #ef4444 252deg 360deg);"></div>';
+    html += '<div class="ref-pie-legend">';
+    html += '<div class="ref-legend-item"><span class="ref-swatch" style="background:#4CAF50;"></span><span>Normal 40%</span></div>';
+    html += '<div class="ref-legend-item"><span class="ref-swatch" style="background:#FF9800;"></span><span>Unusual 30%</span></div>';
+    html += '<div class="ref-legend-item"><span class="ref-swatch" style="background:#ef4444;"></span><span>HU 30%</span></div>';
+    html += '</div>';
+    html += '</div></div>';
+
+    html += '<div class="reference-prior">Each firm has a <strong>50%</strong> prior chance of being fraudulent</div>';
     html += '</div>';
 
     // RIGHT: Main trial content
