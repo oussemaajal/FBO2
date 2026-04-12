@@ -185,6 +185,7 @@
     this.k = scale.k;
     this.N = scale.N;
     this.formatCondition = FORMAT_CONDITIONS[this.formatIndex];
+    console.log('[FBO2] Assigned: cell=' + this.cellIndex + ' scale=' + this.scaleCondition + ' format=' + this.formatCondition);
   };
 
   // ── Build Page Sequence ────────────────────────────────────────────────
@@ -348,6 +349,16 @@
       }
 
       self.elContent.innerHTML = html;
+
+      // Toggle wider wrapper for trial pages (two-column layout)
+      var wrapper = document.querySelector('.survey-wrapper');
+      if (wrapper) {
+        if (page.type === 'fraud_trial') {
+          wrapper.classList.add('trial-active');
+        } else {
+          wrapper.classList.remove('trial-active');
+        }
+      }
 
       // Inject stealth AI check
       self.injectStealthCheck(index);
@@ -1195,24 +1206,49 @@
   // Renders the disclosed transaction breakdown in one of three formats,
   // plus three dependent variables (fraud prob, confidence, HU estimate).
   SurveyEngine.prototype.renderFraudTrial = function (page) {
+    console.log('[FBO2] renderFraudTrial: formatCondition=' + this.formatCondition);
     var trial = page.trial;
+    var hidden = trial.N - trial.k;
     var html = '';
 
-    // Header
-    html += '<div class="page-subtitle">Firm ' + (page.trialIndex + 1) +
-            ' of ' + page.totalTrials + '</div>';
+    // ── Two-Column Layout: Reference Panel + Main Content ───────────────
+    html += '<div class="trial-layout">';
 
-    html += '<div class="trial-params" style="text-align:center;margin:12px 0 20px;font-size:16px;color:#4b5563;">' +
-            'This firm has <strong>' + trial.N + '</strong> transactions. ' +
-            'The manager disclosed <strong>' + trial.k + '</strong>.</div>';
+    // LEFT: Reference Panel (always visible)
+    html += '<div class="reference-panel">';
+    html += '<div class="reference-title">Reference: Transaction Distributions</div>';
+    html += '<table class="reference-table">';
+    html += '<thead><tr><th></th><th>Non-Fraud<br>Firm</th><th>Fraud<br>Firm</th></tr></thead>';
+    html += '<tbody>';
+    html += '<tr><td class="ref-type-normal">Normal</td><td>60%</td><td>40%</td></tr>';
+    html += '<tr><td class="ref-type-unusual">Unusual</td><td>30%</td><td>30%</td></tr>';
+    html += '<tr><td class="ref-type-hu">Highly Unusual</td><td>10%</td><td>30%</td></tr>';
+    html += '</tbody>';
+    html += '</table>';
+    html += '<div class="reference-prior">Prior: Each firm has a 50% chance of being fraudulent</div>';
+    html += '</div>';
 
-    // Disclosed transaction display
-    html += '<div class="trial-card">';
+    // RIGHT: Main trial content
+    html += '<div class="trial-main-content">';
+
+    // ── Header Card ─────────────────────────────────────────────────────
+    html += '<div class="trial-header-card">';
+    html += '<div class="trial-header-firm">Firm ' + (page.trialIndex + 1) + ' of ' + page.totalTrials + '</div>';
+    html += '<div class="trial-header-stats">';
+    html += '<div class="trial-header-stat"><span class="trial-header-stat-label">Total transactions</span><span class="trial-header-stat-value">' + trial.N + '</span></div>';
+    html += '<div class="trial-header-stat"><span class="trial-header-stat-label">Manager disclosed</span><span class="trial-header-stat-value">' + trial.k + ' of ' + trial.N + '</span></div>';
+    html += '</div>';
+    html += '</div>';
+
+    // ── Stimulus Display (format-dependent) ─────────────────────────────
+    html += '<div class="stimulus-display">';
     html += this.renderTransactionDisplay(trial);
     html += '</div>';
 
-    // ── DV1: Fraud Probability Slider (0-100) ───────────────────────────
-    html += '<div class="question-block">';
+    // ── DV Section ──────────────────────────────────────────────────────
+
+    // DV1: Fraud Probability Slider (0-100)
+    html += '<div class="dv-card">';
     html += '<div class="question-prompt">What is the probability that this firm is fraudulent?<span class="question-required">*</span></div>';
     html += '<div class="slider-value-display" id="fraud_prob_display">50%</div>';
     html += '<div class="slider-wrapper">';
@@ -1225,8 +1261,8 @@
     html += '<div class="field-error" id="error_fraud_prob"></div>';
     html += '</div>';
 
-    // ── DV2: Confidence (1-7 Likert) ────────────────────────────────────
-    html += '<div class="question-block" data-required="true" data-field-name="confidence" data-field-type="radio">';
+    // DV2: Confidence (1-7 Likert)
+    html += '<div class="dv-card" data-required="true" data-field-name="confidence" data-field-type="radio">';
     html += '<div class="question-prompt">How confident are you in your fraud assessment?<span class="question-required">*</span></div>';
     html += '<div class="option-list confidence-options">';
     var confLabels = [
@@ -1248,9 +1284,8 @@
     html += '<div class="field-error" id="error_confidence"></div>';
     html += '</div>';
 
-    // ── DV3: Undisclosed HU Estimate Slider (0-100%) ────────────────────
-    var hidden = trial.N - trial.k;
-    html += '<div class="question-block">';
+    // DV3: Undisclosed HU Estimate Slider (0-100%)
+    html += '<div class="dv-card">';
     html += '<div class="question-prompt">Of the <strong>' + hidden +
             '</strong> transactions NOT shown to you, what percentage do you think are Highly Unusual?<span class="question-required">*</span></div>';
     html += '<div class="slider-value-display" id="hu_estimate_display">50%</div>';
@@ -1264,6 +1299,9 @@
     html += '<div class="field-error" id="error_hu_estimate"></div>';
     html += '</div>';
 
+    html += '</div>'; // end .trial-main-content
+    html += '</div>'; // end .trial-layout
+
     return html;
   };
 
@@ -1273,6 +1311,7 @@
   SurveyEngine.prototype.renderTransactionDisplay = function (trial) {
     var format = this.formatCondition;
     var hidden = trial.N - trial.k;
+    console.log('[FBO2] Rendering format: ' + format + ' for trial ' + trial.id);
 
     if (format === 'list') {
       return this.renderListFormat(trial, hidden);
@@ -1282,84 +1321,133 @@
       return this.renderChartFull(trial, hidden);
     }
     // fallback
+    console.log('[FBO2] WARNING: format "' + format + '" not recognized, falling back to list');
     return this.renderListFormat(trial, hidden);
   };
 
   // ── Format: List ───────────────────────────────────────────────────────
+  // Shows ONLY the disclosed transaction counts. No mention of undisclosed.
+  // The undisclosed count is visible in the header card ("Manager disclosed k of N").
   SurveyEngine.prototype.renderListFormat = function (trial, hidden) {
     var html = '';
-    html += '<div class="trial-header">Disclosed Transactions</div>';
-    html += '<div class="transaction-list">';
-    html += '<div class="txn-row"><span class="txn-label">Normal:</span> <span class="txn-count">' + trial.nNormal + '</span></div>';
-    html += '<div class="txn-row"><span class="txn-label">Unusual:</span> <span class="txn-count">' + trial.nUnusual + '</span></div>';
-    html += '<div class="txn-row"><span class="txn-label">Highly Unusual:</span> <span class="txn-count">' + trial.nHU + '</span></div>';
-    html += '<div class="txn-hidden">' + hidden + ' transactions were not disclosed to you.</div>';
+    html += '<div class="stimulus-title">Disclosed Transactions</div>';
+    html += '<div class="disclosed-list">';
+    html += '<div class="disclosed-list-item">';
+    html += '<span class="type-dot" style="background:#4CAF50;"></span>';
+    html += '<span class="disclosed-list-label">Normal</span>';
+    html += '<span class="disclosed-list-count">' + trial.nNormal + '</span>';
+    html += '</div>';
+    html += '<div class="disclosed-list-item">';
+    html += '<span class="type-dot" style="background:#FF9800;"></span>';
+    html += '<span class="disclosed-list-label">Unusual</span>';
+    html += '<span class="disclosed-list-count">' + trial.nUnusual + '</span>';
+    html += '</div>';
+    html += '<div class="disclosed-list-item">';
+    html += '<span class="type-dot" style="background:#ef4444;"></span>';
+    html += '<span class="disclosed-list-label">Highly Unusual</span>';
+    html += '<span class="disclosed-list-count">' + trial.nHU + '</span>';
+    html += '</div>';
     html += '</div>';
     return html;
   };
 
   // ── Format: Chart (disclosed only) ─────────────────────────────────────
+  // Pie shows proportions of disclosed (k) only. Text note about undisclosed below.
   SurveyEngine.prototype.renderChartDisclosed = function (trial, hidden) {
     var html = '';
-    html += '<div class="trial-header">Disclosed Transactions</div>';
-    html += this.renderBarChart(trial, false);
-    html += '<div class="txn-hidden" style="margin-top:12px;">' + hidden + ' transactions were not disclosed to you.</div>';
+    html += '<div class="stimulus-title">Disclosed Transactions</div>';
+    html += '<div class="pie-chart-section">';
+    html += this.renderPieChart(trial, false);
+    html += '</div>';
+    html += '<div class="pie-undisclosed-note">' + hidden + ' transactions were not disclosed to you.</div>';
     return html;
   };
 
-  // ── Format: Chart (full with undisclosed bar) ──────────────────────────
+  // ── Format: Chart (full with undisclosed segment) ──────────────────────
+  // Pie shows proportions of all N transactions. Gray segment = undisclosed.
   SurveyEngine.prototype.renderChartFull = function (trial, hidden) {
     var html = '';
-    html += '<div class="trial-header">Transaction Breakdown</div>';
-    html += this.renderBarChart(trial, true);
+    html += '<div class="stimulus-title">All Transactions</div>';
+    html += '<div class="pie-chart-section">';
+    html += this.renderPieChart(trial, true);
+    html += '</div>';
     return html;
   };
 
-  // ── Bar Chart Builder (pure CSS) ───────────────────────────────────────
-  // Creates horizontal bars with widths proportional to counts.
-  // If showUndisclosed=true, adds a gray bar for hidden transactions.
-  SurveyEngine.prototype.renderBarChart = function (trial, showUndisclosed) {
+  // ── Pie Chart Builder (CSS conic-gradient with legend) ─────────────────
+  // Creates a pie chart using conic-gradient.
+  // If showUndisclosed=true, includes a gray segment for hidden transactions.
+  // For chart_disclosed: pie shows proportions of disclosed transactions only.
+  // For chart_full: pie shows all transactions including undisclosed.
+  SurveyEngine.prototype.renderPieChart = function (trial, showUndisclosed) {
     var hidden = trial.N - trial.k;
 
-    // Determine max value for scaling
-    var maxVal = Math.max(trial.nNormal, trial.nUnusual, trial.nHU);
-    if (showUndisclosed) maxVal = Math.max(maxVal, hidden);
-    if (maxVal === 0) maxVal = 1;  // avoid division by zero
-
-    var html = '';
-    html += '<div class="bar-chart-container" style="display:flex;flex-direction:column;gap:10px;max-width:500px;margin:16px auto;">';
-
-    // Normal bar
-    html += this.renderBarRow('Normal', trial.nNormal, maxVal, '#4CAF50', 'bar-normal');
-
-    // Unusual bar
-    html += this.renderBarRow('Unusual', trial.nUnusual, maxVal, '#FF9800', 'bar-unusual');
-
-    // Highly Unusual bar
-    html += this.renderBarRow('Highly Unusual', trial.nHU, maxVal, '#f44336', 'bar-hu');
-
-    // Undisclosed bar (chart_full only)
+    // Build data segments
+    var segments = [
+      { label: 'Normal',           count: trial.nNormal,  color: '#4CAF50' },
+      { label: 'Unusual',          count: trial.nUnusual, color: '#FF9800' },
+      { label: 'Highly Unusual',   count: trial.nHU,      color: '#ef4444' }
+    ];
     if (showUndisclosed) {
-      html += this.renderBarRow('Undisclosed', hidden, maxVal, '#9E9E9E', 'bar-undisclosed');
+      segments.push({ label: 'Undisclosed', count: hidden, color: '#9CA3AF' });
     }
 
-    html += '</div>';
-    return html;
-  };
+    // Total for percentage calculation
+    var total = 0;
+    for (var i = 0; i < segments.length; i++) {
+      total += segments[i].count;
+    }
+    if (total === 0) total = 1; // avoid division by zero
 
-  // Renders a single bar row: label + colored bar + count
-  SurveyEngine.prototype.renderBarRow = function (label, count, maxVal, color, barClass) {
-    var pct = maxVal > 0 ? (count / maxVal) * 100 : 0;
-    // Minimum width of 2% so zero-count bars are still visible as a sliver
-    var widthPct = count > 0 ? Math.max(pct, 2) : 0;
+    // Calculate degrees and percentages
+    var cumDeg = 0;
+    var gradientParts = [];
+    for (var s = 0; s < segments.length; s++) {
+      var seg = segments[s];
+      var pct = seg.count / total;
+      var deg = pct * 360;
+      seg.pct = pct;
+      seg.startDeg = cumDeg;
+      seg.endDeg = cumDeg + deg;
+
+      if (deg > 0) {
+        gradientParts.push(seg.color + ' ' + cumDeg.toFixed(2) + 'deg ' + seg.endDeg.toFixed(2) + 'deg');
+      }
+      cumDeg = seg.endDeg;
+    }
+
+    // Build conic-gradient string
+    var gradient = 'conic-gradient(' + gradientParts.join(', ') + ')';
+
+    // Handle the case where all segments are zero except one (or all zero)
+    if (gradientParts.length === 0) {
+      gradient = 'conic-gradient(#e5e7eb 0deg 360deg)';
+    }
 
     var html = '';
-    html += '<div class="bar-row" style="display:flex;align-items:center;gap:10px;">';
-    html += '<span class="bar-label" style="min-width:120px;text-align:right;font-size:14px;font-weight:500;color:#374151;">' + esc(label) + '</span>';
-    html += '<div class="bar ' + barClass + '" style="height:30px;border-radius:4px;background:' + color + ';' +
-            'width:' + widthPct.toFixed(1) + '%;min-width:' + (count > 0 ? '4px' : '0') + ';transition:width 0.3s ease;"></div>';
-    html += '<span class="bar-count" style="min-width:40px;font-size:14px;font-weight:600;color:#1f2937;">' + count + '</span>';
+    html += '<div class="pie-chart-container">';
+
+    // Pie chart circle (220px, set via CSS class .pie-chart)
+    html += '<div class="pie-chart" style="background: ' + gradient + ';"></div>';
+
+    // Legend (vertically stacked to right of pie)
+    html += '<div class="pie-legend">';
+    for (var li = 0; li < segments.length; li++) {
+      var item = segments[li];
+      if (item.count === 0) continue; // skip zero-count segments in legend
+      var pctDisplay = Math.round(item.pct * 100);
+      html += '<div class="pie-legend-item">';
+      html += '<div class="pie-legend-swatch" style="background: ' + item.color + ';"></div>';
+      html += '<div class="pie-legend-text">';
+      html += '<span class="pie-legend-label">' + esc(item.label) + '</span>';
+      html += '<span class="pie-legend-value">' + item.count + ' (' + pctDisplay + '%)</span>';
+      html += '</div>';
+      html += '</div>';
+    }
     html += '</div>';
+
+    html += '</div>'; // end .pie-chart-container
+
     return html;
   };
 

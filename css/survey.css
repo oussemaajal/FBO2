@@ -65,6 +65,11 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  transition: max-width var(--transition-slow);
+}
+
+.survey-wrapper.trial-active {
+  max-width: 960px;
 }
 
 /* ---------- Progress Bar ---------- */
@@ -489,53 +494,129 @@ body {
   color: #fff;
 }
 
-/* ---------- Trial Display ---------- */
-.trial-card {
-  background: var(--color-input-bg);
-  border: 1px solid var(--color-border);
+/* ---------- Trial Header Card ---------- */
+.trial-header-card {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
   border-radius: var(--radius-md);
-  padding: 24px;
-  margin: 20px 0;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  color: #fff;
 }
 
-.trial-header {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
+.trial-header-firm {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 12px;
+}
+
+.trial-header-stats {
+  display: flex;
+  gap: 32px;
+}
+
+.trial-header-stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.trial-header-stat-label {
+  font-size: 12px;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 2px;
+}
+
+.trial-header-stat-value {
+  font-size: 26px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.2;
+}
+
+/* ---------- Stimulus Display (main data card) ---------- */
+.stimulus-display {
+  background: #fff;
+  border: 2px solid #e2e8f0;
+  border-radius: var(--radius-lg);
+  padding: 28px 32px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.stimulus-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #64748b;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* ---------- List Format: Disclosed Transaction List ---------- */
+.disclosed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.disclosed-list-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: #f8fafc;
+  border-radius: var(--radius-md);
+  border: 1px solid #e2e8f0;
+}
+
+.type-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.disclosed-list-label {
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--color-text);
+  flex: 1;
+}
+
+.disclosed-list-count {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  min-width: 48px;
+  text-align: right;
+}
+
+/* ---------- DV Card (question containers) ---------- */
+.dv-card {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px 24px;
   margin-bottom: 16px;
 }
 
-.trial-disclosed-value {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--color-primary-dark);
-  padding: 4px 0;
-}
-
-.trial-hidden-value {
-  font-size: 16px;
-  color: var(--color-text-muted);
-  font-style: italic;
-  padding: 4px 0;
-}
-
-.trial-number-label {
+/* ---------- Pie Chart Undisclosed Note ---------- */
+.pie-undisclosed-note {
+  text-align: center;
   font-size: 14px;
-  color: var(--color-text-secondary);
-  margin-right: 8px;
-  min-width: 80px;
-  display: inline-block;
-}
-
-.trial-slot {
-  padding: 6px 0;
-  border-bottom: 1px solid #eee;
-}
-
-.trial-slot:last-child {
-  border-bottom: none;
+  color: #6b7280;
+  font-style: italic;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
 }
 
 /* ---------- N-Intro Display (trial splash page) ---------- */
@@ -1227,10 +1308,6 @@ body {
     width: 120px;
   }
 
-  .trial-disclosed-value {
-    font-size: 22px;
-  }
-
   .slider-value-display {
     font-size: 26px;
   }
@@ -1276,5 +1353,213 @@ body {
   .btn {
     padding: 10px 20px;
     font-size: 14px;
+  }
+
+  .survey-wrapper.trial-active {
+    max-width: 700px;
+  }
+}
+
+/* ==========================================================================
+   Trial Layout: Two-Column (Reference Panel + Main Content)
+   ========================================================================== */
+.trial-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+/* ---------- Reference Panel (sticky left sidebar) ---------- */
+.reference-panel {
+  width: 260px;
+  flex-shrink: 0;
+  background: #f0f4f8;
+  border: 1px solid #cbd5e1;
+  border-left: 4px solid #3b82f6;
+  border-radius: 10px;
+  padding: 20px;
+  position: sticky;
+  top: 20px;
+}
+
+.reference-title {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 14px;
+  color: #1e293b;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.reference-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.reference-table thead th {
+  font-weight: 700;
+  color: #475569;
+  padding: 6px 8px;
+  text-align: center;
+  border-bottom: 2px solid #94a3b8;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.reference-table thead th:first-child {
+  text-align: left;
+}
+
+.reference-table tbody td {
+  padding: 8px 8px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 15px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.reference-table tbody td:first-child {
+  text-align: left;
+  font-weight: 700;
+}
+
+.reference-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.ref-type-normal { color: #15803d; }
+.ref-type-unusual { color: #b45309; }
+.ref-type-hu { color: #dc2626; }
+
+.reference-prior {
+  margin-top: 14px;
+  font-size: 13px;
+  color: #475569;
+  text-align: center;
+  font-style: italic;
+  line-height: 1.4;
+  padding-top: 10px;
+  border-top: 1px solid #cbd5e1;
+}
+
+/* ---------- Trial Main Content Area ---------- */
+.trial-main-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ==========================================================================
+   Pie Chart (CSS conic-gradient)
+   ========================================================================== */
+.pie-chart-section {
+  display: flex;
+  justify-content: center;
+}
+
+.pie-chart-container {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  justify-content: center;
+  margin: 8px 0;
+}
+
+.pie-chart {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.pie-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pie-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pie-legend-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.pie-legend-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.pie-legend-label {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+.pie-legend-value {
+  color: #64748b;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   Responsive: Trial Layout
+   ========================================================================== */
+@media (max-width: 768px) {
+  .trial-layout {
+    flex-direction: column;
+  }
+
+  .reference-panel {
+    width: 100%;
+    position: static;
+    border-left: 4px solid #3b82f6;
+  }
+
+  .reference-table {
+    font-size: 13px;
+  }
+
+  .trial-header-stats {
+    gap: 20px;
+  }
+
+  .trial-header-stat-value {
+    font-size: 22px;
+  }
+
+  .pie-chart-container {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .pie-chart {
+    width: 180px;
+    height: 180px;
+  }
+
+  .pie-legend {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  .disclosed-list-count {
+    font-size: 24px;
+  }
+
+  .stimulus-display {
+    padding: 20px;
   }
 }
