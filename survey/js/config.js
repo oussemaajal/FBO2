@@ -339,32 +339,33 @@ var SURVEY_CONFIG = {
         "<p>Here is the key information. The proportion of each transaction type " +
         "differs between fraudulent and non-fraudulent firms:</p>" +
 
-        "<table class='info-table' style='width:100%; border-collapse:collapse; margin:16px 0;'>" +
-          "<thead>" +
-            "<tr>" +
-              "<th style='text-align:left; padding:8px; border-bottom:2px solid #333;'>Transaction Type</th>" +
-              "<th style='text-align:center; padding:8px; border-bottom:2px solid #333;'>Non-Fraudulent Firms</th>" +
-              "<th style='text-align:center; padding:8px; border-bottom:2px solid #333;'>Fraudulent Firms</th>" +
-            "</tr>" +
-          "</thead>" +
-          "<tbody>" +
-            "<tr style='background:#f8f9fa;'>" +
-              "<td style='padding:8px; color:#2d6a4f;'><strong>Normal</strong></td>" +
-              "<td style='text-align:center; padding:8px;'><strong>60%</strong></td>" +
-              "<td style='text-align:center; padding:8px;'><strong>40%</strong></td>" +
-            "</tr>" +
-            "<tr>" +
-              "<td style='padding:8px; color:#e67700;'><strong>Unusual</strong></td>" +
-              "<td style='text-align:center; padding:8px;'>30%</td>" +
-              "<td style='text-align:center; padding:8px;'>30%</td>" +
-            "</tr>" +
-            "<tr style='background:#f8f9fa;'>" +
-              "<td style='padding:8px; color:#c92a2a;'><strong>Highly Unusual</strong></td>" +
-              "<td style='text-align:center; padding:8px;'><strong>10%</strong></td>" +
-              "<td style='text-align:center; padding:8px;'><strong>30%</strong></td>" +
-            "</tr>" +
-          "</tbody>" +
-        "</table>" +
+        "<div style='display:flex; gap:32px; justify-content:center; flex-wrap:wrap; margin:20px 0;'>" +
+
+          "<div style='text-align:center;'>" +
+            "<div style='font-weight:700; font-size:14px; margin-bottom:10px; color:#1e293b; text-transform:uppercase; letter-spacing:0.5px;'>Non-Fraudulent Firm</div>" +
+            "<div style='display:flex; align-items:center; gap:16px;'>" +
+              "<div style='width:120px; height:120px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 216deg, #FF9800 216deg 324deg, #ef4444 324deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
+              "<div style='display:flex; flex-direction:column; gap:6px; text-align:left;'>" +
+                "<div style='display:flex; align-items:center; gap:8px; font-size:14px;'><span style='display:inline-block; width:14px; height:14px; background:#4CAF50; border-radius:3px;'></span><strong style='color:#2d6a4f;'>Normal 60%</strong></div>" +
+                "<div style='display:flex; align-items:center; gap:8px; font-size:14px;'><span style='display:inline-block; width:14px; height:14px; background:#FF9800; border-radius:3px;'></span><span style='color:#b45309;'>Unusual 30%</span></div>" +
+                "<div style='display:flex; align-items:center; gap:8px; font-size:14px;'><span style='display:inline-block; width:14px; height:14px; background:#ef4444; border-radius:3px;'></span><span style='color:#dc2626;'>HU 10%</span></div>" +
+              "</div>" +
+            "</div>" +
+          "</div>" +
+
+          "<div style='text-align:center;'>" +
+            "<div style='font-weight:700; font-size:14px; margin-bottom:10px; color:#1e293b; text-transform:uppercase; letter-spacing:0.5px;'>Fraudulent Firm</div>" +
+            "<div style='display:flex; align-items:center; gap:16px;'>" +
+              "<div style='width:120px; height:120px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 144deg, #FF9800 144deg 252deg, #ef4444 252deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
+              "<div style='display:flex; flex-direction:column; gap:6px; text-align:left;'>" +
+                "<div style='display:flex; align-items:center; gap:8px; font-size:14px;'><span style='display:inline-block; width:14px; height:14px; background:#4CAF50; border-radius:3px;'></span><span style='color:#2d6a4f;'>Normal 40%</span></div>" +
+                "<div style='display:flex; align-items:center; gap:8px; font-size:14px;'><span style='display:inline-block; width:14px; height:14px; background:#FF9800; border-radius:3px;'></span><span style='color:#b45309;'>Unusual 30%</span></div>" +
+                "<div style='display:flex; align-items:center; gap:8px; font-size:14px;'><span style='display:inline-block; width:14px; height:14px; background:#ef4444; border-radius:3px;'></span><strong style='color:#dc2626;'>HU 30%</strong></div>" +
+              "</div>" +
+            "</div>" +
+          "</div>" +
+
+        "</div>" +
 
         "<div class='info-box' style='background:#fff8e6; border-left:4px solid #e67700; padding:12px 16px;'>" +
           "<p style='margin:0;'><strong>Notice:</strong> Unusual transactions occur at the " +
@@ -947,32 +948,33 @@ var SURVEY_CONFIG = {
         "<p>The proportion of each transaction type differs between " +
         "fraudulent and non-fraudulent firms:</p>" +
 
-        "<table class='info-table' style='width:100%; border-collapse:collapse; margin:16px 0;'>" +
-          "<thead>" +
-            "<tr>" +
-              "<th style='text-align:left; padding:8px; border-bottom:2px solid #333;'>Transaction Type</th>" +
-              "<th style='text-align:center; padding:8px; border-bottom:2px solid #333;'>Non-Fraudulent Firms</th>" +
-              "<th style='text-align:center; padding:8px; border-bottom:2px solid #333;'>Fraudulent Firms</th>" +
-            "</tr>" +
-          "</thead>" +
-          "<tbody>" +
-            "<tr style='background:#f8f9fa;'>" +
-              "<td style='padding:8px; color:#2d6a4f;'><strong>Normal</strong></td>" +
-              "<td style='text-align:center; padding:8px;'><strong>60%</strong></td>" +
-              "<td style='text-align:center; padding:8px;'><strong>40%</strong></td>" +
-            "</tr>" +
-            "<tr>" +
-              "<td style='padding:8px; color:#e67700;'><strong>Unusual</strong></td>" +
-              "<td style='text-align:center; padding:8px;'>30%</td>" +
-              "<td style='text-align:center; padding:8px;'>30%</td>" +
-            "</tr>" +
-            "<tr style='background:#f8f9fa;'>" +
-              "<td style='padding:8px; color:#c92a2a;'><strong>Highly Unusual</strong></td>" +
-              "<td style='text-align:center; padding:8px;'><strong>10%</strong></td>" +
-              "<td style='text-align:center; padding:8px;'><strong>30%</strong></td>" +
-            "</tr>" +
-          "</tbody>" +
-        "</table>" +
+        "<div style='display:flex; gap:32px; justify-content:center; flex-wrap:wrap; margin:20px 0;'>" +
+
+          "<div style='text-align:center;'>" +
+            "<div style='font-weight:700; font-size:14px; margin-bottom:10px; color:#1e293b; text-transform:uppercase; letter-spacing:0.5px;'>Non-Fraudulent Firm</div>" +
+            "<div style='display:flex; align-items:center; gap:16px;'>" +
+              "<div style='width:120px; height:120px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 216deg, #FF9800 216deg 324deg, #ef4444 324deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
+              "<div style='display:flex; flex-direction:column; gap:6px; text-align:left;'>" +
+                "<div style='display:flex; align-items:center; gap:8px; font-size:14px;'><span style='display:inline-block; width:14px; height:14px; background:#4CAF50; border-radius:3px;'></span><strong style='color:#2d6a4f;'>Normal 60%</strong></div>" +
+                "<div style='display:flex; align-items:center; gap:8px; font-size:14px;'><span style='display:inline-block; width:14px; height:14px; background:#FF9800; border-radius:3px;'></span><span style='color:#b45309;'>Unusual 30%</span></div>" +
+                "<div style='display:flex; align-items:center; gap:8px; font-size:14px;'><span style='display:inline-block; width:14px; height:14px; background:#ef4444; border-radius:3px;'></span><span style='color:#dc2626;'>HU 10%</span></div>" +
+              "</div>" +
+            "</div>" +
+          "</div>" +
+
+          "<div style='text-align:center;'>" +
+            "<div style='font-weight:700; font-size:14px; margin-bottom:10px; color:#1e293b; text-transform:uppercase; letter-spacing:0.5px;'>Fraudulent Firm</div>" +
+            "<div style='display:flex; align-items:center; gap:16px;'>" +
+              "<div style='width:120px; height:120px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 144deg, #FF9800 144deg 252deg, #ef4444 252deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
+              "<div style='display:flex; flex-direction:column; gap:6px; text-align:left;'>" +
+                "<div style='display:flex; align-items:center; gap:8px; font-size:14px;'><span style='display:inline-block; width:14px; height:14px; background:#4CAF50; border-radius:3px;'></span><span style='color:#2d6a4f;'>Normal 40%</span></div>" +
+                "<div style='display:flex; align-items:center; gap:8px; font-size:14px;'><span style='display:inline-block; width:14px; height:14px; background:#FF9800; border-radius:3px;'></span><span style='color:#b45309;'>Unusual 30%</span></div>" +
+                "<div style='display:flex; align-items:center; gap:8px; font-size:14px;'><span style='display:inline-block; width:14px; height:14px; background:#ef4444; border-radius:3px;'></span><strong style='color:#dc2626;'>HU 30%</strong></div>" +
+              "</div>" +
+            "</div>" +
+          "</div>" +
+
+        "</div>" +
 
         "<div class='info-box' style='background:#fff8e6; border-left:4px solid #e67700; padding:12px 16px;'>" +
           "<p style='margin:0;'><strong>Key insight:</strong> Unusual transactions occur at the " +
