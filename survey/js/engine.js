@@ -197,8 +197,12 @@
       if (page.type === 'trial_block') {
         var block = page.block || 1;
 
-        // Expand trial block into individual trial pages
-        var trials = (page.trials || []).slice();
+        // Populate trials from stimuli.byScale based on assigned condition
+        var rawTrials = page.trials;
+        if (!rawTrials && self.config.stimuli && self.config.stimuli.byScale) {
+          rawTrials = self.config.stimuli.byScale[self.scaleCondition] || [];
+        }
+        var trials = (rawTrials || []).slice();
 
         // Seeded random shuffle (deterministic per participant)
         if (self.prolificPID) {
