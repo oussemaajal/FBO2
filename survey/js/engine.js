@@ -349,6 +349,16 @@
 
       self.elContent.innerHTML = html;
 
+      // Toggle wider wrapper for trial pages (two-column layout)
+      var wrapper = document.querySelector('.survey-wrapper');
+      if (wrapper) {
+        if (page.type === 'fraud_trial') {
+          wrapper.classList.add('trial-active');
+        } else {
+          wrapper.classList.remove('trial-active');
+        }
+      }
+
       // Inject stealth AI check
       self.injectStealthCheck(index);
 
@@ -1198,9 +1208,29 @@
     var trial = page.trial;
     var html = '';
 
-    // Header
+    // Header (outside the two-column layout)
     html += '<div class="page-subtitle">Firm ' + (page.trialIndex + 1) +
             ' of ' + page.totalTrials + '</div>';
+
+    // ── Two-Column Layout: Reference Panel + Main Content ───────────────
+    html += '<div class="trial-layout">';
+
+    // LEFT: Reference Panel (always visible)
+    html += '<div class="reference-panel">';
+    html += '<div class="reference-title">Transaction Distributions</div>';
+    html += '<table class="reference-table">';
+    html += '<thead><tr><th></th><th>Non-Fraud</th><th>Fraud</th></tr></thead>';
+    html += '<tbody>';
+    html += '<tr><td class="type-normal">Normal</td><td>60%</td><td>40%</td></tr>';
+    html += '<tr><td class="type-unusual">Unusual</td><td>30%</td><td>30%</td></tr>';
+    html += '<tr><td class="type-hu">Highly Unusual</td><td>10%</td><td>30%</td></tr>';
+    html += '</tbody>';
+    html += '</table>';
+    html += '<div class="reference-prior">Prior: P(Fraud) = 50%</div>';
+    html += '</div>';
+
+    // RIGHT: Main trial content
+    html += '<div class="trial-main-content">';
 
     html += '<div class="trial-params" style="text-align:center;margin:12px 0 20px;font-size:16px;color:#4b5563;">' +
             'This firm has <strong>' + trial.N + '</strong> transactions. ' +
@@ -1264,6 +1294,9 @@
     html += '<div class="field-error" id="error_hu_estimate"></div>';
     html += '</div>';
 
+    html += '</div>'; // end .trial-main-content
+    html += '</div>'; // end .trial-layout
+
     return html;
   };
 
@@ -1302,129 +1335,89 @@
   SurveyEngine.prototype.renderChartDisclosed = function (trial, hidden) {
     var html = '';
     html += '<div class="trial-header">Disclosed Transactions</div>';
-    html += this.renderBarChart(trial, false);
+    html += this.renderPieChart(trial, false);
     html += '<div class="txn-hidden" style="margin-top:12px;">' + hidden + ' transactions were not disclosed to you.</div>';
     return html;
   };
 
-  // ── Format: Chart (full with undisclosed bar) ──────────────────────────
+  // ── Format: Chart (full with undisclosed segment) ──────────────────────
   SurveyEngine.prototype.renderChartFull = function (trial, hidden) {
     var html = '';
     html += '<div class="trial-header">Transaction Breakdown</div>';
-    html += this.renderBarChart(trial, true);
+    html += this.renderPieChart(trial, true);
     return html;
   };
 
-  // ── Bar Chart Builder (pure CSS, vertical bars with Y-axis) ────────────
-  // Creates a vertical bar chart with labeled axes.
-  // If showUndisclosed=true, adds a gray bar for hidden transactions.
-  SurveyEngine.prototype.renderBarChart = function (trial, showUndisclosed) {
+  // ── Pie Chart Builder (CSS conic-gradient with legend) ─────────────────
+  // Creates a pie chart using conic-gradient.
+  // If showUndisclosed=true, includes a gray segment for hidden transactions.
+  // For chart_disclosed: pie shows proportions of disclosed transactions only.
+  // For chart_full: pie shows all transactions including undisclosed.
+  SurveyEngine.prototype.renderPieChart = function (trial, showUndisclosed) {
     var hidden = trial.N - trial.k;
 
-    // Build data series
-    var bars = [
-      { label: 'Normal',          count: trial.nNormal,  color: '#4CAF50' },
-      { label: 'Unusual',         count: trial.nUnusual, color: '#FF9800' },
-      { label: 'Highly\nUnusual', count: trial.nHU,      color: '#f44336' }
+    // Build data segments
+    var segments = [
+      { label: 'Normal',           count: trial.nNormal,  color: '#4CAF50' },
+      { label: 'Unusual',          count: trial.nUnusual, color: '#FF9800' },
+      { label: 'Highly Unusual',   count: trial.nHU,      color: '#f44336' }
     ];
     if (showUndisclosed) {
-      bars.push({ label: 'Undisclosed', count: hidden, color: '#9E9E9E' });
+      segments.push({ label: 'Undisclosed', count: hidden, color: '#9E9E9E' });
     }
 
-    // Determine Y-axis scale
-    var maxVal = 0;
-    for (var i = 0; i < bars.length; i++) {
-      if (bars[i].count > maxVal) maxVal = bars[i].count;
+    // Total for percentage calculation
+    var total = 0;
+    for (var i = 0; i < segments.length; i++) {
+      total += segments[i].count;
     }
-    // Round up to a nice number for tick marks
-    var niceMax;
-    if (maxVal <= 5) niceMax = Math.max(maxVal, 3);
-    else if (maxVal <= 10) niceMax = 10;
-    else if (maxVal <= 25) niceMax = Math.ceil(maxVal / 5) * 5;
-    else if (maxVal <= 50) niceMax = Math.ceil(maxVal / 10) * 10;
-    else if (maxVal <= 100) niceMax = Math.ceil(maxVal / 20) * 20;
-    else if (maxVal <= 500) niceMax = Math.ceil(maxVal / 100) * 100;
-    else niceMax = Math.ceil(maxVal / 200) * 200;
-    if (niceMax === 0) niceMax = 1;
+    if (total === 0) total = 1; // avoid division by zero
 
-    // Generate tick values (4-5 ticks including 0)
-    var nTicks = 4;
-    var tickStep = niceMax / nTicks;
-    // Round tickStep to a nice number
-    if (tickStep >= 100) tickStep = Math.round(tickStep / 50) * 50;
-    else if (tickStep >= 10) tickStep = Math.round(tickStep / 5) * 5;
-    else if (tickStep > 1) tickStep = Math.round(tickStep);
-    else tickStep = 1;
-    if (tickStep === 0) tickStep = 1;
+    // Calculate degrees and percentages
+    var cumDeg = 0;
+    var gradientParts = [];
+    for (var s = 0; s < segments.length; s++) {
+      var seg = segments[s];
+      var pct = seg.count / total;
+      var deg = pct * 360;
+      seg.pct = pct;
+      seg.startDeg = cumDeg;
+      seg.endDeg = cumDeg + deg;
 
-    var ticks = [];
-    for (var t = 0; t <= niceMax; t += tickStep) {
-      ticks.push(t);
+      if (deg > 0) {
+        gradientParts.push(seg.color + ' ' + cumDeg.toFixed(2) + 'deg ' + seg.endDeg.toFixed(2) + 'deg');
+      }
+      cumDeg = seg.endDeg;
     }
-    // Ensure niceMax is the last tick
-    if (ticks[ticks.length - 1] < niceMax) ticks.push(niceMax);
 
-    var chartHeight = 220;
-    var barWidth = bars.length <= 3 ? 60 : 50;
-    var barGap = bars.length <= 3 ? 24 : 16;
-    var chartAreaWidth = bars.length * (barWidth + barGap);
+    // Build conic-gradient string
+    var gradient = 'conic-gradient(' + gradientParts.join(', ') + ')';
+
+    // Handle the case where all segments are zero except one (or all zero)
+    if (gradientParts.length === 0) {
+      gradient = 'conic-gradient(#e5e7eb 0deg 360deg)';
+    }
 
     var html = '';
-    html += '<div class="bar-chart-wrapper" style="display:flex;justify-content:center;margin:20px auto;max-width:520px;">';
+    html += '<div class="pie-chart-container">';
 
-    // Y-axis with ticks
-    html += '<div class="bar-chart-yaxis" style="display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;padding-right:8px;height:' + chartHeight + 'px;position:relative;">';
-    for (var ti = ticks.length - 1; ti >= 0; ti--) {
-      var tickVal = ticks[ti];
-      var topPct = (1 - tickVal / niceMax) * 100;
-      html += '<span style="font-size:12px;color:#6b7280;line-height:1;position:absolute;top:' + topPct.toFixed(1) + '%;transform:translateY(-50%);right:8px;">' + tickVal + '</span>';
-    }
-    html += '</div>';
+    // Pie chart circle
+    html += '<div class="pie-chart" style="background: ' + gradient + ';"></div>';
 
-    // Chart area with axis line and bars
-    html += '<div class="bar-chart-area" style="position:relative;height:' + chartHeight + 'px;width:' + chartAreaWidth + 'px;border-left:2px solid #374151;border-bottom:2px solid #374151;">';
-
-    // Horizontal grid lines
-    for (var gi = 0; gi < ticks.length; gi++) {
-      var gPct = (ticks[gi] / niceMax) * 100;
-      if (ticks[gi] > 0) {
-        html += '<div style="position:absolute;bottom:' + gPct.toFixed(1) + '%;left:0;right:0;height:1px;background:#e5e7eb;"></div>';
-      }
-    }
-
-    // Bars
-    for (var bi = 0; bi < bars.length; bi++) {
-      var bar = bars[bi];
-      var heightPct = niceMax > 0 ? (bar.count / niceMax) * 100 : 0;
-      var leftPx = bi * (barWidth + barGap) + barGap / 2;
-
-      // Bar
-      html += '<div style="position:absolute;bottom:0;left:' + leftPx + 'px;width:' + barWidth + 'px;' +
-              'height:' + heightPct.toFixed(1) + '%;background:' + bar.color + ';border-radius:4px 4px 0 0;' +
-              'transition:height 0.4s ease;min-height:' + (bar.count > 0 ? '2px' : '0') + ';">';
-
-      // Count label inside or above bar
-      if (heightPct > 15) {
-        html += '<span style="position:absolute;top:6px;left:50%;transform:translateX(-50%);font-size:14px;font-weight:700;color:#fff;">' + bar.count + '</span>';
-      } else {
-        html += '<span style="position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);font-size:13px;font-weight:700;color:#374151;">' + bar.count + '</span>';
-      }
+    // Legend
+    html += '<div class="pie-legend">';
+    for (var li = 0; li < segments.length; li++) {
+      var item = segments[li];
+      var pctDisplay = Math.round(item.pct * 100);
+      html += '<div class="pie-legend-item">';
+      html += '<div class="pie-legend-swatch" style="background: ' + item.color + ';"></div>';
+      html += '<span class="pie-legend-label">' + esc(item.label) + ':</span>';
+      html += '<span class="pie-legend-value">' + item.count + ' (' + pctDisplay + '%)</span>';
       html += '</div>';
     }
-
-    html += '</div>';  // end chart area
-    html += '</div>';  // end wrapper
-
-    // X-axis labels below
-    html += '<div class="bar-chart-xlabels" style="display:flex;justify-content:center;max-width:520px;margin:0 auto;padding-left:40px;">';
-    for (var xi = 0; xi < bars.length; xi++) {
-      var lbl = bars[xi].label.replace('\n', '<br>');
-      html += '<div style="width:' + (barWidth + barGap) + 'px;text-align:center;font-size:12px;font-weight:500;color:#374151;line-height:1.2;">' + lbl + '</div>';
-    }
     html += '</div>';
 
-    // Y-axis title
-    html += '<div style="text-align:center;font-size:11px;color:#6b7280;margin-top:4px;">Number of transactions</div>';
+    html += '</div>'; // end .pie-chart-container
 
     return html;
   };

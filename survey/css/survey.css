@@ -65,6 +65,11 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  transition: max-width var(--transition-slow);
+}
+
+.survey-wrapper.trial-active {
+  max-width: 960px;
 }
 
 /* ---------- Progress Bar ---------- */
@@ -1276,5 +1281,144 @@ body {
   .btn {
     padding: 10px 20px;
     font-size: 14px;
+  }
+
+  .survey-wrapper.trial-active {
+    max-width: 700px;
+  }
+}
+
+/* ==========================================================================
+   Reference Panel (persistent on fraud_trial pages)
+   ========================================================================== */
+.trial-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.reference-panel {
+  width: 240px;
+  flex-shrink: 0;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-left: 4px solid #3b82f6;
+  border-radius: 8px;
+  padding: 16px;
+  position: sticky;
+  top: 20px;
+}
+
+.reference-title {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 12px;
+  color: #1f2937;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.reference-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.reference-table th {
+  font-weight: 600;
+  color: #6b7280;
+  padding: 4px 8px;
+  text-align: center;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.reference-table td {
+  padding: 4px 8px;
+  text-align: center;
+}
+
+.reference-table td:first-child {
+  text-align: left;
+  font-weight: 600;
+}
+
+.type-normal { color: #2d6a4f; }
+.type-unusual { color: #b45309; }
+.type-hu { color: #b91c1c; }
+
+.reference-prior {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #6b7280;
+  text-align: center;
+  font-style: italic;
+}
+
+.trial-main-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ==========================================================================
+   Pie Chart
+   ========================================================================== */
+.pie-chart-container {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  justify-content: center;
+  margin: 16px 0;
+  flex-wrap: wrap;
+}
+
+.pie-chart {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pie-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pie-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.pie-legend-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.pie-legend-label {
+  font-weight: 500;
+  color: #374151;
+}
+
+.pie-legend-value {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+/* ==========================================================================
+   Responsive: Reference Panel + Trial Layout
+   ========================================================================== */
+@media (max-width: 768px) {
+  .trial-layout {
+    flex-direction: column;
+  }
+
+  .reference-panel {
+    width: 100%;
+    position: static;
   }
 }
