@@ -1315,51 +1315,117 @@
     return html;
   };
 
-  // ── Bar Chart Builder (pure CSS) ───────────────────────────────────────
-  // Creates horizontal bars with widths proportional to counts.
+  // ── Bar Chart Builder (pure CSS, vertical bars with Y-axis) ────────────
+  // Creates a vertical bar chart with labeled axes.
   // If showUndisclosed=true, adds a gray bar for hidden transactions.
   SurveyEngine.prototype.renderBarChart = function (trial, showUndisclosed) {
     var hidden = trial.N - trial.k;
 
-    // Determine max value for scaling
-    var maxVal = Math.max(trial.nNormal, trial.nUnusual, trial.nHU);
-    if (showUndisclosed) maxVal = Math.max(maxVal, hidden);
-    if (maxVal === 0) maxVal = 1;  // avoid division by zero
-
-    var html = '';
-    html += '<div class="bar-chart-container" style="display:flex;flex-direction:column;gap:10px;max-width:500px;margin:16px auto;">';
-
-    // Normal bar
-    html += this.renderBarRow('Normal', trial.nNormal, maxVal, '#4CAF50', 'bar-normal');
-
-    // Unusual bar
-    html += this.renderBarRow('Unusual', trial.nUnusual, maxVal, '#FF9800', 'bar-unusual');
-
-    // Highly Unusual bar
-    html += this.renderBarRow('Highly Unusual', trial.nHU, maxVal, '#f44336', 'bar-hu');
-
-    // Undisclosed bar (chart_full only)
+    // Build data series
+    var bars = [
+      { label: 'Normal',          count: trial.nNormal,  color: '#4CAF50' },
+      { label: 'Unusual',         count: trial.nUnusual, color: '#FF9800' },
+      { label: 'Highly\nUnusual', count: trial.nHU,      color: '#f44336' }
+    ];
     if (showUndisclosed) {
-      html += this.renderBarRow('Undisclosed', hidden, maxVal, '#9E9E9E', 'bar-undisclosed');
+      bars.push({ label: 'Undisclosed', count: hidden, color: '#9E9E9E' });
     }
 
-    html += '</div>';
-    return html;
-  };
+    // Determine Y-axis scale
+    var maxVal = 0;
+    for (var i = 0; i < bars.length; i++) {
+      if (bars[i].count > maxVal) maxVal = bars[i].count;
+    }
+    // Round up to a nice number for tick marks
+    var niceMax;
+    if (maxVal <= 5) niceMax = Math.max(maxVal, 3);
+    else if (maxVal <= 10) niceMax = 10;
+    else if (maxVal <= 25) niceMax = Math.ceil(maxVal / 5) * 5;
+    else if (maxVal <= 50) niceMax = Math.ceil(maxVal / 10) * 10;
+    else if (maxVal <= 100) niceMax = Math.ceil(maxVal / 20) * 20;
+    else if (maxVal <= 500) niceMax = Math.ceil(maxVal / 100) * 100;
+    else niceMax = Math.ceil(maxVal / 200) * 200;
+    if (niceMax === 0) niceMax = 1;
 
-  // Renders a single bar row: label + colored bar + count
-  SurveyEngine.prototype.renderBarRow = function (label, count, maxVal, color, barClass) {
-    var pct = maxVal > 0 ? (count / maxVal) * 100 : 0;
-    // Minimum width of 2% so zero-count bars are still visible as a sliver
-    var widthPct = count > 0 ? Math.max(pct, 2) : 0;
+    // Generate tick values (4-5 ticks including 0)
+    var nTicks = 4;
+    var tickStep = niceMax / nTicks;
+    // Round tickStep to a nice number
+    if (tickStep >= 100) tickStep = Math.round(tickStep / 50) * 50;
+    else if (tickStep >= 10) tickStep = Math.round(tickStep / 5) * 5;
+    else if (tickStep > 1) tickStep = Math.round(tickStep);
+    else tickStep = 1;
+    if (tickStep === 0) tickStep = 1;
+
+    var ticks = [];
+    for (var t = 0; t <= niceMax; t += tickStep) {
+      ticks.push(t);
+    }
+    // Ensure niceMax is the last tick
+    if (ticks[ticks.length - 1] < niceMax) ticks.push(niceMax);
+
+    var chartHeight = 220;
+    var barWidth = bars.length <= 3 ? 60 : 50;
+    var barGap = bars.length <= 3 ? 24 : 16;
+    var chartAreaWidth = bars.length * (barWidth + barGap);
 
     var html = '';
-    html += '<div class="bar-row" style="display:flex;align-items:center;gap:10px;">';
-    html += '<span class="bar-label" style="min-width:120px;text-align:right;font-size:14px;font-weight:500;color:#374151;">' + esc(label) + '</span>';
-    html += '<div class="bar ' + barClass + '" style="height:30px;border-radius:4px;background:' + color + ';' +
-            'width:' + widthPct.toFixed(1) + '%;min-width:' + (count > 0 ? '4px' : '0') + ';transition:width 0.3s ease;"></div>';
-    html += '<span class="bar-count" style="min-width:40px;font-size:14px;font-weight:600;color:#1f2937;">' + count + '</span>';
+    html += '<div class="bar-chart-wrapper" style="display:flex;justify-content:center;margin:20px auto;max-width:520px;">';
+
+    // Y-axis with ticks
+    html += '<div class="bar-chart-yaxis" style="display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;padding-right:8px;height:' + chartHeight + 'px;position:relative;">';
+    for (var ti = ticks.length - 1; ti >= 0; ti--) {
+      var tickVal = ticks[ti];
+      var topPct = (1 - tickVal / niceMax) * 100;
+      html += '<span style="font-size:12px;color:#6b7280;line-height:1;position:absolute;top:' + topPct.toFixed(1) + '%;transform:translateY(-50%);right:8px;">' + tickVal + '</span>';
+    }
     html += '</div>';
+
+    // Chart area with axis line and bars
+    html += '<div class="bar-chart-area" style="position:relative;height:' + chartHeight + 'px;width:' + chartAreaWidth + 'px;border-left:2px solid #374151;border-bottom:2px solid #374151;">';
+
+    // Horizontal grid lines
+    for (var gi = 0; gi < ticks.length; gi++) {
+      var gPct = (ticks[gi] / niceMax) * 100;
+      if (ticks[gi] > 0) {
+        html += '<div style="position:absolute;bottom:' + gPct.toFixed(1) + '%;left:0;right:0;height:1px;background:#e5e7eb;"></div>';
+      }
+    }
+
+    // Bars
+    for (var bi = 0; bi < bars.length; bi++) {
+      var bar = bars[bi];
+      var heightPct = niceMax > 0 ? (bar.count / niceMax) * 100 : 0;
+      var leftPx = bi * (barWidth + barGap) + barGap / 2;
+
+      // Bar
+      html += '<div style="position:absolute;bottom:0;left:' + leftPx + 'px;width:' + barWidth + 'px;' +
+              'height:' + heightPct.toFixed(1) + '%;background:' + bar.color + ';border-radius:4px 4px 0 0;' +
+              'transition:height 0.4s ease;min-height:' + (bar.count > 0 ? '2px' : '0') + ';">';
+
+      // Count label inside or above bar
+      if (heightPct > 15) {
+        html += '<span style="position:absolute;top:6px;left:50%;transform:translateX(-50%);font-size:14px;font-weight:700;color:#fff;">' + bar.count + '</span>';
+      } else {
+        html += '<span style="position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);font-size:13px;font-weight:700;color:#374151;">' + bar.count + '</span>';
+      }
+      html += '</div>';
+    }
+
+    html += '</div>';  // end chart area
+    html += '</div>';  // end wrapper
+
+    // X-axis labels below
+    html += '<div class="bar-chart-xlabels" style="display:flex;justify-content:center;max-width:520px;margin:0 auto;padding-left:40px;">';
+    for (var xi = 0; xi < bars.length; xi++) {
+      var lbl = bars[xi].label.replace('\n', '<br>');
+      html += '<div style="width:' + (barWidth + barGap) + 'px;text-align:center;font-size:12px;font-weight:500;color:#374151;line-height:1.2;">' + lbl + '</div>';
+    }
+    html += '</div>';
+
+    // Y-axis title
+    html += '<div style="text-align:center;font-size:11px;color:#6b7280;margin-top:4px;">Number of transactions</div>';
+
     return html;
   };
 
