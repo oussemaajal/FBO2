@@ -1,0 +1,605 @@
+\documentclass[12pt]{article}
+
+% Packages
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{setspace}
+\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{array}
+
+\theoremstyle{definition}
+\newtheorem{remark}{Remark}
+
+\onehalfspacing
+
+\title{Experimental Design: \\ Measuring Selection Neglect in Disclosure Evaluation \\[6pt] \large Draft --- April 2026}
+\author{Oussema Ajala \\ University of Miami}
+\date{}
+
+\begin{document}
+\maketitle
+
+%% ====================================================================
+\section{Overview}
+\label{sec:overview}
+%% ====================================================================
+
+This experiment accompanies a theory paper showing that \emph{selection neglect} (SN) investors---who drop undisclosed information from their mental model entirely---are harder to arbitrage away than \emph{naive} investors who merely fail to condition on strategic withholding. The key theoretical prediction driving the experimental design is that SN investors are \textbf{more confident} (overconfident) than naive investors, because they have eliminated a dimension of uncertainty from their belief formation. Naive investors know the hidden information exists and are therefore less sure; SN investors do not carry that uncertainty at all.
+
+The experiment asks participants to evaluate firms for fraud based on selectively disclosed transaction data. A simulated manager, paid when participants rate fraud lower, discloses the most favorable subset of a firm's transactions. By varying the presentation format and the scale of the information set across participants, and by observing responses to a fixed set of trial compositions within participants, we pursue three goals:
+
+\begin{enumerate}[nosep]
+\item \textbf{Detect selection neglect:} Show that participants fail to account for strategically withheld information, and that the pattern of failure is consistent with SN rather than naivete alone.
+\item \textbf{Measure endogenous overconfidence:} Show that SN is accompanied by higher subjective confidence, and that this confidence increases when the disclosed information is more salient.
+\item \textbf{Structurally estimate the fraction of each type:} Use a mixture model to identify the proportions of rational, naive, and SN participants across experimental conditions.
+\end{enumerate}
+
+
+%% ====================================================================
+\section{Task and Cover Story}
+\label{sec:task}
+%% ====================================================================
+
+\subsection{Setting}
+
+Participants play the role of \textbf{fraud assessors} evaluating firms for potential fraud. Each firm has $N$ transactions, and each transaction is independently classified as one of three types:
+
+\begin{table}[h!]
+\centering
+\caption{Transaction Type Distributions}
+\label{tab:distributions}
+\begin{tabular}{lccc}
+\toprule
+& Normal (N) & Unusual (U) & Highly Unusual (HU) \\
+\midrule
+Non-fraudulent firm & 60\% & 30\% & 10\% \\
+Fraudulent firm & 40\% & 30\% & 30\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The prior probability of fraud is $P(\text{Fraud}) = 0.5$.
+
+\begin{remark}[Design choice: matched Unusual probability]
+The probability of Unusual transactions is 30\% under both firm types, making U transactions uninformative in isolation. Fraud updating is driven entirely by the Normal/Highly Unusual balance. This simplification serves two purposes: (1) it reduces the cognitive load on participants, since they need only track the N--HU balance rather than a 3-way comparison; and (2) it provides a clean diagnostic---if participants update on the number of U transactions, this indicates a failure of basic statistical reasoning rather than selection neglect specifically.
+\end{remark}
+
+\subsection{The Manager's Disclosure Decision}
+
+A simulated manager observes all $N$ transactions and must disclose exactly $k$ of them ($k$ is set by the experimenter, not chosen by the manager). The manager is paid when the participant rates fraud probability \emph{lower}. Participants are told:
+\begin{itemize}[nosep]
+\item The total number of transactions $N$.
+\item The number of disclosed transactions $k$.
+\item The manager sees all $N$ transactions before choosing which $k$ to show.
+\item The manager earns a bonus when you rate fraud probability lower.
+\end{itemize}
+
+\textbf{Simulated manager strategy (not revealed to participants):} The manager discloses the $k$ most favorable transactions, where favorability is ranked N $>$ U $>$ HU (Normal is most favorable for looking non-fraudulent). Ties within a category are broken randomly. Participants must infer the manager's strategy from the incentive structure---they are never told the strategy directly.
+
+\subsection{Comprehension Check}
+
+After instructions, participants answer four structural comprehension questions:
+
+\begin{enumerate}[nosep]
+\item Who picks which transactions you see? \textit{(The manager)}
+\item Does the manager earn more when you rate fraud high or low? \textit{(Low)}
+\item If the firm has 10 transactions and the manager shows 3, how many are hidden? \textit{(7)}
+\item Can a non-fraudulent firm have a Highly Unusual transaction? \textit{(Yes)}
+\end{enumerate}
+
+Participants who fail any question are paid a flat fee and dismissed. These questions verify structural understanding (roles, incentives, arithmetic) \textbf{without coaching participants on the strategic implications}. Question~2 establishes awareness of the conflict of interest without suggesting what inference to draw from it.
+
+\begin{remark}[No strategic coaching]
+The comprehension check is deliberately limited to structural facts. We do not ask questions like ``What should you infer about the hidden transactions?'' or ``Does the manager have an incentive to hide bad transactions?'' Such questions would prime strategic reasoning and reduce the very bias we seek to measure. The check ensures participants understand the rules of the game, not how to play it optimally.
+\end{remark}
+
+
+%% ====================================================================
+\section{Experimental Design}
+\label{sec:design}
+%% ====================================================================
+
+\subsection{Design Overview}
+
+The experiment uses a $3 \times 3$ fully between-subject design:
+
+\begin{itemize}[nosep]
+\item \textbf{Presentation Format} (between-subjects, 3 levels): List, Chart-Disclosed, Chart-Full
+\item \textbf{Scale} (between-subjects, 3 levels): $(k, N) \in \{(3, 10),\; (30, 100),\; (300, 1000)\}$
+\end{itemize}
+
+Each participant completes 10 within-subject trials (varying the disclosed transaction composition) under their assigned between-subject condition.
+
+Total cells: $3 \times 3 = 9$ between-subject conditions.
+
+\subsection{Manipulation 1: Presentation Format (Salience)}
+\label{sec:format}
+
+The three presentation formats vary how prominently the disclosed information is displayed relative to the undisclosed information:
+
+\begin{description}[style=nextline]
+
+\item[\textbf{Condition A: List}]
+Disclosed transactions are shown as a simple text list:
+\begin{quote}
+\texttt{Transaction 1: Normal} \\
+\texttt{Transaction 2: Normal} \\
+\texttt{Transaction 3: Unusual} \\
+\texttt{[7 transactions not shown]}
+\end{quote}
+The undisclosed count is displayed in the same font and format as the disclosed transactions. This is the lowest-salience condition for disclosed information.
+
+\item[\textbf{Condition B: Chart-Disclosed}]
+Disclosed transactions are shown as a colored bar chart displaying the composition of disclosed transaction types (e.g., a bar for Normal, a bar for Unusual, a bar for Highly Unusual among the $k$ disclosed). The number of undisclosed transactions is shown as a small text note below the chart:
+\begin{quote}
+\textit{Note: $N - k$ additional transactions were not disclosed.}
+\end{quote}
+The chart draws visual attention to the composition of disclosed transactions while relegating the undisclosed count to a footnote. This is the highest-salience condition for the disclosed information.
+
+\item[\textbf{Condition C: Chart-Full}]
+A bar chart showing the composition of disclosed transactions \emph{plus} an additional gray bar for the count of undisclosed transactions. The undisclosed bar is visually integrated into the same chart, making the ``missing'' information as salient as the disclosed information. This is the highest-salience condition for undisclosed information (and thus the condition predicted to produce the lowest selection neglect).
+\end{description}
+
+\begin{remark}[Predicted ordering]
+If selection neglect is driven by the salience of disclosed information crowding out attention to what is missing, then:
+\begin{itemize}[nosep]
+\item Condition B (Chart-Disclosed) should produce the highest selection neglect: vivid, visually prominent disclosed information with the undisclosed count buried in a footnote.
+\item Condition C (Chart-Full) should produce the lowest selection neglect: the undisclosed bar is visually integrated, making the gap impossible to ignore.
+\item Condition A (List) should be intermediate: not visually salient, but the undisclosed count is at least displayed in the same format.
+\end{itemize}
+A rational Bayesian agent should not be affected by presentation format, since the information content is identical across conditions. Any difference is attributable to cognitive processing of the display.
+\end{remark}
+
+
+\subsection{Manipulation 2: Scale}
+\label{sec:scale}
+
+The three scale conditions hold the disclosure ratio $k/N = 0.3$ constant while varying the absolute size:
+
+\begin{table}[h!]
+\centering
+\caption{Scale Conditions}
+\label{tab:scale}
+\begin{tabular}{lccl}
+\toprule
+Condition & $k$ (disclosed) & $N$ (total) & Interpretation \\
+\midrule
+Small & 3 & 10 & Small firm, easy to process \\
+Medium & 30 & 100 & Medium firm, moderate cognitive load \\
+Large & 300 & 1,000 & Large firm, overwhelming disclosure \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{remark}[Prediction]
+A rational Bayesian agent should produce the same posterior for a given transaction composition (expressed as proportions) regardless of scale, since $k/N$ is held constant and the sufficient statistics are proportions. If selection neglect increases with scale, this supports the salience/crowding-out mechanism: larger disclosed sets create a stronger sense of ``having enough information'' and crowd out attention to the undisclosed portion. At $(300, 1000)$, participants see 300 transactions---a large and seemingly complete information set. The undisclosed 700 become psychologically distant. At $(3, 10)$, participants see only 3 transactions, and the undisclosed 7 are easy to keep in mind. We predict that selection neglect \emph{increases} with scale even though the Bayesian benchmark does not change.
+\end{remark}
+
+
+\subsection{Within-Subject Variation: Trial Compositions}
+\label{sec:within}
+
+Each participant sees the same 10 trial compositions (in random order), defined as proportions of the disclosed $k$ transactions. The compositions are deterministic---they are not randomly drawn---to ensure every participant evaluates the same information sets and to span the full range from all-Normal to all-Highly Unusual.
+
+\begin{table}[h!]
+\centering
+\caption{Deterministic Trial Compositions}
+\label{tab:compositions}
+\small
+\begin{tabular}{l ccc ccc ccc}
+\toprule
+& \multicolumn{3}{c}{Proportions of $k$} & \multicolumn{3}{c}{$k=3, N=10$} & \multicolumn{3}{c}{$k=30, N=100$} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7} \cmidrule(lr){8-10}
+Trial & \%N & \%U & \%HU & N & U & HU & N & U & HU \\
+\midrule
+T1  & 100 &   0 &   0 & 3 & 0 & 0 & 30 &  0 &  0 \\
+T2  &  67 &  33 &   0 & 2 & 1 & 0 & 20 & 10 &  0 \\
+T3  &  33 &  67 &   0 & 1 & 2 & 0 & 10 & 20 &  0 \\
+T4  &   0 & 100 &   0 & 0 & 3 & 0 &  0 & 30 &  0 \\
+T5  &  67 &   0 &  33 & 2 & 0 & 1 & 20 &  0 & 10 \\
+T6  &  33 &  33 &  33 & 1 & 1 & 1 & 10 & 10 & 10 \\
+T7  &   0 &  67 &  33 & 0 & 2 & 1 &  0 & 20 & 10 \\
+T8  &  33 &   0 &  67 & 1 & 0 & 2 & 10 &  0 & 20 \\
+T9  &   0 &  33 &  67 & 0 & 1 & 2 &  0 & 10 & 20 \\
+T10 &   0 &   0 & 100 & 0 & 0 & 3 &  0 &  0 & 30 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Trial Compositions at Large Scale ($k=300, N=1000$)}
+\label{tab:compositions_large}
+\begin{tabular}{l ccc}
+\toprule
+Trial & N & U & HU \\
+\midrule
+T1  & 300 &   0 &   0 \\
+T2  & 200 & 100 &   0 \\
+T3  & 100 & 200 &   0 \\
+T4  &   0 & 300 &   0 \\
+T5  & 200 &   0 & 100 \\
+T6  & 100 & 100 & 100 \\
+T7  &   0 & 200 & 100 \\
+T8  & 100 &   0 & 200 \\
+T9  &   0 & 100 & 200 \\
+T10 &   0 &   0 & 300 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{remark}[Design choice: deterministic compositions]
+Using fixed, deterministic compositions rather than random draws from the probability model has three advantages. First, every participant evaluates the same information, so between-subject comparisons are clean. Second, the compositions span the full range of diagnostic difficulty, from trials where the disclosed set is maximally favorable (T1: all Normal) to maximally unfavorable (T10: all Highly Unusual). Third, the pattern of responses across this fixed set of compositions is the identifying variation for the structural mixture model---we need each participant to reveal their ``type'' through their response function, not through the luck of their random draw.
+\end{remark}
+
+
+%% ====================================================================
+\section{Behavioral Benchmarks}
+\label{sec:benchmarks}
+%% ====================================================================
+
+\subsection{Setup}
+
+Let $\theta \in \{0, 1\}$ denote the firm type (0 = non-fraudulent, 1 = fraudulent), with prior $P(\theta = 1) = 0.5$. The manager observes $N$ i.i.d.\ transactions, each drawn from $f(\cdot \mid \theta)$:
+\[
+f(s \mid \theta) = \begin{cases}
+(0.6, 0.3, 0.1) & \text{if } \theta = 0 \text{ (non-fraud)}, \\
+(0.4, 0.3, 0.3) & \text{if } \theta = 1 \text{ (fraud)}.
+\end{cases}
+\]
+
+The manager selects the $k$ most favorable transactions to disclose (N $>$ U $>$ HU).
+
+\subsection{Rational (Bayesian) Posterior}
+
+The rational posterior must account for the manager's selection strategy. Let $\mathbf{s} = (n_N, n_U, n_{HU})$ denote the disclosed composition. The Bayesian posterior is:
+\begin{equation}
+P(\theta = 1 \mid \mathbf{s}) = \frac{P(\mathbf{s} \mid \theta = 1)}{P(\mathbf{s} \mid \theta = 1) + P(\mathbf{s} \mid \theta = 0)},
+\label{eq:posterior}
+\end{equation}
+where $P(\mathbf{s} \mid \theta)$ is the probability that the manager's optimal selection from $N$ draws of type $\theta$ produces the disclosed composition $\mathbf{s}$. This probability accounts for both the random draw of $N$ transactions and the deterministic selection of the best $k$.
+
+\subsection{Naive and Selection Neglect Posteriors}
+
+Both the naive investor and the selection neglect investor treat the disclosed transactions as a random sample, ignoring the selection mechanism. Their point estimate uses the naive likelihood:
+\begin{equation}
+P_{\text{naive/SN}}(\theta = 1 \mid \mathbf{s}) = \frac{\prod_{s \in \mathbf{s}} f(s \mid 1)}{\prod_{s \in \mathbf{s}} f(s \mid 1) + \prod_{s \in \mathbf{s}} f(s \mid 0)}.
+\label{eq:naive_posterior}
+\end{equation}
+
+\begin{remark}[SN and naive produce the same point estimate]
+\label{rmk:same_point}
+In a pure Bayesian framework, SN and naive produce the \textbf{same point estimate}. Both treat the disclosed $k$ as a random sample; the unobserved $N - k$ transactions contribute nothing to the Bayesian update in either model. The separation between the two types comes from three channels detailed in Section~\ref{sec:separation}, not from the point estimate itself.
+\end{remark}
+
+\subsection{Exact Benchmarks at $k=3$, $N=10$}
+
+Table~\ref{tab:benchmarks_small} reports the computed Bayesian and naive/SN posteriors for each trial composition at the small scale.
+
+\begin{table}[h!]
+\centering
+\caption{Exact Bayesian and Naive/SN Posteriors ($k=3$, $N=10$)}
+\label{tab:benchmarks_small}
+\begin{tabular}{l ccc cc c}
+\toprule
+Trial & N & U & HU & Naive/SN $P(F)$ & Bayesian $P(F)$ & Gap \\
+\midrule
+T1 (3,0,0)   & 3 & 0 & 0 & 0.229 & 0.457 & $+0.229$ \\
+T2 (2,1,0)   & 2 & 1 & 0 & 0.308 & 0.919 & $+0.611$ \\
+T3 (1,2,0)   & 1 & 2 & 0 & 0.400 & 0.962 & $+0.562$ \\
+T4 (0,3,0)   & 0 & 3 & 0 & 0.500 & 0.982 & $+0.482$ \\
+T5 (2,0,1)   & 2 & 0 & 1 & 0.571 & 1.000 & $+0.429$ \\
+T6 (1,1,1)   & 1 & 1 & 1 & 0.667 & 1.000 & $+0.333$ \\
+T7 (0,2,1)   & 0 & 2 & 1 & 0.750 & 1.000 & $+0.250$ \\
+T8 (1,0,2)   & 1 & 0 & 2 & 0.857 & 1.000 & $+0.143$ \\
+T9 (0,1,2)   & 0 & 1 & 2 & 0.900 & 1.000 & $+0.100$ \\
+T10 (0,0,3)  & 0 & 0 & 3 & 0.964 & 1.000 & $+0.036$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{remark}[Reading the benchmarks]
+The gap between Bayesian and naive/SN posteriors is largest for the ``favorable'' trials (T1--T4), where the disclosed transactions look good. A rational agent recognizes that if the best 3 out of 10 include any non-Normal transaction, the firm is almost certainly fraudulent---the manager \emph{tried} to show only Normal and could not. The naive/SN investor misses this inference entirely.
+\end{remark}
+
+\subsection{Benchmarks at Larger Scales}
+
+At $(k=30, N=100)$ and $(k=300, N=1000)$, the Bayesian posterior for \textbf{all compositions except all-Normal} is essentially 1.0. The logic is the same but sharper: if the best 30 out of 100 (or 300 out of 1000) include even a single non-Normal transaction, the firm is virtually certain to be fraudulent. The all-Normal Bayesian posterior approaches 0.50 (uninformative), because both firm types can produce 30 or 300 Normal transactions among their best $k$ with non-trivial probability.
+
+Meanwhile, the naive posteriors at larger $k$ become \textbf{more extreme} (not more moderate), because the naive investor treats the $k$ disclosed transactions as independent draws and the larger sample produces stronger likelihood ratios. For example:
+\begin{itemize}[nosep]
+\item T2 at $k=30$: composition $(20, 10, 0)$ yields naive $P(F) \approx 0.0003$ (very confident non-fraud).
+\item T6 at $k=30$: composition $(10, 10, 10)$ yields naive $P(F) \approx 0.999$ (very confident fraud).
+\end{itemize}
+
+This creates an important asymmetry across scales: at small $k$, naive responses are moderate and the Bayesian-naive gap is the dominant signal; at large $k$, naive responses are extreme and the \textbf{variance} of responses across trials becomes the key identifier for SN versus naive (see Section~\ref{sec:separation}).
+
+
+%% ====================================================================
+\section{Separating Selection Neglect from Naivete}
+\label{sec:separation}
+%% ====================================================================
+
+Since SN and naive investors produce the same point estimate in the pure Bayesian framework (Remark~\ref{rmk:same_point}), the separation between the two types relies on three channels.
+
+\subsection{Channel 1: Confidence (Primary)}
+
+SN investors are \textbf{more confident} than naive investors because they have eliminated a dimension of uncertainty. The naive investor knows that $N - k$ transactions exist but are hidden; this knowledge introduces residual uncertainty about the firm's true type. The SN investor has dropped the undisclosed transactions from their mental model entirely---as far as they are concerned, they have seen all the information there is. Their perceived precision is higher, which manifests as higher confidence.
+
+This is the experimental analogue of the precision channel in the theory ($\tau_{SN} > \tau_N$). We measure it directly via the confidence DV (1--7 Likert) on every trial.
+
+\textbf{Prediction:} SN-classified participants report higher confidence than naive-classified participants, controlling for the accuracy of their fraud assessment.
+
+\subsection{Channel 2: Heuristic Extremity}
+
+If participants use a ``weighted average'' heuristic rather than exact Bayesian computation, the SN and naive responses diverge in a predictable way:
+\begin{itemize}[nosep]
+\item \textbf{SN response:} $r_{SN} = P(F \mid \text{disclosed only})$, with full anchoring on the disclosed evidence.
+\item \textbf{Naive response:} $r_{N} = (1 - \alpha) \cdot P(F \mid \text{disclosed}) + \alpha \cdot 0.5$, with partial regression to the prior ($\alpha > 0$) reflecting the naive investor's awareness that undisclosed transactions exist and pull toward uncertainty.
+\end{itemize}
+
+The SN response is always \textbf{more extreme} (further from 0.50). The gap has a clear directional pattern: on favorable trials (T1--T3), SN says \emph{less} fraud; on unfavorable trials (T5--T10), SN says \emph{more} fraud. On Trial T4 (all Unusual, uninformative), both predict 0.50.
+
+Table~\ref{tab:heuristic} illustrates the heuristic model predictions for $\alpha = 0.3$.
+
+\begin{table}[h!]
+\centering
+\caption{Heuristic Model Predictions ($\alpha = 0.3$)}
+\label{tab:heuristic}
+\begin{tabular}{l cc c}
+\toprule
+Trial & SN Response & Naive ($\alpha = 0.3$) & Gap (SN $-$ Naive) \\
+\midrule
+T1 (3,0,0)   & 0.229 & 0.310 & $-0.081$ \\
+T2 (2,1,0)   & 0.308 & 0.366 & $-0.058$ \\
+T3 (1,2,0)   & 0.400 & 0.430 & $-0.030$ \\
+T4 (0,3,0)   & 0.500 & 0.500 & $\phantom{-}0.000$ \\
+T5 (2,0,1)   & 0.571 & 0.550 & $+0.021$ \\
+T6 (1,1,1)   & 0.667 & 0.617 & $+0.050$ \\
+T7 (0,2,1)   & 0.750 & 0.675 & $+0.075$ \\
+T8 (1,0,2)   & 0.857 & 0.750 & $+0.107$ \\
+T9 (0,1,2)   & 0.900 & 0.780 & $+0.120$ \\
+T10 (0,0,3)  & 0.964 & 0.825 & $+0.139$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{remark}[Identifying power of heuristic extremity]
+The SN--naive gap is largest at the extremes of the disclosed composition (T1 and T10) and zero at the uninformative trial (T4). This ``fan shape'' in the response function---with SN responses more spread out than naive responses---provides the key identifying variation for the structural model: \textbf{SN response variance across trials is higher than naive response variance}.
+\end{remark}
+
+\subsection{Channel 3: Beliefs about Undisclosed Transactions (Mechanism Check)}
+
+On every trial, we ask: ``Of the $N - k$ transactions you did NOT see, what percentage do you think are Highly Unusual?'' The three types should respond differently:
+\begin{itemize}[nosep]
+\item \textbf{Rational:} high percentage. The manager hid the worst transactions, so the undisclosed set is disproportionately HU. The rational estimate depends on the disclosed composition but should generally exceed the unconditional rate.
+\item \textbf{Naive:} approximately 20\%. The unconditional rate of HU is $0.5 \times 10\% + 0.5 \times 30\% = 20\%$, and naive investors assign the unconditional distribution to undisclosed transactions.
+\item \textbf{Selection neglect:} vague, uncertain, or unable to produce a coherent answer. SN investors have not thought about the undisclosed transactions at all. Their responses should show high variance or cluster around focal values (0\%, 50\%) that suggest guessing rather than inference.
+\end{itemize}
+
+\begin{remark}[Why ask on every trial]
+We elicit undisclosed beliefs on every trial rather than a selected subset to avoid priming effects. If the question appeared only on certain trials, participants might infer that those trials are ``special'' and adjust their behavior. By asking consistently, the question becomes routine and does not selectively activate strategic thinking.
+\end{remark}
+
+
+%% ====================================================================
+\section{Dependent Variables}
+\label{sec:dvs}
+%% ====================================================================
+
+For each of the 10 trials, participants provide three responses:
+
+\begin{enumerate}
+
+\item \textbf{Fraud probability assessment} (0--100 slider): ``Based on the information shown to you, what is the probability that this firm is fraudulent?'' This is the primary dependent variable. Incentivized via the binarized scoring rule (BSR).
+
+\item \textbf{Confidence rating} (1--7 Likert scale): ``How confident are you in your fraud assessment?'' This is the overconfidence test. The theory predicts that SN investors are more confident than naive investors because they carry lower perceived uncertainty. If SN produces endogenous overconfidence, confidence should be higher in conditions that induce more SN (Chart-Disclosed format, larger scale), controlling for the objective difficulty of the trial.
+
+\item \textbf{Estimated percentage of HU among undisclosed} (0--100 slider): ``Of the $N-k$ transactions you did NOT see, what percentage do you think are Highly Unusual?'' This is the mechanism check, elicited on every trial. It directly reveals whether participants have formed beliefs about the undisclosed set and, if so, whether those beliefs reflect the selection mechanism.
+
+\end{enumerate}
+
+
+%% ====================================================================
+\section{Structural Estimation Strategy}
+\label{sec:structural}
+%% ====================================================================
+
+\subsection{Mixture Model}
+
+We model each participant as belonging to one of three types---Rational (R), Naive (N), or Selection Neglect (SN)---with type probabilities $(\pi_R, \pi_N, \pi_{SN})$ that may vary across between-subject conditions. Conditional on type $j$ and trial $i$, the response is:
+
+\begin{equation}
+P(\text{response} = r_i \mid \mathbf{s}_i, \text{type } j) = \phi\left(\frac{r_i - \mu_j(\mathbf{s}_i)}{\sigma_j}\right),
+\label{eq:mixture}
+\end{equation}
+
+where:
+\begin{itemize}[nosep]
+\item $\mu_R(\mathbf{s}_i)$ = Bayesian posterior (accounts for selection),
+\item $\mu_N(\mathbf{s}_i) = (1 - \alpha_N) \cdot P_{\text{naive}}(\mathbf{s}_i) + \alpha_N \cdot 0.5$ (partial regression to prior),
+\item $\mu_{SN}(\mathbf{s}_i) = P_{\text{naive}}(\mathbf{s}_i)$ (full anchoring on disclosed),
+\item $\sigma_j$ is the noise parameter for type $j$.
+\end{itemize}
+
+The log-likelihood for participant $p$ across trials is:
+\begin{equation}
+\ell_p = \log \sum_{j \in \{R, N, SN\}} \pi_j \prod_{i=1}^{10} \phi\left(\frac{r_{p,i} - \mu_j(\mathbf{s}_i)}{\sigma_j}\right).
+\label{eq:loglik}
+\end{equation}
+
+The full parameter vector is $(\pi_R, \pi_N, \pi_{SN}, \alpha_N, \sigma_R, \sigma_N, \sigma_{SN})$---seven parameters estimated by maximum likelihood, separately for each of the 9 between-subject cells.
+
+\subsection{Identification}
+
+The three types are identified by their differential response patterns across the 10 trial compositions:
+
+\begin{enumerate}[nosep]
+
+\item \textbf{R versus (N, SN):} Rational agents produce responses that track the Bayesian posterior, which is systematically higher (more skeptical) than the naive posterior. The gap is largest on trials T2--T4, where the disclosed set looks favorable but the Bayesian inference is that the firm is almost certainly fraudulent. This gap separates rational agents from both non-rational types.
+
+\item \textbf{SN versus N:} The key identifying variation is \textbf{response variance across trials}. SN responses are more extreme than naive responses (the ``fan shape'' from Section~\ref{sec:separation}), so $\text{Var}_{i}(\mu_{SN}(\mathbf{s}_i)) > \text{Var}_{i}(\mu_N(\mathbf{s}_i))$. Additionally, SN participants report higher confidence. We use both the point estimates and the confidence data jointly for classification.
+
+\item \textbf{Scale variation (supplementary):} As $N$ increases (holding $k/N$ constant), the naive response function becomes more extreme (larger sample produces stronger likelihood ratios), while the SN response function tracks the same naive posterior. The difference between them increases with scale, providing additional identifying power in the cross-cell comparison.
+
+\end{enumerate}
+
+\subsection{Estimating Type Fractions by Condition}
+
+The key hypothesis is that $\pi_{SN}$ varies systematically across between-subject conditions:
+\begin{itemize}[nosep]
+\item $\hat{\pi}_{SN}$ should be highest in Chart-Disclosed format (salient disclosed info, hidden undisclosed).
+\item $\hat{\pi}_{SN}$ should be lowest in Chart-Full format (undisclosed bar visually integrated).
+\item $\hat{\pi}_{SN}$ should increase with scale (larger information sets crowd out attention to the gap).
+\end{itemize}
+
+These comparative statics on type fractions across the 9 cells provide the cleanest evidence for the salience mechanism of selection neglect.
+
+
+%% ====================================================================
+\section{Hypotheses}
+\label{sec:hypotheses}
+%% ====================================================================
+
+\begin{description}[style=nextline]
+
+\item[H1 (Selection Neglect Exists)]
+Average fraud probability assessments are less skeptical than the Bayesian benchmark across all conditions. The deviation from rationality is consistent with the naive/SN posterior rather than a partially-adjusted Bayesian response.
+
+\textit{Test:} Compare average responses to the Bayesian and naive/SN benchmarks by trial. The SN/naive posterior should fit the data better than an intermediate ``noisy Bayesian'' model.
+
+\item[H2 (Endogenous Overconfidence)]
+Confidence ratings are higher in the Chart-Disclosed format and the Large Scale condition, controlling for the objective difficulty of the trial.
+
+\textit{Test:} Regress confidence on format and scale indicators with trial fixed effects and participant-clustered standard errors. The coefficient on Chart-Disclosed and Large Scale should be positive.
+
+\item[H3 (Salience Drives Selection Neglect)]
+The structurally estimated fraction of selection neglect types varies with format salience:
+\[
+\hat{\pi}_{SN}^{\text{Chart-Disclosed}} > \hat{\pi}_{SN}^{\text{List}} > \hat{\pi}_{SN}^{\text{Chart-Full}}.
+\]
+
+\textit{Test:} Compare $\hat{\pi}_{SN}$ across the 3 format conditions (within each scale level) from the structural estimation.
+
+\item[H4 (Scale Crowds Out Attention to Undisclosed)]
+The structurally estimated fraction of selection neglect types increases with scale:
+\[
+\hat{\pi}_{SN}^{(300,1000)} > \hat{\pi}_{SN}^{(30,100)} > \hat{\pi}_{SN}^{(3,10)}.
+\]
+
+\textit{Test:} Compare $\hat{\pi}_{SN}$ across the 3 scale conditions (within each format level) from the structural estimation.
+
+\item[H5 (SN Implies Higher Confidence)]
+Participants classified as SN by the mixture model report higher confidence than participants classified as naive, controlling for the accuracy of their fraud assessment.
+
+\textit{Test:} Within each cell, regress confidence on a SN indicator (from posterior type probabilities), controlling for $|r_i - P_{\text{Bayes}}(\mathbf{s}_i)|$ and trial fixed effects. The SN coefficient should be positive.
+
+\item[H6 (SN Response Variance Exceeds Naive Variance)]
+SN-classified participants exhibit higher response variance across the 10 trials than naive-classified participants.
+
+\textit{Test:} Compute each participant's within-person variance of fraud probability assessments across the 10 trials. Compare the distribution of variances between SN-classified and naive-classified participants.
+
+\end{description}
+
+
+%% ====================================================================
+\section{Procedures}
+\label{sec:procedures}
+%% ====================================================================
+
+\subsection{Platform and Participants}
+
+The experiment will be conducted on Prolific. Target: approximately 100 participants per cell, for a total of approximately 900 participants across 9 between-subject cells. Participants are U.S.-based adults.
+
+\subsection{Timing}
+
+Estimated total time: approximately 20 minutes.
+
+\begin{enumerate}[nosep]
+\item \textbf{Instructions} ($\sim$3 min): Explain the firm, transaction types, distributions (Table~\ref{tab:distributions}), the manager's role, the manager's incentive, and the participant's task. Display the type distributions visually.
+
+\item \textbf{Comprehension check}: 4 questions (Section~\ref{sec:task}). Fail any question $\to$ dismissed with flat payment.
+
+\item \textbf{Main trials} ($\sim$15 min): 10 trials, each with a different disclosed composition (Table~\ref{tab:compositions}), presented in random order. For each trial:
+\begin{enumerate}[nosep]
+\item See the disclosed transactions in the assigned format (List, Chart-Disclosed, or Chart-Full).
+\item Rate fraud probability (0--100 slider).
+\item Rate confidence (1--7 Likert).
+\item Estimate \% HU among undisclosed (0--100 slider).
+\end{enumerate}
+
+\item \textbf{Debrief and demographics} ($\sim$2 min): Berlin Numeracy Test, demographics, open-ended strategy description (``How did you decide on your fraud ratings?'').
+\end{enumerate}
+
+\subsection{Incentive Compatibility}
+
+Fraud probability assessments are incentivized using the \textbf{binarized scoring rule} (BSR): for each trial, the participant's payment is a function of their reported $P(\text{Fraud})$ and the realized firm type, structured so that the expected-payoff-maximizing report equals the participant's true subjective probability. The BSR is incentive-compatible, robust to risk preferences, and produces a payment that is linear in the participant's true belief. Payment is a base rate plus the BSR bonus.
+
+Confidence ratings and undisclosed-beliefs estimates are not incentivized (standard practice for metacognitive and belief-elicitation measures that are secondary to the main task).
+
+
+%% ====================================================================
+\section{Power and Sample Size}
+\label{sec:power}
+%% ====================================================================
+
+\subsection{Primary Test: SN versus Naive Benchmark}
+
+Based on prior experimental work (Farina et al., 2026), the expected SN--naive difference in fraud assessments is approximately 5 percentage points, with within-subject standard deviation $\sigma \approx 15$ pp. This yields an effect size of $d = 5/15 = 0.33$.
+
+With 100 participants per cell and 10 repeated measures per participant:
+\begin{itemize}[nosep]
+\item \textbf{Within-cell test:} $d = 0.33$, power $> 0.95$ with 10 trials per participant.
+\item \textbf{Between-cell comparison} (e.g., Chart-Disclosed vs.\ Chart-Full): $d = 0.33$, power $\approx 0.85$ with $n = 100$ per cell.
+\end{itemize}
+
+\subsection{Structural Estimation}
+
+Each between-subject cell provides $10 \times 100 = 1{,}000$ observations (10 trials $\times$ 100 participants). The mixture model has 7 free parameters $(\pi_R, \pi_N, \pi_{SN}, \alpha_N, \sigma_R, \sigma_N, \sigma_{SN})$, with $\pi_R + \pi_N + \pi_{SN} = 1$ reducing the effective count to 6. With 1,000 observations per cell and well-separated type predictions across the 10 trial compositions, this is adequate for stable estimation of a 3-type mixture.
+
+
+%% ====================================================================
+\section{Connection to Theory}
+\label{sec:connection}
+%% ====================================================================
+
+The experiment maps directly onto the theoretical model:
+
+\begin{table}[h!]
+\centering
+\caption{Theory--Experiment Mapping}
+\label{tab:mapping}
+\begin{tabular}{ll}
+\toprule
+Theory & Experiment \\
+\midrule
+Firm value $v = (m+d)/2 + \varepsilon$ & Firm fraud status $\theta$ \\
+Mandatory signal $m$ & Disclosed $k$ transactions \\
+Discretionary signal $d$ & Undisclosed $N-k$ transactions \\
+Rational investor & Participant who accounts for selection \\
+Naive investor & Participant who assigns unconditional dist.\ to undisclosed \\
+Selection neglect investor & Participant who drops undisclosed from mental model \\
+Overconfidence ($\tau_{SN} > \tau_R$) & Higher confidence ratings in SN-classified participants \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The three key theoretical predictions tested experimentally:
+
+\begin{enumerate}
+
+\item \textbf{Precision channel (H5):} SN participants should be more confident than naive participants, even though they are less accurate. This is the endogenous overconfidence result---the core mechanism by which SN investors survive arbitrage in the theoretical model. An investor who is wrong \emph{and knows it} trades cautiously and loses slowly; an investor who is wrong \emph{and confident} trades aggressively and persists.
+
+\item \textbf{Extremity channel (H6):} SN participants should exhibit higher response variance across trials than naive participants. In the theory, this maps to the result that SN investors' trades are more sensitive to the realized mandatory signal $m$, because they do not dilute $m$ with any prior about $d$. Higher sensitivity to disclosed information means SN investors move prices more per unit of disclosed information.
+
+\item \textbf{Salience mechanism (H3, H4):} The fraction of SN types should respond to presentation format and scale. This provides evidence on the \emph{cognitive origin} of selection neglect---whether it is driven by the salience of disclosed information crowding out the undisclosed, or by some other mechanism (e.g., computational difficulty, lack of motivation). The theory is agnostic about why SN arises; the experiment provides the missing link.
+
+\end{enumerate}
+
+
+\end{document}

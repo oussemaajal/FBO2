@@ -1,0 +1,23 @@
+# Data (too large for git)
+data/
+
+# Python
+__pycache__/
+*.pyc
+.env
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.bbl
+*.blg
+
+# Claude local settings
+.claude/
+
+# OS
+Thumbs.db
+.DS_Store

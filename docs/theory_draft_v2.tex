@@ -1,0 +1,1194 @@
+\documentclass[12pt]{article}
+
+% Packages
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{mathtools}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{setspace}
+\onehalfspacing
+
+% Theorem environments
+\theoremstyle{plain}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}[proposition]{Lemma}
+\newtheorem{corollary}[proposition]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+
+% Shortcuts
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Var}{\mathrm{Var}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\ND}{\mathrm{ND}}
+\newcommand{\R}{\mathrm{R}}
+\newcommand{\SN}{\mathrm{SN}}
+\newcommand{\N}{\mathrm{N}}
+\newcommand{\B}{\mathrm{B}}
+
+\title{Selection Neglect and Strategic Non-Disclosure \\ Without Disclosure Costs: \\[6pt] \large A Theoretical Framework (v2)}
+\author{Oussema Ajala \\ University of Miami}
+\date{Working Draft --- April 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent What happens to corporate disclosure when some investors do not just misread hidden signals but forget they exist? We develop a model of strategic non-disclosure in which some investors exhibit \emph{selection neglect}: when a firm withholds a discretionary signal, these investors drop it from their mental model entirely and treat the disclosed mandatory signal as if it were the whole story. The firm's terminal value is an average of two quality dimensions plus noise. Disclosure is costless ($c = 0$), so with all-rational investors the standard unraveling argument applies and full disclosure obtains. We show that selection neglect alone---without any disclosure costs or other frictions---can sustain non-disclosure in equilibrium. The mechanism is overconfidence: by collapsing a two-dimensional problem into one dimension, selection neglect investors perceive less uncertainty than actually exists, trade aggressively, and earn disproportionate weight in price formation. Compared to the ``naive'' investors in the existing literature (who fail to condition on strategic withholding but retain the correct model of firm value), selection neglect investors have artificially high perceived precision. The non-disclosure threshold with selection neglect depends on the mandatory signal realization $m$: firms with stronger mandatory signals face more non-disclosure, a prediction absent from standard models. The mispricing ratio $w_\SN/w_\N$ increases monotonically in the fraction of rational investors, from 1 (when all are biased) to $r = \tau_\SN/\tau_\N > 1$ (when all are rational), and halving the mispricing requires a strictly higher fraction of rational investors under selection neglect than under naivete. Moreover, conditioning on the event that actually matters---firms that withhold---reveals that the unconditional mispricing comparison substantially understates the selection neglect effect, because non-disclosure selectively oversamples exactly the firms where the SN error is largest.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%% ====================================================================
+\section{Model Setup}
+\label{sec:setup}
+%% ====================================================================
+
+\subsection{Primitives}
+
+A firm's terminal value is
+\begin{equation}
+v = \frac{m + d}{2} + \varepsilon,
+\label{eq:value}
+\end{equation}
+where $m \sim \mathcal{N}(\mu, \sigma_m^2)$ is a \textbf{mandatory signal} (always disclosed), representing one dimension of firm quality; $d \sim \mathcal{N}(\mu, \sigma_d^2)$ is a \textbf{discretionary signal} (voluntarily disclosed), representing a second dimension of firm quality; and $\varepsilon \sim \mathcal{N}(0, \sigma_\varepsilon^2)$ is residual noise, unresolvable by any signal. Think of $m$ as something like reported earnings---everybody sees it---and $d$ as something like forward guidance or segment-level detail that the firm can choose to reveal or keep quiet.
+
+The three components are mutually independent. We require $\sigma_d > 0$ and $\sigma_\varepsilon > 0$ throughout. Both quality dimensions share the same prior mean $\mu$, so the firm value is the \emph{average} quality across the two dimensions plus noise. The unconditional expected firm value is $\E[v] = \mu + 0 = \mu$.
+
+\begin{remark}[Why the averaging structure]
+Why $(m+d)/2$ rather than $m + d$? The averaging formulation has two appealing properties. First, the mean $\mu$ cancels symmetrically: when the prior means are equal, neither dimension is inherently more important ex ante. Second, the averaging structure makes the selection neglect investor's behavior psychologically natural: upon non-disclosure of $d$, they extrapolate from the observed dimension $m$ to the whole firm, treating $m$ as representative of overall quality. If the firm is a pie, $m$ is one slice and $d$ is another. The SN investor looks at one slice and decides it represents the whole pie.
+\end{remark}
+
+\subsection{Disclosure Mechanism}
+
+The manager observes $(m, d)$ and must disclose $m$. Disclosure of $d$ is voluntary and \textbf{costless} ($c = 0$). In equilibrium, the manager discloses $d$ if and only if $d \geq d^*(m)$, where $d^*(m)$ is the endogenous threshold. The manager's objective is simple: maximize the stock price.
+
+\begin{remark}[No disclosure costs]
+\label{rmk:no_cost}
+Setting $c = 0$ is a deliberate modeling choice, not an oversight. With all-rational investors and $c = 0$, the standard unraveling argument (Grossman, 1981; Milgrom, 1981) applies: any non-disclosure is penalized to the worst type, so full disclosure obtains. The question we address is whether investor bias \emph{alone}---without any other friction---can sustain non-disclosure in equilibrium. If the answer is yes, then the unraveling theorem is fragile in a way the literature has not fully appreciated.
+\end{remark}
+
+\subsection{Investor Types}
+\label{sec:types}
+
+A fraction $\lambda \in (0,1)$ of investors are \emph{rational} (type $\R$); the remaining $1-\lambda$ are \emph{biased} (type $B$). What exactly goes wrong in the heads of biased investors? We consider two possibilities, and the difference between them turns out to drive everything.
+
+\medskip
+\noindent\textbf{When $d$ is disclosed}, all investors observe $(m, d)$ and agree:
+\[
+\E[v \mid m, d] = \frac{m + d}{2}, \qquad \Var(v \mid m, d) = \sigma_\varepsilon^2.
+\]
+No disagreement here---disclosure resolves the information problem.
+
+\noindent\textbf{When $d$ is not disclosed}, beliefs diverge, and how they diverge is the heart of the model:
+
+\begin{definition}[Rational investors ($\R$)]
+\label{def:rational}
+Rational investors correctly condition on the withholding event. They know $d$ was withheld, infer $d < d^*$, and update accordingly:
+\[
+\E_\R[v \mid m, d < d^*] = \frac{m + \mu_{\ND}}{2}, \qquad \Var_\R(v \mid m, d < d^*) = \frac{\sigma_{\ND}^2}{4} + \sigma_\varepsilon^2,
+\]
+where $\mu_{\ND} \equiv \E[d \mid d < d^*]$ and $\sigma_{\ND}^2 \equiv \Var(d \mid d < d^*)$ are the mean and variance of the truncated distribution.
+\end{definition}
+
+\begin{definition}[Naive investors ($\N$)]
+\label{def:naive}
+Naive investors know that $d$ exists and perceive its full unconditional uncertainty, but they fail to draw the obvious inference from the fact that the firm chose not to disclose it:
+\[
+\E_\N[v \mid m, \ND] = \frac{m + \mu}{2}, \qquad \Var_\N(v \mid m, \ND) = \frac{\sigma_d^2}{4} + \sigma_\varepsilon^2.
+\]
+Their first-moment error is that they assign the \emph{unconditional} mean $\mu$ rather than the \emph{conditional} mean $\mu_{\ND} < \mu$. They know the right question (``what is $d$?'') but miss that the silence itself is informative.
+\end{definition}
+
+\begin{definition}[Selection neglect investors ($\SN$)]
+\label{def:sn}
+Selection neglect investors go further. Upon non-disclosure, they drop $d$ from their mental model entirely:
+\[
+\E_\SN[v \mid m, \ND] = m, \qquad \Var_\SN(v \mid m, \ND) = \sigma_\varepsilon^2.
+\]
+They treat the observed mandatory signal $m$ as representative of the firm's overall quality, acting as if $v = m + \varepsilon$. They perceive no uncertainty from the discretionary component---not because they have information about it, but because they have stopped thinking about it.
+\end{definition}
+
+\begin{remark}[Psychological interpretation of $\E_\SN = m$]
+\label{rmk:sn_interp}
+The specification $\E_\SN = m$ captures the idea from Farina, Krasikov, Polak, and Yal\c{c}in (2026) that selection neglect investors ``take evidence at face value.'' Upon observing $m$ and receiving no information about $d$, they extrapolate: the firm's disclosed quality dimension $m$ must be representative of the firm as a whole. In the averaging structure $v = (m+d)/2 + \varepsilon$, the disclosed dimension accounts for half the fundamental value. The SN investor treats it as if it accounts for all of it.
+
+Three alternative specifications were considered. First, $\E_\SN = m/2$ (drop $d$ from the average but retain the denominator): this makes SN identical to naive in first moment when $\mu = 0$, eliminating the $m$-dependent threshold that is a key prediction. Second, $\E_\SN = (m + \mu)/2$ (substitute the prior mean for $d$): this is equivalent to naive in first moment, losing the distinction entirely. Third, $\E_\SN = m$ (extrapolate the disclosed signal to the whole firm): this is the most psychologically faithful to ``dropping $d$ from the mental model'' and generates the richest predictions. We adopt the third specification.
+\end{remark}
+
+\begin{remark}[The behavioral distinction]
+Here is a clean way to see the difference. A naive investor \emph{knows the question but ignores the answer}: they know $d$ matters but do not adjust for the fact that silence is bad news. A selection neglect investor \emph{forgets the question}: they cease to account for $d$ altogether. This distinction has concrete consequences. The naive investor's first-moment error is $(\mu - \mu_{\ND})/2$, which is the same for every firm regardless of its mandatory signal. The SN investor's first-moment error is $(m - \mu_{\ND})/2$, which varies with $m$. A firm with a spectacular earnings report gets an even bigger free pass from SN investors when it stays quiet about forward guidance.
+\end{remark}
+
+
+\subsection{Truncated Normal Formulas}
+\label{sec:truncated}
+
+For reference, with $d \sim \mathcal{N}(\mu, \sigma_d^2)$ and truncation at $d < d^*$, let $t \equiv (d^* - \mu)/\sigma_d$. Then:
+\begin{align}
+\mu_{\ND} &= \E[d \mid d < d^*] = \mu - \sigma_d \frac{\phi(t)}{\Phi(t)}, \label{eq:mu_nd} \\
+\sigma_{\ND}^2 &= \Var(d \mid d < d^*) = \sigma_d^2 \left[1 - \frac{t\,\phi(t)}{\Phi(t)} - \left(\frac{\phi(t)}{\Phi(t)}\right)^2\right], \label{eq:var_nd}
+\end{align}
+where $\phi(\cdot)$ and $\Phi(\cdot)$ are the standard normal PDF and CDF. Note that $\mu_{\ND} < \mu$ for any finite $d^*$, and $\sigma_{\ND}^2 < \sigma_d^2$.
+
+
+%% ====================================================================
+\section{Benchmark: Full Unraveling with $c = 0$}
+\label{sec:unraveling}
+%% ====================================================================
+
+Before introducing biased investors, we need to establish what happens in a world of perfect rationality. The answer is complete transparency---and it is worth understanding why, because the rest of the paper is about what breaks this result.
+
+\begin{proposition}[Full unraveling with rational investors]
+\label{prop:unraveling}
+With $\lambda = 1$ (all rational) and $c = 0$, the unique equilibrium is full disclosure: $d^*(m) = -\infty$ for all $m$.
+\end{proposition}
+
+\begin{proof}
+With $\lambda = 1$, the non-disclosure price is $\hat{P}_{\ND}(m) = (m + \mu_{\ND})/2$, where $\mu_{\ND} = \E[d \mid d < d^*]$. The disclosure price is $\hat{P}_D(m, d) = (m + d)/2$. The manager discloses $d$ if $\hat{P}_D \geq \hat{P}_{\ND}$, which gives $d \geq \mu_{\ND}(d^*)$. The equilibrium threshold satisfies:
+\[
+d^* = \mu_{\ND}(d^*) = \mu - \sigma_d \frac{\phi(t)}{\Phi(t)}, \quad t = \frac{d^* - \mu}{\sigma_d}.
+\]
+Substituting and rearranging: $t + \phi(t)/\Phi(t) = 0$. Define $h(t) \equiv t + \phi(t)/\Phi(t)$. A well-known property of the inverse Mills ratio is that $\phi(t)/\Phi(t) > -t$ for all $t < 0$ (and $\phi(t)/\Phi(t) > 0$ for all $t$). Therefore $h(t) > 0$ for all finite $t$, and no finite solution exists. The only limit is $t \to -\infty$ (equivalently $d^* \to -\infty$), which is full disclosure.
+\end{proof}
+
+The logic is elegant in its simplicity. With costless disclosure and rational investors, any manager who withholds $d$ is penalized---the market correctly infers $d < d^*$ and marks down the price. The penalty exactly equals the disclosure gain at the threshold, and with $c = 0$ there is no reason to absorb it. Silence is punished, so everyone talks. Full disclosure is the unique outcome. The rest of this paper shows how biased investors break this logic.
+
+
+%% ====================================================================
+\section{Weighted Average Expectations (Benchmark Model)}
+\label{sec:weighted_avg}
+%% ====================================================================
+
+We begin with the simplest possible market structure. Following Zhou (2020), the price is just a weighted average of what different investor types believe:
+\begin{equation}
+P = \lambda \, \E_\R[v \mid \mathcal{I}] + (1 - \lambda) \, \E_B[v \mid \mathcal{I}].
+\label{eq:wa_price}
+\end{equation}
+This is a useful benchmark because it strips away any role for trading intensity or precision---each investor type's belief gets exactly its population-share weight. The interesting question is what happens when we move beyond this and let investors trade, but we need this baseline first.
+
+\subsection{Equilibrium Prices}
+
+\textbf{Disclosure ($d \geq d^*$):} All investors observe $(m, d)$ and agree, so $P_D = (m + d)/2$. No disagreement, no bias, no story.
+
+\textbf{Non-disclosure ($d < d^*$):} This is where beliefs diverge. Rational investors correctly condition on the withholding: $\E_\R = (m + \mu_{\ND})/2$. Naive investors use the unconditional mean: $\E_\N = (m + \mu)/2$. Selection neglect investors extrapolate from what they see: $\E_\SN = m$.
+
+The non-disclosure price with \textbf{naive} investors works out to:
+\begin{equation}
+P_{\ND}^\N = \lambda\,\frac{m + \mu_{\ND}}{2} + (1-\lambda)\,\frac{m + \mu}{2} = \frac{m}{2} + \frac{\lambda\mu_{\ND} + (1-\lambda)\mu}{2}.
+\label{eq:wa_nd_naive}
+\end{equation}
+
+The non-disclosure price with \textbf{selection neglect} investors is:
+\begin{equation}
+P_{\ND}^\SN = \lambda\,\frac{m + \mu_{\ND}}{2} + (1-\lambda)\, m = \frac{\lambda(m + \mu_{\ND}) + 2(1-\lambda)m}{2} = \frac{m(2-\lambda) + \lambda\mu_{\ND}}{2}.
+\label{eq:wa_nd_sn}
+\end{equation}
+
+\begin{remark}[Non-equivalence under averaging]
+\label{rmk:nonequiv}
+Notice something important: even in this simple weighted-average framework, the two types of bias produce different prices. The SN price loads on $m$ with a coefficient of $(2-\lambda)/2 > 1/2$, while the naive price has a coefficient of exactly $1/2$ on $m$. The SN investor inflates the role of $m$ because they treat it as the whole story rather than half the story. This $m$-dependence is a signature of selection neglect that persists throughout the paper.
+\end{remark}
+
+\subsection{Equilibrium Threshold (Weighted Average)}
+
+The manager discloses $d$ if the disclosure price exceeds the non-disclosure price:
+\[
+\frac{m + d}{2} \geq P_{\ND}(m) \implies d \geq 2\,P_{\ND}(m) - m.
+\]
+
+\textbf{Naive investors:} From \eqref{eq:wa_nd_naive}:
+\[
+d^*_\N = 2 \cdot \frac{m + \lambda\mu_{\ND} + (1-\lambda)\mu}{2} - m = \lambda\mu_{\ND} + (1-\lambda)\mu.
+\]
+This does \emph{not} depend on $m$. With $\mu = 0$:
+\begin{equation}
+d^*_\N = \lambda\,\mu_{\ND}(d^*_\N).
+\label{eq:wa_threshold_naive}
+\end{equation}
+
+\textbf{Selection neglect investors:} From \eqref{eq:wa_nd_sn}:
+\[
+d^*_\SN(m) = 2 \cdot \frac{m(2-\lambda) + \lambda\mu_{\ND}}{2} - m = m(2 - \lambda) + \lambda\mu_{\ND} - m = m(1-\lambda) + \lambda\mu_{\ND}.
+\]
+\begin{equation}
+\boxed{d^*_\SN(m) = (1-\lambda)\,m + \lambda\,\mu_{\ND}(d^*_\SN(m)).}
+\label{eq:wa_threshold_sn}
+\end{equation}
+
+This \emph{depends on $m$}---and that dependence is the first sign that selection neglect produces qualitatively different predictions from naivete.
+
+\begin{proposition}[m-dependent threshold under selection neglect]
+\label{prop:m_dependent}
+In the weighted-average model with $c = 0$, the non-disclosure threshold under selection neglect investors depends on the mandatory signal $m$:
+\[
+\frac{\partial d^*_\SN}{\partial m} = (1-\lambda) + \lambda\,\frac{\partial \mu_{\ND}}{\partial d^*}\,\frac{\partial d^*}{\partial m} > 0.
+\]
+Firms with higher $m$ face higher thresholds and withhold $d$ more often. Under naive investors, the threshold is $m$-independent.
+\end{proposition}
+
+The intuition is straightforward: when $m$ is high, SN investors are already convinced the firm is valuable (they think $v \approx m$), so the market price is high even without $d$. A manager with a mediocre $d$ has little to gain from disclosure---the price support from SN investors is already doing the work.
+
+\begin{proof}
+Let $F(d^*, m) \equiv d^* - (1-\lambda)m - \lambda\mu_{\ND}(d^*) = 0$. By the implicit function theorem:
+\[
+\frac{\partial d^*}{\partial m} = -\frac{\partial F/\partial m}{\partial F/\partial d^*} = -\frac{-(1-\lambda)}{1 - \lambda\,\mu_{\ND}'(d^*)} = \frac{1-\lambda}{1 - \lambda\,\mu_{\ND}'(d^*)}.
+\]
+Since $\mu_{\ND}'(d^*) = \partial \E[d \mid d < d^*]/\partial d^*$. Writing $R(t) = \phi(t)/\Phi(t)$ and $h(t) = t + R(t)$, one can show $\mu_{\ND}'(d^*) = R(t)\,h(t)$. This lies in $(0,1)$: positivity follows from $R > 0$ and $h > 0$ (Proposition~\ref{prop:unraveling}), and the bound $R(t)\,h(t) < 1$ is equivalent to $\sigma_{\ND}^2 > 0$ (since $\sigma_{\ND}^2 = \sigma_d^2[1 - R\,h]$). Therefore the denominator is positive and $\partial d^*/\partial m > 0$.
+\end{proof}
+
+This effect is absent with naive investors, whose valuation $(m + \mu)/2$ has the same coefficient on $m$ as the rational valuation $(m + \mu_{\ND})/2$. For naive investors, the difference between the disclosure and non-disclosure price does not depend on $m$---only on the gap $\mu - \mu_{\ND}$, which is a property of the equilibrium, not of any individual firm.
+
+
+\subsection{Existence of Non-Disclosure Equilibrium with $c = 0$}
+
+This is the central existence result. Can biased investors, by themselves, sustain information withholding in a world where disclosure is free?
+
+\begin{proposition}[Non-disclosure survives without costs]
+\label{prop:existence}
+For any $\lambda \in (0, 1)$ and any $m$, the equilibrium threshold $d^*_\SN(m)$ is finite (i.e., $d^*(m) > -\infty$). Non-disclosure exists in equilibrium even with $c = 0$.
+\end{proposition}
+
+\begin{proof}
+Fix $m$. The equilibrium threshold is the fixed point of $g(d^*) \equiv (1-\lambda)m + \lambda\mu_{\ND}(d^*)$. As $d^* \to -\infty$: $\mu_{\ND}(d^*) \to d^*$, so $g(d^*) \to (1-\lambda)m + \lambda d^*$. Since $\lambda < 1$, $g(d^*) - d^* \to (1-\lambda)m + (\lambda - 1)d^* = (1-\lambda)(m - d^*) \to +\infty$. So $g(d^*) > d^*$ for sufficiently negative $d^*$. As $d^* \to +\infty$: $\mu_{\ND}(d^*) \to \mu$, so $g(d^*) \to (1-\lambda)m + \lambda\mu$, which is finite. Therefore $d^* > g(d^*)$ for large $d^*$. By the intermediate value theorem, $g$ crosses the 45-degree line at a finite $d^*$.
+\end{proof}
+
+The result is worth pausing on. With $c = 0$ and all-rational investors, full disclosure is the unique equilibrium---that is the classic Grossman-Milgrom unraveling result. But introduce even a small fraction of biased investors, and non-disclosure becomes sustainable. The bias provides enough price support that some managers can afford to stay quiet. The unraveling theorem is not just theoretically fragile to costs (Verrecchia, 1983) or uncertainty about information endowment (Dye, 1985)---it is fragile to a basic cognitive bias.
+
+\begin{corollary}[Non-disclosure survives under naive investors too]
+\label{cor:naive_nd}
+For any $\lambda \in (0, 1)$, the naive threshold $d^*_\N = \lambda\mu_{\ND}(d^*_\N)$ (with $\mu = 0$) also has a finite solution. Both biases sustain non-disclosure without disclosure costs.
+\end{corollary}
+
+\begin{proof}
+Define $h_\N(d^*) \equiv \lambda\mu_{\ND}(d^*)$. As $d^* \to -\infty$: $h_\N(d^*) \to \lambda d^*$, so $h_\N(d^*) - d^* \to (\lambda - 1)d^* \to +\infty$. As $d^* \to +\infty$: $h_\N \to 0$, so $d^* - h_\N \to +\infty$. By IVT, a crossing exists.
+\end{proof}
+
+\begin{remark}[The role of $c = 0$]
+\label{rmk:c_zero}
+With $c = 0$ and \emph{all rational investors} ($\lambda = 1$), full unraveling obtains (Proposition~\ref{prop:unraveling}). With $\lambda < 1$---even $\lambda = 0.99$---non-disclosure survives. The sole friction sustaining non-disclosure is investor unsophistication. This is the paper's central message: selection neglect (and even naivete) can sustain information withholding in equilibrium \emph{without any disclosure costs whatsoever}.
+\end{remark}
+
+\begin{remark}[Trading-model existence]
+\label{rmk:trading_existence}
+The existence argument above applies to the weighted-average model. In the trading model (Section~\ref{sec:trading}), the threshold equation $d^* = w_B(d^*)\,m + (1-w_B(d^*))\,\mu_{\ND}(d^*)$ involves weights $w_B$ that depend on $d^*$ through $\tau_\R(d^*) = 1/(\sigma_{\ND}^2(d^*)/4 + \sigma_\varepsilon^2)$. The same IVT argument applies: $w_B(d^*)$ is continuous and bounded in $(0,1)$, so the composite map inherits the boundary behavior (diverges below the 45-degree line as $d^* \to -\infty$, converges to a finite constant as $d^* \to +\infty$). Existence of a finite fixed point follows.
+\end{remark}
+
+
+%% ====================================================================
+\section{Trading Model (CARA-Normal)}
+\label{sec:trading}
+%% ====================================================================
+
+The weighted-average model is a useful benchmark, but it misses something important: in real markets, investors who are more confident trade more aggressively and thereby earn more influence over the price. This is where the key distinction between naive and selection neglect investors emerges---and it cuts in opposite directions for the two biases.
+
+\subsection{Setup}
+
+All investors have CARA utility with common risk aversion $\gamma > 0$:
+\[
+U(W) = -\exp(-\gamma W).
+\]
+Given perceived mean $E_i$ and variance $V_i$ for firm value, investor $i$'s optimal demand for the risky asset is:
+\begin{equation}
+x_i = \frac{E_i - P}{\gamma\, V_i} = \frac{\tau_i}{\gamma}(E_i - P),
+\label{eq:demand}
+\end{equation}
+where $\tau_i \equiv 1/V_i$ is investor $i$'s \textbf{perceived precision}. This equation contains the key economic force: higher precision means more aggressive trading for any given deviation of the expected value from the price. An investor who thinks they know a lot puts a lot of money where their mouth is.
+
+Exogenous noise trader demand is $z$ with $\E[z] = 0$. The total supply of the risky asset is normalized to $S = 1$.
+
+\subsection{Market Clearing and Equilibrium Price}
+
+Market clearing requires:
+\[
+\lambda\,\frac{\tau_\R}{\gamma}(E_\R - P) + (1-\lambda)\,\frac{\tau_B}{\gamma}(E_B - P) + z = 1.
+\]
+
+Solving for $P$:
+\begin{equation}
+\boxed{P = \underbrace{\frac{\lambda\tau_\R E_\R + (1-\lambda)\tau_B E_B}{\lambda\tau_\R + (1-\lambda)\tau_B}}_{\text{precision-weighted average } \hat{P}} - \underbrace{\frac{\gamma(1-z)}{\lambda\tau_\R + (1-\lambda)\tau_B}}_{\text{risk premium}}.}
+\label{eq:trading_price}
+\end{equation}
+
+The first term, $\hat{P}$, is the informational component---the part of the price that reflects what investors think the firm is worth. The second term is a risk premium for bearing uncertainty. The interesting action is in $\hat{P}$, because that is where investor beliefs get aggregated, and the aggregation weights depend on perceived precision. We define the \emph{aggregate precision} as $\Sigma_B \equiv \lambda\tau_\R + (1-\lambda)\tau_B$, with specializations $\Sigma_\SN$ and $\Sigma_\N$ for the two biased types.
+
+\subsection{Perceived Precisions}
+\label{sec:precisions}
+
+Under non-disclosure ($d < d^*$), the perceived variances are:
+\begin{align}
+V_\SN &= \sigma_\varepsilon^2, \label{eq:var_sn}\\
+V_\R &= \frac{\sigma_{\ND}^2}{4} + \sigma_\varepsilon^2, \label{eq:var_r}\\
+V_\N &= \frac{\sigma_d^2}{4} + \sigma_\varepsilon^2. \label{eq:var_n}
+\end{align}
+
+Define $\kappa \equiv \sigma_d^2/\sigma_\varepsilon^2$ (the signal importance ratio) and $\kappa_{\ND} \equiv \sigma_{\ND}^2/\sigma_\varepsilon^2$ (the truncated signal importance ratio).
+
+The precision ordering that drives everything in this paper is:
+
+\begin{proposition}[Precision ordering]
+\label{prop:precision}
+\begin{equation}
+\tau_\SN > \tau_\R > \tau_\N.
+\end{equation}
+Specifically:
+\begin{align}
+\tau_\SN &= \frac{1}{\sigma_\varepsilon^2}, \qquad
+\tau_\R = \frac{1}{\sigma_\varepsilon^2(1 + \kappa_{\ND}/4)}, \qquad
+\tau_\N = \frac{1}{\sigma_\varepsilon^2(1 + \kappa/4)}.
+\end{align}
+The precision ratios are:
+\begin{align}
+\frac{\tau_\SN}{\tau_\N} &= 1 + \frac{\kappa}{4}, \label{eq:sn_n_ratio}\\
+\frac{\tau_\SN}{\tau_\R} &= 1 + \frac{\kappa_{\ND}}{4}, \label{eq:sn_r_ratio}\\
+\frac{\tau_\R}{\tau_\N} &= \frac{1 + \kappa/4}{1 + \kappa_{\ND}/4}. \label{eq:r_n_ratio}
+\end{align}
+\end{proposition}
+
+\begin{proof}
+Since $\sigma_{\ND}^2 < \sigma_d^2$, the variances satisfy $V_\SN < V_\R < V_\N$:
+\[
+\sigma_\varepsilon^2 < \frac{\sigma_{\ND}^2}{4} + \sigma_\varepsilon^2 < \frac{\sigma_d^2}{4} + \sigma_\varepsilon^2.
+\]
+Taking reciprocals reverses the inequalities. The precision expressions follow by factoring out $\sigma_\varepsilon^2$.
+\end{proof}
+
+\begin{remark}[Attenuated precision advantage]
+\label{rmk:attenuated}
+Compared to the additive model $v = m + d + \varepsilon$, where $\tau_\SN/\tau_\N = 1 + \kappa$, the averaging model gives $\tau_\SN/\tau_\N = 1 + \kappa/4$. The precision advantage is attenuated by a factor of 4 because the averaging structure reduces the contribution of $d$ to the total variance. This is a feature, not a bug: it means our results are conservative estimates of the SN effect.
+\end{remark}
+
+\begin{remark}[Interpretation]
+Here is the crucial point. Selection neglect investors are not just wrong about what the hidden signal is---they are wrong about how much they \emph{don't know}. By dropping an entire dimension of uncertainty from their mental model, they perceive less risk than actually exists. This makes them trade aggressively, as if they have precise information, when in fact they have a blind spot. This is \textbf{overconfidence}, but not the exogenous kind assumed in the behavioral finance literature---it is overconfidence that arises endogenously from a specific cognitive error about what information is missing. Naive investors, by contrast, are \textbf{underconfident relative to rational investors}: they fail to condition on non-disclosure, perceiving more uncertainty ($\sigma_d^2/4$) than actually remains ($\sigma_{\ND}^2/4$). Rational investors lie between the two extremes.
+\end{remark}
+
+
+\subsection{Biased Investor Weight}
+
+The weight of biased investors in the informational component of the price is:
+\begin{equation}
+w_B = \frac{(1-\lambda)\tau_B}{\lambda\tau_\R + (1-\lambda)\tau_B}.
+\label{eq:weight}
+\end{equation}
+
+In the weighted-average model, the biased weight is always $1-\lambda$, regardless of precision---every investor counts equally. In the trading model, the weight depends on \emph{relative} precision: investors who think they know more trade more and thereby move the price more. This is why the precision ordering in Proposition~\ref{prop:precision} matters so much.
+
+
+\subsection{First-Moment Errors}
+
+Under non-disclosure, the first-moment errors relative to the rational benchmark $E_\R = (m + \mu_{\ND})/2$ are:
+\begin{align}
+E_\N - E_\R &= \frac{m + \mu}{2} - \frac{m + \mu_{\ND}}{2} = \frac{\mu - \mu_{\ND}}{2} \equiv \Delta_\N, \label{eq:error_naive}\\
+E_\SN - E_\R &= m - \frac{m + \mu_{\ND}}{2} = \frac{m - \mu_{\ND}}{2} \equiv \Delta_\SN(m). \label{eq:error_sn}
+\end{align}
+
+\begin{proposition}[First-moment error comparison]
+\label{prop:first_moment}
+\hfill
+\begin{enumerate}[nosep]
+\item The naive error $\Delta_\N = (\mu - \mu_{\ND})/2 > 0$ is constant across firms.
+\item The SN error $\Delta_\SN(m) = (m - \mu_{\ND})/2$ is increasing in $m$.
+\item At $m = \mu$: $\Delta_\SN(\mu) = (\mu - \mu_{\ND})/2 = \Delta_\N$ (same error for the average firm).
+\item For $m > \mu$: $\Delta_\SN(m) > \Delta_\N$ (SN has larger error for high-$m$ firms).
+\item For $m < \mu$: $\Delta_\SN(m) < \Delta_\N$ (SN has smaller error for low-$m$ firms).
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+Direct computation from \eqref{eq:error_naive}--\eqref{eq:error_sn}. Note $\mu_{\ND} < \mu$, so $\Delta_\N > 0$. The SN error is positive when $m > \mu_{\ND}$, which includes all $m \geq \mu$ since $\mu > \mu_{\ND}$.
+\end{proof}
+
+The naive investor's overvaluation is a flat tax on all non-disclosing firms: they fail to penalize for withholding by a fixed amount $(\mu - \mu_{\ND})/2$, regardless of the mandatory signal. The SN investor's overvaluation \emph{scales with the mandatory signal}: firms with strong earnings reports are overvalued more because the SN investor extrapolates from $m$ to the whole firm. For the ``average'' firm ($m = \mu$), the errors are identical---but this average masks very different patterns across the cross-section.
+
+
+\subsection{Mispricing}
+
+The mispricing---the deviation of the informational price from the rational benchmark---is:
+\begin{equation}
+\Delta P_B(m) = w_B\,(E_B(m) - E_\R(m)).
+\label{eq:mispricing}
+\end{equation}
+
+For the ``average'' firm ($m = \mu$), both biases produce the same first-moment error $\Delta_\N$. So any difference in mispricing comes purely from the weight channel:
+
+\begin{proposition}[Mispricing comparison at $m = \mu$]
+\label{prop:mispricing}
+For any $\lambda \in (0,1)$, evaluating at $m = \mu$:
+\[
+|\Delta P_\SN(\mu)| > |\Delta P_\N(\mu)|.
+\]
+\end{proposition}
+
+\begin{proof}
+At $m = \mu$: $\Delta_\SN(\mu) = \Delta_\N = (\mu - \mu_{\ND})/2$. Therefore:
+\[
+\frac{|\Delta P_\SN|}{|\Delta P_\N|} = \frac{w_\SN}{w_\N}.
+\]
+From the precision ordering $\tau_\SN > \tau_\N$ (Proposition~\ref{prop:precision}), we have $w_\SN > w_\N$. To verify: $w_\SN/w_\N > 1$ iff $\tau_\SN[\lambda\tau_\R + (1-\lambda)\tau_\N] > \tau_\N[\lambda\tau_\R + (1-\lambda)\tau_\SN]$, which simplifies to $\lambda\tau_\R(\tau_\SN - \tau_\N) > 0$. This holds since $\lambda, \tau_\R > 0$ and $\tau_\SN > \tau_\N$.
+\end{proof}
+
+Even when the first-moment errors are equal, the market impact differs because SN investors trade more aggressively per unit of misinformation. They do not merely believe the wrong thing---they believe it with too much confidence. For firms with $m > \mu$, the comparison is even starker because SN investors also have a \emph{larger} first-moment error on top of their higher weight.
+
+
+\subsection{Asymmetric Impact of Trading}
+
+Here is the result that captures the paper's central insight about market structure:
+
+\begin{proposition}[Asymmetric impact]
+\label{prop:asymmetric}
+For all $\lambda \in (0,1)$:
+\begin{equation}
+w_\SN > 1 - \lambda > w_\N.
+\label{eq:asymmetric}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+$w_B > 1-\lambda$ iff $\tau_B > \lambda\tau_\R + (1-\lambda)\tau_B$, which simplifies to $\tau_B > \tau_\R$. By Proposition~\ref{prop:precision}: $\tau_\SN > \tau_\R$ (so $w_\SN > 1-\lambda$) and $\tau_\N < \tau_\R$ (so $w_\N < 1-\lambda$).
+\end{proof}
+
+\begin{corollary}[Directional effect of trading]
+\label{cor:direction}
+Relative to the weighted-average benchmark, moving to a trading model has opposite effects on the two biases. It \textbf{reduces} the price impact of naive investors---their conservatism (overestimating variance) makes them trade less, so the market partially self-corrects. But it \textbf{amplifies} the price impact of selection neglect investors---their overconfidence makes them trade aggressively, and the market gives them disproportionate influence as a result.
+\end{corollary}
+
+This is the paper's central result, and it is worth dwelling on. The standard intuition in finance is that trading and arbitrage discipline biased investors. That intuition is correct for naive investors: they are too cautious, so they under-trade, and the market naturally limits their influence. But for SN investors, the mechanism runs in reverse. Their overconfidence---derived from ignoring a whole dimension of uncertainty---makes them trade as if they have superior information. The market rewards this apparent confidence with outsized price impact. Arbitrage does not discipline overconfident investors; it amplifies them.
+
+
+\subsection{Critical Fraction of Rational Investors}
+\label{sec:critical}
+
+For the biased-investor weight to fall below a target $\rho \in (0,1)$, we need $w_B \leq \rho$. Solving $w_B = \rho$ for $\lambda$:
+\begin{equation}
+\lambda^*(\rho) = \frac{(1-\rho)\,\tau_B}{(1-\rho)\,\tau_B + \rho\,\tau_\R}.
+\label{eq:lambda_star}
+\end{equation}
+
+\begin{proposition}[Critical fraction comparison]
+\label{prop:critical}
+For any target $\rho \in (0,1)$:
+\begin{equation}
+\lambda^*_\SN(\rho) > \lambda^*_\N(\rho).
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+$\lambda^*(\rho)$ is increasing in $\tau_B$ (the derivative $(1-\rho)\rho\tau_\R / [(1-\rho)\tau_B + \rho\tau_\R]^2 > 0$), and $\tau_\SN > \tau_\N$.
+\end{proof}
+
+In plain language: correcting selection neglect mispricing requires a \emph{strictly higher} fraction of rational investors than correcting naive mispricing by the same amount. The overconfidence of SN investors makes them harder to outweigh.
+
+\subsection{The Ratio of Critical Fractions}
+
+Proposition~\ref{prop:critical} says $\lambda^*_\SN > \lambda^*_\N$. But by how much? The ratio has a clean closed form that reveals exactly how the gap depends on the correction target and the model parameters.
+
+\begin{proposition}[Ratio of critical fractions]
+\label{prop:lambda_ratio}
+\begin{equation}
+\frac{\lambda^*_\SN(\rho)}{\lambda^*_\N(\rho)} = r \cdot \frac{(1-\rho) + \rho\,k}{(1-\rho)\,r + \rho\,k},
+\label{eq:lambda_ratio}
+\end{equation}
+where $r = \tau_\SN/\tau_\N$ and $k = \tau_\R/\tau_\N$ as before. This ratio has the same functional form as the mispricing ratio \eqref{eq:ratio_formula}, with $\rho$ playing the role of $\lambda$:
+\begin{enumerate}[nosep]
+\item At $\rho = 0$: the ratio is $1$. When the correction target is lenient (any weight is acceptable), both types need almost no rational investors and the gap vanishes.
+\item At $\rho = 1$: the ratio is $r = 1 + \kappa/4$. When the target is strict (the biased weight must be driven to nearly zero), the full precision advantage of SN investors is expressed.
+\item The ratio is strictly increasing in $\rho$. The stricter the correction target, the wider the gap between how many rational investors you need against each bias.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+From \eqref{eq:lambda_star}: $\lambda^*(\rho) = (1-\rho)\tau_B / [(1-\rho)\tau_B + \rho\tau_\R]$. Using $\tau_\SN = r\tau_\N$ and $\tau_\R = k\tau_\N$:
+\[
+\frac{\lambda^*_\SN}{\lambda^*_\N} = \frac{(1-\rho)\,r\tau_\N}{(1-\rho)\,r\tau_\N + \rho\,k\tau_\N} \cdot \frac{(1-\rho)\,\tau_\N + \rho\,k\tau_\N}{(1-\rho)\,\tau_\N} = \frac{r[(1-\rho) + \rho k]}{(1-\rho)r + \rho k}.
+\]
+The boundary values follow by substitution ($\rho = 0$: $r \cdot 1/r = 1$; $\rho = 1$: $r \cdot k/k = r$). Monotonicity follows from the same derivative calculation as Proposition~\ref{prop:mispricing_ratio}: the numerator of the derivative is $r \cdot k \cdot (r-1) > 0$.
+\end{proof}
+
+There is a more intuitive way to read this result. Instead of asking ``how many rational investors do you need?'' ask the inverse: ``how many biased investors can the market tolerate before mispricing exceeds the target?'' That tolerance is $1 - \lambda^*$. For a given $\rho$:
+\begin{equation}
+\frac{1 - \lambda^*_\N(\rho)}{1 - \lambda^*_\SN(\rho)} = \frac{\text{tolerable naive fraction}}{\text{tolerable SN fraction}}.
+\label{eq:tolerance_ratio}
+\end{equation}
+
+\begin{table}[h!]
+\centering
+\caption{Market Tolerance for Biased Investors ($\sigma_d = 1$, $\sigma_\varepsilon = 0.5$, $d^* = 0$)}
+\label{tab:tolerance}
+\begin{tabular}{lccccc}
+\toprule
+Target $\rho$ & Max naive fraction & Max SN fraction & Tolerance ratio & $\lambda^*_\SN/\lambda^*_\N$ \\
+\midrule
+0.05 & 7.2\% & 3.7\% & 1.93 & 1.037 \\
+0.10 & 14.0\% & 7.5\% & 1.86 & 1.075 \\
+0.20 & 26.8\% & 15.5\% & 1.73 & 1.155 \\
+0.30 & 38.6\% & 23.9\% & 1.61 & 1.239 \\
+0.50 & 59.5\% & 42.3\% & 1.41 & 1.423 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The tolerance ratio tells a vivid story. Consider a regulator who deems 5\% mispricing weight acceptable ($\rho = 0.05$). The market can tolerate up to 7.2\% naive investors before breaching this threshold---but only 3.7\% selection neglect investors. The market can absorb roughly \emph{twice} as many naive investors as SN investors for the same mispricing bound.
+
+This nearly 2:1 ratio at strict targets is not a coincidence. As $\rho \to 0$:
+\[
+\frac{1 - \lambda^*_\N}{1 - \lambda^*_\SN} \to \frac{\tau_\R}{\tau_\SN} \cdot \frac{\tau_\SN}{\tau_\R} \cdot \frac{\tau_\SN}{\tau_\N} = r.
+\]
+So the tolerance ratio approaches $r = 1 + \kappa/4 = 2$ at our parameters. The market's capacity to absorb SN investors is $1/r$ times its capacity for naive investors---a ratio determined entirely by the precision advantage.
+
+\begin{corollary}[Comparative statics of the critical-fraction ratio]
+\label{cor:lambda_ratio_cs}
+The ratio $\lambda^*_\SN/\lambda^*_\N$ is:
+\begin{enumerate}[nosep]
+\item Increasing in $\rho$: stricter targets expose more of the SN precision advantage.
+\item Increasing in $\kappa = \sigma_d^2/\sigma_\varepsilon^2$: when the discretionary signal is more informative, the SN investor drops a more important dimension, widening the gap. At $\kappa = 0.5$, the ratio at $\rho = 0.10$ is just 1.012; at $\kappa = 16$, it is 1.173.
+\item Decreasing in $\kappa_{\ND}$ (equivalently, decreasing as $d^*$ falls): as the non-disclosure region shrinks, the rational investor's informational advantage over the naive investor grows (both learn more from conditioning on $d < d^*$), which pushes $k$ up and moderates the ratio.
+\end{enumerate}
+\end{corollary}
+
+
+%% ====================================================================
+\section{The Mispricing Ratio}
+\label{sec:mispricing_ratio}
+%% ====================================================================
+
+This section pins down exactly how much more damage selection neglect does compared to naivete. We derive the mispricing ratio $w_\SN/w_\N$ in closed form and prove it has a simple, elegant monotonicity.
+
+\subsection{Closed-Form Expression}
+
+Define:
+\begin{align}
+r &\equiv \frac{\tau_\SN}{\tau_\N} = 1 + \frac{\kappa}{4} > 1, \label{eq:r_def} \\
+k &\equiv \frac{\tau_\R}{\tau_\N} = \frac{1 + \kappa/4}{1 + \kappa_{\ND}/4} > 1. \label{eq:k_def}
+\end{align}
+
+\begin{proposition}[Mispricing ratio]
+\label{prop:mispricing_ratio}
+For the ``average'' firm ($m = \mu$), where both biases have the same first-moment error:
+\begin{equation}
+\boxed{\frac{w_\SN}{w_\N} = r \cdot \frac{\lambda k + (1 - \lambda)}{\lambda k + (1 - \lambda)r}.}
+\label{eq:ratio_formula}
+\end{equation}
+This ratio:
+\begin{enumerate}[nosep]
+\item Equals $1$ at $\lambda = 0$ (all biased: precision does not matter).
+\item Equals $r = 1 + \kappa/4$ at $\lambda = 1$ (SN's precision advantage is fully expressed).
+\item Is strictly increasing in $\lambda$ on $(0, 1)$.
+\end{enumerate}
+\end{proposition}
+
+The result is counterintuitive at first glance. Adding more rational investors makes the SN-to-naive mispricing gap \emph{worse}, not better. The reason: rational investors are better at disciplining naive investors (who are underconfident and easy to outweigh) than SN investors (who are overconfident and hard to outweigh). So increasing $\lambda$ shrinks both mispricings, but it shrinks the naive mispricing faster.
+
+\begin{proof}
+\textbf{Derivation.} Write $\tau_\SN = r\tau_\N$ and $\tau_\R = k\tau_\N$. Then:
+\begin{align*}
+w_\SN &= \frac{(1-\lambda)r\tau_\N}{\lambda k\tau_\N + (1-\lambda)r\tau_\N} = \frac{(1-\lambda)r}{\lambda k + (1-\lambda)r}, \\
+w_\N &= \frac{(1-\lambda)\tau_\N}{\lambda k\tau_\N + (1-\lambda)\tau_\N} = \frac{(1-\lambda)}{\lambda k + (1-\lambda)}.
+\end{align*}
+Their ratio is:
+\[
+\frac{w_\SN}{w_\N} = \frac{r[\lambda k + (1-\lambda)]}{\lambda k + (1-\lambda)r},
+\]
+confirming \eqref{eq:ratio_formula}.
+
+\textbf{Boundary values.} At $\lambda = 0$: $r \cdot 1/r = 1$. At $\lambda = 1$: $r \cdot k/k = r$.
+
+\textbf{Monotonicity.} Let $f(\lambda) \equiv r \cdot [\lambda k + (1-\lambda)] / [\lambda k + (1-\lambda)r]$. Write the numerator as $N(\lambda) = r[1 + \lambda(k-1)]$ and the denominator as $D(\lambda) = r + \lambda(k - r)$. Then:
+\begin{align*}
+f'(\lambda) &= \frac{N'(\lambda)\,D(\lambda) - N(\lambda)\,D'(\lambda)}{D(\lambda)^2}.
+\end{align*}
+Computing: $N'(\lambda) = r(k-1)$, $D'(\lambda) = k - r$. The numerator of $f'$:
+\begin{align*}
+N'D - ND' &= r(k-1)[r + \lambda(k-r)] - r[1 + \lambda(k-1)](k-r) \\
+&= r\bigl\{(k-1)r + (k-1)(k-r)\lambda - (k-r) - (k-1)(k-r)\lambda\bigr\} \\
+&= r\bigl\{(k-1)r - (k-r)\bigr\} \\
+&= r\bigl\{kr - r - k + r\bigr\} \\
+&= r \cdot k \cdot (r - 1).
+\end{align*}
+Since $r > 1$ and $k > 0$:
+\begin{equation}
+\boxed{f'(\lambda) = \frac{r \cdot k \cdot (r - 1)}{[\lambda k + (1-\lambda)r]^2} > 0.}
+\label{eq:ratio_derivative}
+\end{equation}
+The ratio is strictly increasing in $\lambda$.
+\end{proof}
+
+The mispricing ratio $w_\SN/w_\N$ measures how much \emph{more} price impact SN investors have compared to naive investors, per unit of first-moment error (evaluated at $m = \mu$). When all investors are biased ($\lambda = 0$), precision does not matter---the weighted-average model applies, and both types are equivalent. As rational investors enter the market, the SN advantage grows: rational investors discipline naive investors (who are underconfident) more effectively than they discipline SN investors (who are overconfident). At the limit $\lambda = 1$, the ratio reaches its maximum $r = 1 + \kappa/4$, the raw precision ratio.
+
+
+\subsection{Half-Life Comparisons}
+\label{sec:half_life}
+
+How many rational investors does it take to cut the mispricing in half? Setting $w_B = 1/2$:
+\[
+\frac{(1-\lambda)\tau_B}{\lambda\tau_\R + (1-\lambda)\tau_B} = \frac{1}{2} \implies (1-\lambda)\tau_B = \lambda\tau_\R \implies \lambda = \frac{\tau_B}{\tau_B + \tau_\R}.
+\]
+
+\begin{proposition}[Half-life of mispricing]
+\label{prop:half_life}
+The fraction of rational investors needed to halve the biased weight is:
+\begin{align}
+\lambda^\dagger_\SN &= \frac{\tau_\SN}{\tau_\SN + \tau_\R} = \frac{1 + \kappa_{\ND}/4}{2 + \kappa_{\ND}/4}, \\
+\lambda^\dagger_\N &= \frac{\tau_\N}{\tau_\N + \tau_\R} = \frac{1 + \kappa_{\ND}/4}{(1 + \kappa/4) + (1 + \kappa_{\ND}/4)}.
+\end{align}
+Since $\tau_\SN > \tau_\N$: $\lambda^\dagger_\SN > \lambda^\dagger_\N$.
+\end{proposition}
+
+\begin{proof}
+$\lambda^\dagger = \tau_B/(\tau_B + \tau_\R)$ is increasing in $\tau_B$, and $\tau_\SN > \tau_\N$.
+\end{proof}
+
+It takes more rational investors to halve the market impact of SN investors than naive investors. The gap $\lambda^\dagger_\SN - \lambda^\dagger_\N$ is increasing in $\kappa$: the more important the discretionary signal, the harder it is to discipline SN investors.
+
+The mispricing ratio also has a natural midpoint. At what $\lambda$ does $w_\SN/w_\N$ reach halfway between its minimum (1) and maximum ($r$)?
+
+\begin{proposition}[Half-life of the mispricing ratio]
+\label{prop:half_life_ratio}
+The fraction of rational investors at which $w_\SN/w_\N = (1 + r)/2$ is:
+\begin{equation}
+\lambda^{\ddagger} = \frac{r}{k + r} = \frac{\tau_\SN}{\tau_\R + \tau_\SN}.
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Set $f(\lambda) = (1+r)/2$ and solve. From \eqref{eq:ratio_formula}:
+\[
+r \cdot \frac{\lambda k + (1-\lambda)}{\lambda k + (1-\lambda)r} = \frac{1+r}{2}.
+\]
+Cross-multiplying and simplifying (algebra in the numerics appendix):
+\[
+2r[\lambda k + 1 - \lambda] = (1+r)[\lambda k + (1-\lambda)r].
+\]
+Expanding both sides and canceling the $\lambda(k-1)(k-r)$ terms:
+\begin{align*}
+2r\lambda k + 2r - 2r\lambda &= (1+r)\lambda k + r(1+r) - r(1+r)\lambda, \\
+\lambda[2rk - 2r - k(1+r) + r(1+r)] &= r(1+r) - 2r = r(r-1), \\
+\lambda[(r-1)(k + r)] &= r(r-1), \\
+\lambda &= \frac{r}{k + r}.
+\end{align*}
+\end{proof}
+
+
+%% ====================================================================
+\section{Conditional Mispricing: The Effect Where It Matters}
+\label{sec:conditional}
+%% ====================================================================
+
+Everything so far has compared naive and selection neglect mispricing evaluated at the ``average'' firm ($m = \mu$). That comparison is clean and tractable, but it misses something important. The firms we actually care about---the ones where mispricing has real consequences---are the firms that \emph{withhold} information. And those firms are not a random sample of the population.
+
+The unconditional mispricing ratio $w_\SN/w_\N$ from Proposition~\ref{prop:mispricing_ratio} evaluates both biases at $m = \mu$, where the SN and naive first-moment errors happen to be equal. But this understates the SN effect for a subtle reason involving selection. Three facts combine to create an amplification:
+
+First, the SN first-moment error is $(m - \mu_{\ND})/2$, which \emph{increases} in $m$. The naive error $(\mu - \mu_{\ND})/2$ is constant. So for any firm with an above-average mandatory signal, the SN error is strictly larger than the naive error.
+
+Second, the SN non-disclosure threshold $d^*_\SN(m)$ is increasing in $m$ (Proposition~\ref{prop:m_dependent}), so non-disclosure is more likely for high-$m$ firms. The naive threshold does not depend on $m$ at all.
+
+Third, combining the first two facts: conditioning on non-disclosure over-weights high-$m$ firms in the SN case---exactly the firms where the SN error is largest. This is a selection effect that has no analog under naivete.
+
+\subsection{Setup and Notation}
+
+Let $\pi(m) \equiv \Phi\bigl((d^*_\SN(m) - \mu)/\sigma_d\bigr)$ denote the probability of non-disclosure given $m$ under selection neglect. Since $d^*_\SN(m)$ is increasing in $m$, so is $\pi(m)$: firms with higher mandatory signals are more likely to withhold.
+
+The mispricing for a given firm under non-disclosure is $\Delta P_B(m) = w_B \cdot (E_B(m) - E_\R(m))$. The expected mispricing conditional on non-disclosure requires integrating over the distribution of $m$ among non-disclosing firms.
+
+\subsection{Conditional Mispricing under Naivete}
+
+Under naivete, neither the first-moment error nor the non-disclosure probability depends on $m$. The naive error is $\Delta_\N = (\mu - \mu_\ND)/2$, and the naive threshold $d^*_\N$ is $m$-independent, so $\Pr(\ND \mid m) = \Phi((d^*_\N - \mu)/\sigma_d)$ is constant across firms. The conditional expectation is simply the unconditional one:
+\begin{equation}
+\E[\Delta P_\N \mid \ND] = w_\N \cdot \frac{\mu - \mu_\ND}{2}.
+\label{eq:cond_naive}
+\end{equation}
+
+\subsection{Conditional Mispricing under Selection Neglect}
+
+Under selection neglect, both the error and the non-disclosure probability depend on $m$. The expected mispricing conditional on non-disclosure is:
+\begin{equation}
+\E[\Delta P_\SN \mid \ND] = w_\SN \cdot \frac{\E_m\!\left[\frac{m - \mu_\ND}{2} \cdot \pi(m)\right]}{\E_m[\pi(m)]},
+\label{eq:cond_sn}
+\end{equation}
+where the expectations are taken over $m \sim \mathcal{N}(\mu, \sigma_m^2)$.
+
+The numerator is the expected product of the error and the non-disclosure probability. The denominator normalizes by the overall probability of non-disclosure. The key question is whether the ratio $\E_m[(m - \mu_\ND) \cdot \pi(m)] / \E_m[\pi(m)]$ exceeds $(\mu - \mu_\ND)$---i.e., whether the conditional error exceeds the unconditional one.
+
+\begin{proposition}[Conditional mispricing amplification]
+\label{prop:conditional}
+The expected mispricing conditional on non-disclosure satisfies:
+\begin{equation}
+\E[\Delta P_\SN \mid \ND] > w_\SN \cdot \frac{\mu - \mu_\ND}{2},
+\label{eq:cond_bound}
+\end{equation}
+and therefore the conditional mispricing ratio satisfies:
+\begin{equation}
+\frac{\E[\Delta P_\SN \mid \ND]}{\E[\Delta P_\N \mid \ND]} > \frac{w_\SN}{w_\N},
+\label{eq:cond_ratio}
+\end{equation}
+with strict inequality. The unconditional precision ratio $w_\SN/w_\N$ is a \emph{lower bound} on the conditional mispricing ratio.
+\end{proposition}
+
+The intuition is clean. Among the pool of non-disclosing firms, selection neglect over-represents exactly the firms where the SN error is largest (high-$m$ firms). Naive investors make the same error for every firm, so this selection effect is irrelevant for them. The result is that the ``average'' comparison at $m = \mu$ is the most conservative possible comparison---conditioning on non-disclosure makes the SN effect strictly worse.
+
+\begin{proof}
+The inequality \eqref{eq:cond_bound} is equivalent to:
+\begin{equation}
+\E_m\!\left[(m - \mu_\ND) \cdot \pi(m)\right] > (\mu - \mu_\ND) \cdot \E_m[\pi(m)].
+\label{eq:cov_ineq}
+\end{equation}
+Define $f(m) \equiv m - \mu_\ND$ and $g(m) \equiv \pi(m) = \Phi\bigl((d^*_\SN(m) - \mu)/\sigma_d\bigr)$. Both $f$ and $g$ are increasing functions of $m$: $f$ trivially so, and $g$ because $d^*_\SN(m)$ is increasing in $m$ and $\Phi$ is monotone. By the covariance inequality for monotone functions of the same random variable (a consequence of the FKG inequality, or more elementarily, of the fact that $\Cov(f(X), g(X)) \geq 0$ when $f$ and $g$ are both nondecreasing):
+\[
+\E[f(m) \cdot g(m)] \geq \E[f(m)] \cdot \E[g(m)] = (\mu - \mu_\ND) \cdot \E[\pi(m)].
+\]
+Strict inequality holds because $f$ and $g$ are both strictly increasing and $m$ has a continuous distribution with positive variance $\sigma_m^2 > 0$: in this case, $\Cov(f(m), g(m)) > 0$ strictly (the covariance is zero only when one function is a.s.\ constant, which requires $\sigma_m^2 = 0$).
+
+Dividing both sides of \eqref{eq:cov_ineq} by $\E_m[\pi(m)] > 0$ and multiplying by $w_\SN/2$ gives \eqref{eq:cond_bound}. The conditional ratio inequality \eqref{eq:cond_ratio} follows by dividing \eqref{eq:cond_bound} by $\E[\Delta P_\N \mid \ND] = w_\N \cdot (\mu - \mu_\ND)/2$.
+\end{proof}
+
+\begin{corollary}[Amplification increases with mandatory signal dispersion]
+\label{cor:sigma_m}
+The gap between the conditional and unconditional mispricing ratios is increasing in $\sigma_m^2$, the variance of the mandatory signal. When $\sigma_m^2 = 0$ (degenerate mandatory signal), the conditional and unconditional ratios coincide. As $\sigma_m^2$ increases, the selection effect strengthens because there is more dispersion in both the SN error and the non-disclosure probability across firms.
+\end{corollary}
+
+\begin{proof}
+When $\sigma_m^2 = 0$, $m = \mu$ a.s., so $\Cov(f(m), g(m)) = 0$ and the inequality holds with equality. For $\sigma_m^2 > 0$, the covariance $\Cov(f(m), g(m))$ is strictly positive and increasing in $\sigma_m^2$: greater dispersion in $m$ creates more variation in both the error $f(m) = m - \mu_\ND$ and the non-disclosure probability $g(m) = \pi(m)$, and since both are increasing in $m$, their covariance grows with the variance of $m$.
+\end{proof}
+
+\subsection{Numerical Illustration}
+
+To see how large the amplification can be, we compute the conditional mispricing ratio by numerical integration for several values of $\sigma_m$ and $\lambda$.
+
+\begin{table}[h!]
+\centering
+\caption{Conditional vs.\ Unconditional Mispricing Ratio ($\lambda = 0.5$, $\sigma_d = 1$, $\sigma_\varepsilon = 0.5$, $\mu = 0$)}
+\label{tab:conditional_05}
+\begin{tabular}{lccc}
+\toprule
+$\sigma_m$ & Unconditional $w_\SN/w_\N$ & Conditional ratio & Amplification \\
+\midrule
+0.5 & 1.42 & 1.68 & 1.18$\times$ \\
+1.0 & 1.42 & 2.31 & 1.62$\times$ \\
+2.0 & 1.42 & 3.97 & 2.79$\times$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Conditional vs.\ Unconditional Mispricing Ratio ($\lambda = 0.7$, $\sigma_d = 1$, $\sigma_\varepsilon = 0.5$, $\mu = 0$)}
+\label{tab:conditional_07}
+\begin{tabular}{lccc}
+\toprule
+$\sigma_m$ & Unconditional $w_\SN/w_\N$ & Conditional ratio & Amplification \\
+\midrule
+0.5 & 1.63 & 1.84 & 1.13$\times$ \\
+1.0 & 1.63 & 2.42 & 1.49$\times$ \\
+2.0 & 1.63 & 4.24 & 2.60$\times$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The amplification is substantial. With $\sigma_m = 2$, the conditional mispricing from selection neglect is nearly 4 times what naive investors produce among firms that actually withhold. The unconditional precision channel alone would predict only a 1.4--1.6$\times$ advantage. The selection effect---the fact that non-disclosure selectively oversamples the high-$m$ firms where the SN error is largest---does most of the work.
+
+This has a direct empirical implication. Any test that compares SN and naive mispricing unconditionally (across all firms) will understate the true difference. The right comparison conditions on non-disclosure, and the amplification can be large when mandatory signals vary substantially across firms.
+
+
+%% ====================================================================
+\section{Non-Disclosure Equilibrium in the Trading Model}
+\label{sec:nd_trading}
+%% ====================================================================
+
+We now return to the trading model and characterize the non-disclosure equilibrium in full. The weighted-average results established existence; the trading model shows how precision differences reshape the equilibrium.
+
+\subsection{Equilibrium Characterization}
+
+The informational component of the non-disclosure price is:
+\begin{equation}
+\hat{P}_{\ND}(m) = \frac{\lambda\tau_\R\, E_\R + (1-\lambda)\tau_B\, E_B}{\lambda\tau_\R + (1-\lambda)\tau_B}.
+\label{eq:info_nd}
+\end{equation}
+
+\textbf{With naive investors:}
+\[
+\hat{P}_{\ND}^\N(m) = \frac{\lambda\tau_\R\,\frac{m+\mu_{\ND}}{2} + (1-\lambda)\tau_\N\,\frac{m+\mu}{2}}{\Sigma_\N} = \frac{m}{2} + \frac{(1-w_\N)\mu_{\ND} + w_\N\mu}{2}.
+\]
+The disclosure threshold:
+\begin{equation}
+d^*_\N = (1-w_\N)\,\mu_{\ND}(d^*_\N) + w_\N\,\mu.
+\label{eq:trading_threshold_naive}
+\end{equation}
+This is $m$-independent---the threshold is the same for every firm, regardless of its mandatory signal.
+
+\textbf{With selection neglect investors:}
+\begin{align*}
+\hat{P}_{\ND}^\SN(m) &= \frac{\lambda\tau_\R\,\frac{m+\mu_{\ND}}{2} + (1-\lambda)\tau_\SN\, m}{\Sigma_\SN}.
+\end{align*}
+The manager discloses if $(m+d)/2 \geq \hat{P}_{\ND}^\SN(m)$. After algebra:
+\begin{equation}
+\boxed{d^*_\SN(m) = w_\SN\, m + (1 - w_\SN)\,\mu_{\ND}(d^*_\SN(m)).}
+\label{eq:trading_threshold_sn}
+\end{equation}
+This \emph{depends on $m$}---the richer the mandatory signal, the more the firm can afford to stay quiet.
+
+\begin{remark}[Deriving the SN threshold]
+\label{rmk:sn_threshold}
+From $\hat{P}_{\ND}^\SN$, the condition $(m+d)/2 \geq \hat{P}_{\ND}^\SN$ gives:
+\begin{align*}
+d &\geq 2\hat{P}_{\ND}^\SN - m \\
+&= \frac{2[\lambda\tau_\R(m+\mu_{\ND})/2 + (1-\lambda)\tau_\SN\, m]}{\Sigma_\SN} - m \\
+&= \frac{\lambda\tau_\R m + \lambda\tau_\R\mu_{\ND} + 2(1-\lambda)\tau_\SN m}{\Sigma_\SN} - m \\
+&= \frac{\lambda\tau_\R m + 2(1-\lambda)\tau_\SN m - [\lambda\tau_\R + (1-\lambda)\tau_\SN]m + \lambda\tau_\R\mu_{\ND}}{\Sigma_\SN} \\
+&= \frac{(1-\lambda)\tau_\SN\, m + \lambda\tau_\R\,\mu_{\ND}}{\Sigma_\SN} \\
+&= w_\SN\, m + (1-w_\SN)\,\mu_{\ND}.
+\end{align*}
+\end{remark}
+
+\subsection{Threshold Comparison}
+
+\begin{proposition}[More non-disclosure with selection neglect]
+\label{prop:threshold}
+In the trading model with $c = 0$ and $\mu = 0$, for the ``average'' firm ($m = \mu = 0$):
+\begin{equation}
+d^*_\SN(0) = (1-w_\SN)\,\mu_{\ND} > (1-w_\N)\,\mu_{\ND} = d^*_\N.
+\end{equation}
+More generally, $d^*_\SN(m) > d^*_\N$ for all $m \geq 0$ (and for $m < 0$ when $|m|$ is not too large).
+\end{proposition}
+
+The logic: since $w_\SN > w_\N$ (SN investors get more weight) and $\mu_\ND < 0$ (the truncated mean is below the prior), the factor $(1 - w_\SN)$ is smaller in absolute value. Multiplying a negative number by a smaller positive coefficient gives a less negative (i.e., higher) threshold.
+
+\begin{proof}
+The thresholds are fixed points of $g_\SN(d^*) \equiv w_\SN(d^*)\,m + (1-w_\SN(d^*))\,\mu_{\ND}(d^*)$ and $g_\N(d^*) \equiv (1-w_\N(d^*))\,\mu_{\ND}(d^*) + w_\N(d^*)\,\mu$, where $w_B(d^*)$ depends on $d^*$ through $\tau_\R(d^*) = 1/(\sigma_{\ND}^2(d^*)/4 + \sigma_\varepsilon^2)$.
+
+\emph{Pointwise comparison at $m = 0$, $\mu = 0$.} At any candidate $d^*$, both maps use the same $\tau_\R(d^*)$ and the same $\mu_{\ND}(d^*)$, differing only in $\tau_B$: $\tau_\SN = 1/\sigma_\varepsilon^2 > \tau_\N = 1/(\sigma_d^2/4 + \sigma_\varepsilon^2)$. Therefore $w_\SN(d^*) > w_\N(d^*)$ at every $d^*$, which gives $(1-w_\SN) < (1-w_\N)$. Since $\mu_{\ND}(d^*) < 0$: $g_\SN(d^*) = (1-w_\SN)\mu_{\ND} > (1-w_\N)\mu_{\ND} = g_\N(d^*)$ pointwise.
+
+\emph{Fixed-point ordering.} Both maps are continuous. Since $g_\SN(d^*) > g_\N(d^*)$ for all $d^*$, the function $h(d^*) \equiv d^* - g_\SN(d^*)$ satisfies $h(d^*) < d^* - g_\N(d^*)$ everywhere. Because $d^* - g_\N(d^*)$ changes sign from negative to positive (the naive fixed point exists by the same IVT argument), $h$ must cross zero at a strictly higher $d^*$. Therefore $d^*_\SN > d^*_\N$.
+
+For $m > 0$: $g_\SN(d^*) = w_\SN m + (1-w_\SN)\mu_{\ND} > (1-w_\SN)\mu_{\ND} > (1-w_\N)\mu_{\ND} = g_\N(d^*)$, strengthening the pointwise comparison.
+\end{proof}
+
+Selection neglect investors provide more price support for non-disclosing firms. Their high-precision, upward-biased trading pushes the non-disclosure price up, reducing the manager's marginal gain from disclosing. The $m$-dependent threshold means this effect is \emph{stronger for firms with higher mandatory signals}---a pattern that concentrates the mispricing exactly where the conditional analysis of Section~\ref{sec:conditional} predicts.
+
+\subsection{The $m$-Dependent Threshold: A New Prediction}
+
+\begin{proposition}[$m$-dependent non-disclosure under SN]
+\label{prop:m_dependent_trading}
+In the trading model with $c = 0$ and SN investors:
+\begin{enumerate}[nosep]
+\item The disclosure threshold is $d^*_\SN(m) = w_\SN\,m + (1-w_\SN)\,\mu_{\ND}$, which is strictly increasing in $m$.
+\item For sufficiently high $m$, $d^*_\SN(m) > 0$: the manager withholds $d$ even when $d$ is \emph{above} the prior mean $\mu = 0$. At the equilibrium, this occurs when $m > (1-w_\SN)|\mu_{\ND}|/w_\SN > 0$, where $w_\SN$ and $\mu_{\ND}$ are evaluated at the equilibrium threshold.
+\item The probability of non-disclosure, $\Phi((d^*_\SN(m) - \mu)/\sigma_d)$, is increasing in $m$.
+\end{enumerate}
+Under naive investors, the threshold is $m$-independent.
+\end{proposition}
+
+\begin{proof}
+Part (1) follows from $\partial d^*/\partial m = w_\SN > 0$. Part (2): $d^*_\SN(m) > 0$ iff $w_\SN m > -(1-w_\SN)\mu_{\ND}$, i.e., $m > (1-w_\SN)|\mu_{\ND}|/w_\SN > 0$ since $\mu_{\ND} < 0$. Part (3): $\Phi$ is increasing and $d^*_\SN(m)$ is increasing in $m$.
+\end{proof}
+
+This is a genuinely new prediction. When the mandatory signal is strong, SN investors are very confident in a high valuation (they think $v \approx m$), so the non-disclosure price is elevated even without $d$. The manager finds it less worthwhile to disclose a moderate $d$ because the marginal price improvement from disclosure is small relative to what SN investors already provide. Part (2) is particularly striking: for high enough $m$, the firm withholds a discretionary signal that is \emph{above average}. In a world of only rational investors, above-average signals would always be disclosed.
+
+\emph{Empirical prediction.} Among non-disclosing firms, those with stronger mandatory signals (e.g., higher earnings) should have a higher incidence of withholding discretionary information (e.g., forward guidance). This is testable in the data and, to our knowledge, has not been documented.
+
+
+\subsection{Risk Premium Reinforcement}
+\label{sec:risk_premium}
+
+The full price includes a risk premium: $P = \hat{P} - \gamma(1-z)/\Sigma_B$, where $\Sigma_B \equiv \lambda\tau_\R + (1-\lambda)\tau_B$ is the aggregate precision. Since $\tau_\SN > \tau_\N$, we have $\Sigma_\SN > \Sigma_\N$, so the risk premium is \emph{lower} under SN:
+\begin{equation}
+\frac{\gamma}{\Sigma_\SN} < \frac{\gamma}{\Sigma_\N}.
+\end{equation}
+
+This creates a second channel supporting non-disclosure. Under disclosure, the risk premium is $\gamma\sigma_\varepsilon^2$ (all agree). The risk-premium \emph{reduction} upon disclosure is $\Delta RP_B = \gamma/\Sigma_B - \gamma\sigma_\varepsilon^2$. Since $\Sigma_\SN > \Sigma_\N$:
+\[
+\Delta RP_\SN < \Delta RP_\N.
+\]
+Both the informational and risk-premium channels push toward more non-disclosure with selection neglect. The manager gains less from disclosing, whether measured by the informational price improvement or the risk-premium reduction.
+
+
+%% ====================================================================
+\section{Comparative Statics and Numerical Illustration}
+\label{sec:comparative}
+%% ====================================================================
+
+\subsection{Signal Importance Ratio}
+
+Define $\kappa \equiv \sigma_d^2/\sigma_\varepsilon^2$. The key precision ratios are:
+\begin{equation}
+\frac{\tau_\SN}{\tau_\N} = 1 + \frac{\kappa}{4}, \qquad \frac{\tau_\SN}{\tau_\R} = 1 + \frac{\kappa_{\ND}}{4}.
+\label{eq:precision_ratios}
+\end{equation}
+
+The mispricing weight ratio at $m = \mu$ is:
+\begin{equation}
+\frac{w_\SN}{w_\N} = \left(1 + \frac{\kappa}{4}\right) \cdot \frac{\lambda k + (1-\lambda)}{\lambda k + (1-\lambda)(1 + \kappa/4)},
+\end{equation}
+which is increasing in $\kappa$.
+
+\begin{corollary}[Informativeness amplification]
+\label{cor:kappa}
+The relative market impact of selection neglect (compared to naivete) is increasing in $\kappa$. The more informative the discretionary signal---the more the firm could tell the market but chooses not to---the larger the precision advantage of SN investors, and the worse the mispricing.
+\end{corollary}
+
+
+\subsection{Numerical Illustration}
+
+\begin{table}[h!]
+\centering
+\caption{Parameter Values}
+\label{tab:params}
+\begin{tabular}{lll}
+\toprule
+Parameter & Value & Interpretation \\
+\midrule
+$\mu$ & 0 & Common prior mean \\
+$\sigma_d$ & 1 & Std.\ dev.\ of discretionary signal \\
+$\sigma_\varepsilon$ & 0.5 & Std.\ dev.\ of residual noise \\
+$\kappa = \sigma_d^2/\sigma_\varepsilon^2$ & 4 & Signal importance ratio \\
+$c$ & 0 & Disclosure cost \\
+$d^*$ & 0 & Threshold (for precision calculations) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+With $d^* = 0$, $\mu = 0$, $\sigma_d = 1$:
+\begin{align*}
+\mu_{\ND} &= -\sqrt{2/\pi} \approx -0.798, \\
+\sigma_{\ND}^2 &= 1 - 2/\pi \approx 0.363.
+\end{align*}
+
+Precisions (averaging model):
+\begin{align*}
+\tau_\R &= \frac{1}{0.363/4 + 0.25} = \frac{1}{0.341} = 2.934, \\
+\tau_\N &= \frac{1}{1/4 + 0.25} = \frac{1}{0.500} = 2.000, \\
+\tau_\SN &= \frac{1}{0.25} = 4.000.
+\end{align*}
+
+\begin{table}[h!]
+\centering
+\caption{Key Ratios ($\sigma_d=1$, $\sigma_\varepsilon=0.5$, $d^*=0$, $\mu = 0$, $c = 0$)}
+\label{tab:ratios}
+\begin{tabular}{ll}
+\toprule
+Quantity & Value \\
+\midrule
+$r = \tau_\SN/\tau_\N$ & 2.000 \\
+$k = \tau_\R/\tau_\N$ & 1.467 \\
+$\tau_\SN/\tau_\R$ & 1.363 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Mispricing Weights and Critical Fractions (at $m = 0$)}
+\label{tab:results}
+\begin{tabular}{lcccc}
+\toprule
+& \multicolumn{2}{c}{Weight $w_B$ at $\lambda = 0.50$} & \multicolumn{2}{c}{$\lambda^*$ for $w_B \leq \rho$} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+Type & $w_B$ & vs.\ WA ($1-\lambda = 0.50$) & $\rho = 0.10$ & $\rho = 0.01$ \\
+\midrule
+Naive ($\N$) & 0.405 & $< 0.50$ (trading helps) & 0.860 & 0.985 \\
+Selection neglect ($\SN$) & 0.577 & $> 0.50$ (trading hurts) & 0.925 & 0.993 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Non-Disclosure Thresholds in Trading Model ($c = 0$, $\mu = 0$)}
+\label{tab:thresholds}
+\begin{tabular}{lccccc}
+\toprule
+$\lambda$ & $d^*_\N$ & $\Pr(\ND)_\N$ & $d^*_\SN(m{=}0)$ & $\Pr(\ND)_\SN$ & $d^*_\SN(m{=}1)$ \\
+\midrule
+0.30 & $-0.441$ & 33.0\% & $-0.234$ & 40.8\% & 0.692 \\
+0.50 & $-0.901$ & 18.4\% & $-0.505$ & 30.7\% & 0.351 \\
+0.70 & $-1.692$ & 4.5\% & $-1.017$ & 15.5\% & $-0.264$ \\
+0.90 & $-3.931$ & 0.0\% & $-2.603$ & 0.5\% & $-2.008$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The tables tell a clear story. At $\lambda = 0.50$, the naive weight \emph{drops} from 0.50 (weighted-average model) to 0.405 (trading model)---the market partially disciplines naive investors. The SN weight \emph{rises} from 0.50 to 0.577---the market amplifies SN investors. At $m = 0$, SN thresholds are strictly higher than naive thresholds for all $\lambda$. At $m = 1$, the thresholds are dramatically higher: with $\lambda = 0.30$, $d^*_\SN(1) = 0.69$, meaning the firm withholds $d$ even when $d$ is above average. And both biases sustain non-disclosure with $c = 0$ (all thresholds are finite), but SN sustains \emph{more} non-disclosure at every $\lambda$ and every $m$.
+
+\begin{table}[h!]
+\centering
+\caption{Mispricing Ratio $w_\SN/w_\N$ across $\lambda$}
+\label{tab:ratio}
+\begin{tabular}{lcccccc}
+\toprule
+$\lambda$ & 0.0 & 0.2 & 0.4 & 0.6 & 0.8 & 1.0 \\
+\midrule
+$w_\SN/w_\N$ & 1.000 & 1.155 & 1.328 & 1.524 & 1.746 & 2.000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\subsection{Half-Life Summary}
+
+\begin{table}[h!]
+\centering
+\caption{Half-Life Comparisons}
+\label{tab:half_life}
+\begin{tabular}{lcc}
+\toprule
+Quantity & $\lambda$ needed (SN) & $\lambda$ needed (N) \\
+\midrule
+$w_B$ halved ($w_B = 0.5$) & 0.577 & 0.405 \\
+Mispricing ratio at midpoint & \multicolumn{2}{c}{$\lambda^{\ddagger} = r/(k+r) = 0.577$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The coincidence that $\lambda^\dagger_\SN = \lambda^{\ddagger} = 0.577$ is not accidental: the half-life of SN mispricing and the midpoint of the ratio both occur at $\lambda = \tau_\SN/(\tau_\SN + \tau_\R)$. This has a natural interpretation: SN investors reach parity with rational investors (in terms of aggregate precision contribution) at the same $\lambda$ where their relative advantage over naive investors is half-realized.
+
+
+%% ====================================================================
+\section{Summary of Results}
+\label{sec:summary}
+%% ====================================================================
+
+\begin{table}[h!]
+\centering
+\caption{Summary: Naive vs.\ Selection Neglect Investors (Averaging Model, $c = 0$)}
+\label{tab:summary}
+\begin{tabular}{lcc}
+\toprule
+Property & Naive ($\N$) & Selection Neglect ($\SN$) \\
+\midrule
+First-moment error & $(\mu - \mu_{\ND})/2$ & $(m - \mu_{\ND})/2$ \\
+Error depends on $m$? & No & Yes \\
+Perceived variance & $\sigma_d^2/4 + \sigma_\varepsilon^2$ & $\sigma_\varepsilon^2$ \\
+Precision ranking & $\tau_\N < \tau_\R$ & $\tau_\SN > \tau_\R$ \\[3pt]
+\midrule
+\emph{Weighted-average model:} & & \\
+\quad Threshold depends on $m$? & No & \textbf{Yes} \\
+\quad Non-disclosure with $c = 0$? & Yes & Yes \\[3pt]
+\midrule
+\emph{Trading model:} & & \\
+\quad Price weight & $w_\N < 1-\lambda$ & $w_\SN > 1-\lambda$ \\
+\quad Effect of trading & Reduces impact & \textbf{Amplifies impact} \\
+\quad Mispricing at $m = \mu$ & Lower & \textbf{Higher} \\
+\quad $\lambda^*$ to correct mispricing & Lower & \textbf{Higher} \\
+\quad Non-disclosure threshold & Lower & \textbf{Higher} \\
+\quad Threshold depends on $m$? & No & \textbf{Yes} \\
+\quad Risk premium effect & Reinforces & Reinforces \\
+\quad Conditional mispricing ratio & --- & $> w_\SN/w_\N$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+%% ====================================================================
+\section{Discussion}
+\label{sec:discussion}
+%% ====================================================================
+
+\subsection{Selection Neglect Alone Breaks Unraveling}
+
+The central message of this model is stark: selection neglect---without disclosure costs, without informed trading frictions, without any other market imperfection---can sustain non-disclosure in equilibrium. This is a stronger result than in the standard disclosure-cost framework, where non-disclosure requires $c > 0$ even with biased investors. The implication is that the unraveling theorem is fragile not just to costs (Verrecchia, 1983) or proprietary information (Dye, 1985), but to a basic cognitive bias about how investors process missing information. If even a small fraction of investors respond to silence by simplifying their model of the firm, managers can exploit that simplification by staying quiet.
+
+\subsection{The $m$-Dependent Threshold}
+
+The $m$-dependent threshold under selection neglect is a genuinely novel prediction. It says that firms with better mandatory disclosures (e.g., higher reported earnings) are \emph{less likely} to make voluntary disclosures (e.g., forward guidance)---not because they have less to say, but because the market already overvalues them due to selection neglect. This creates a ``good news silence'' pattern: firms with the strongest public signals are the ones most likely to withhold private ones, because SN investors are already doing the work of supporting the price. This is the opposite of the standard prediction, where firms with good mandatory signals also tend to have good discretionary signals and thus disclose both.
+
+\subsection{Dimensionality Reduction, Not Just Neglect}
+
+The SN investor does not make two independent errors (wrong mean and wrong variance). They make \emph{one} error: they adopt a simpler model of the world, collapsing the two-dimensional value structure $v = (m+d)/2 + \varepsilon$ into a one-dimensional one $v = m + \varepsilon$. Both the first-moment deviation and the overconfidence are mechanical consequences of this single structural assumption. This is closer to Kahneman's (2011) WYSIATI (``What You See Is All There Is'') than to simple extrapolation: the SN investor does not reason ``$m$ is disclosed, so $d$ is probably similar.'' Rather, they cease to perceive that $d$ exists. The overconfidence is therefore \emph{derived}, not assumed---it follows from the structure of the bias, not from an additional behavioral postulate.
+
+\subsection{Connection to the Overconfidence Literature}
+
+Selection neglect generates overconfidence endogenously through the information structure: when information is selectively disclosed, investors who fail to account for the selection process naturally perceive less uncertainty than actually exists. Unlike in Daniel, Hirshleifer, and Subrahmanyam (1998), where overconfidence about private signal precision is assumed, our overconfidence arises as a byproduct of dimensionality reduction. The mechanism is specific to disclosure environments, which gives the theory empirical bite: the overconfidence should be strongest in settings with more discretionary disclosure and more complex information environments.
+
+\subsection{The $\kappa$ Tension}
+
+As $\kappa = \sigma_d^2/\sigma_\varepsilon^2$ increases, SN investors become simultaneously \emph{more wrong} (the discretionary component they ignore accounts for a larger share of value) and \emph{more influential} (their precision advantage $\tau_\SN/\tau_\N = 1 + \kappa/4$ grows). This is not a knife-edge: it is a general feature of overconfidence in trading models. Agents who underestimate risk trade more aggressively, gaining market influence precisely when their errors are largest. The welfare implication is that the allocative cost of selection neglect is increasing in $\kappa$---not merely the mispricing level, but the degree to which corporate disclosure decisions are distorted.
+
+\subsection{Attenuated but Preserved}
+
+The averaging structure $v = (m+d)/2 + \varepsilon$ attenuates the precision advantage of SN investors relative to the additive model (the ratio $\tau_\SN/\tau_\N$ is $1 + \kappa/4$ vs.\ $1 + \kappa$). All qualitative results are preserved. The attenuation is economically sensible: when the firm value is an average of two dimensions, each dimension contributes less to total variance, so dropping one dimension from the model is a less extreme error. Our results are therefore conservative estimates---the effects would be stronger under an additive value structure.
+
+\subsection{The Conditional Mispricing Effect}
+
+The conditional mispricing analysis (Section~\ref{sec:conditional}) reveals that the unconditional comparison at $m = \mu$ is the most conservative possible benchmark. Among firms that actually withhold information, the SN mispricing is substantially larger because non-disclosure selectively oversamples high-$m$ firms---exactly the firms where the SN error is biggest. The amplification is economically meaningful: with moderate mandatory signal dispersion ($\sigma_m = 1$), the conditional ratio is roughly 60\% larger than the unconditional one, and with $\sigma_m = 2$ it nearly triples. This matters for empirical work because any test that pools disclosing and non-disclosing firms will understate the true SN effect.
+
+\subsection{Comparison with Zhou (2020)}
+
+Zhou (2020) shows that naive investors sustain non-disclosure in a weighted-average framework. Our results extend this in two directions. First, in a CARA-Normal trading model, naive investors receive less weight than their population share because their conservatism (overestimating variance) makes them trade less aggressively. In market structures where the belief-to-demand mapping differs (e.g., delegated portfolio management, index funds), naive investors may retain their full population-share weight, as in Zhou's framework. Second, selection neglect investors exhibit the opposite pattern: they gain weight beyond their population share because their overconfidence makes them trade aggressively. The trading model thus does not uniformly discipline biased investors---it disciplines underconfident biases while amplifying overconfident ones. This asymmetry is a general insight about how market structure interacts with the direction of a cognitive bias.
+
+
+%% ====================================================================
+\section{Appendix: Full Derivation of Key Equations}
+\label{sec:appendix}
+%% ====================================================================
+
+\subsection{Non-Disclosure Price Derivation (SN, Trading Model)}
+
+With SN investors, the informational component is:
+\begin{align*}
+\hat{P}_{\ND}^\SN &= \frac{\lambda\tau_\R \cdot \frac{m + \mu_{\ND}}{2} + (1-\lambda)\tau_\SN \cdot m}{\lambda\tau_\R + (1-\lambda)\tau_\SN} \\[4pt]
+&= \frac{\frac{\lambda\tau_\R}{2}(m + \mu_{\ND}) + (1-\lambda)\tau_\SN \cdot m}{\Sigma_\SN} \\[4pt]
+&= \frac{m\left[\frac{\lambda\tau_\R}{2} + (1-\lambda)\tau_\SN\right] + \frac{\lambda\tau_\R\mu_{\ND}}{2}}{\Sigma_\SN}.
+\end{align*}
+
+The disclosure threshold:
+\begin{align*}
+d^* &= 2\hat{P}_{\ND}^\SN - m \\
+&= \frac{2m\left[\frac{\lambda\tau_\R}{2} + (1-\lambda)\tau_\SN\right] + \lambda\tau_\R\mu_{\ND}}{\Sigma_\SN} - m \\
+&= \frac{m[\lambda\tau_\R + 2(1-\lambda)\tau_\SN] + \lambda\tau_\R\mu_{\ND} - m\Sigma_\SN}{\Sigma_\SN} \\
+&= \frac{m[\lambda\tau_\R + 2(1-\lambda)\tau_\SN - \lambda\tau_\R - (1-\lambda)\tau_\SN] + \lambda\tau_\R\mu_{\ND}}{\Sigma_\SN} \\
+&= \frac{(1-\lambda)\tau_\SN \cdot m + \lambda\tau_\R \cdot \mu_{\ND}}{\Sigma_\SN} \\
+&= w_\SN \cdot m + (1 - w_\SN) \cdot \mu_{\ND}.
+\end{align*}
+
+\subsection{Non-Disclosure Price Derivation (Naive, Trading Model)}
+
+With naive investors:
+\begin{align*}
+\hat{P}_{\ND}^\N &= \frac{\lambda\tau_\R \cdot \frac{m + \mu_{\ND}}{2} + (1-\lambda)\tau_\N \cdot \frac{m + \mu}{2}}{\Sigma_\N} \\[4pt]
+&= \frac{m}{2} \cdot \frac{\lambda\tau_\R + (1-\lambda)\tau_\N}{\Sigma_\N} + \frac{\lambda\tau_\R\mu_{\ND} + (1-\lambda)\tau_\N\mu}{2\Sigma_\N} \\[4pt]
+&= \frac{m}{2} + \frac{(1-w_\N)\mu_{\ND} + w_\N\mu}{2}.
+\end{align*}
+
+The disclosure threshold:
+\begin{align*}
+d^* &= 2\hat{P}_{\ND}^\N - m = m + (1-w_\N)\mu_{\ND} + w_\N\mu - m = (1-w_\N)\mu_{\ND} + w_\N\mu.
+\end{align*}
+
+This does not depend on $m$.
+
+\subsection{Verification of the Mispricing Ratio Derivative}
+
+From $f(\lambda) = r \cdot \frac{\lambda k + (1-\lambda)}{\lambda k + (1-\lambda)r}$, write $f = r \cdot N/D$ where $N = \lambda k + 1 - \lambda = 1 + \lambda(k-1)$ and $D = \lambda k + (1-\lambda)r = r + \lambda(k-r)$.
+
+\begin{align*}
+f' &= r \cdot \frac{N'D - ND'}{D^2}, \\
+N' &= k - 1, \quad D' = k - r, \\
+N'D - ND' &= (k-1)[r + \lambda(k-r)] - [1 + \lambda(k-1)](k-r) \\
+&= (k-1)r + \lambda(k-1)(k-r) - (k-r) - \lambda(k-1)(k-r) \\
+&= (k-1)r - (k-r) \\
+&= kr - r - k + r \\
+&= k(r-1).
+\end{align*}
+
+Therefore:
+\[
+f'(\lambda) = \frac{r \cdot k(r-1)}{[r + \lambda(k-r)]^2} > 0 \quad \text{since } r > 1, \; k > 0.
+\]
+
+
+\subsection{Unraveling Proof: $h(t) = t + \phi(t)/\Phi(t) > 0$ for all $t$}
+
+\textbf{Claim:} $h(t) > 0$ for all $t \in \mathbb{R}$.
+
+\textbf{Proof.} For $t \geq 0$: $\phi(t)/\Phi(t) > 0$, so $h(t) > t \geq 0$.
+
+For $t < 0$: we use the well-known bound on the Mills ratio. For $t < 0$, let $s = -t > 0$. Then:
+\[
+\frac{\phi(t)}{\Phi(t)} = \frac{\phi(s)}{1 - \Phi(s)} = \frac{\phi(s)}{\Phi(-s)}.
+\]
+The Mills ratio of the standard normal satisfies $\phi(s)/[1 - \Phi(s)] > s$ for all $s > 0$ (a classical inequality; see, e.g., Gordon, 1941). Therefore $\phi(t)/\Phi(t) > -t$ for $t < 0$, giving $h(t) = t + \phi(t)/\Phi(t) > t + (-t) = 0$. $\qed$
+
+
+\end{document}
