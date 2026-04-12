@@ -650,62 +650,41 @@ var SURVEY_CONFIG = {
         "<!--endif:list-->" +
 
         "<!--if:chart_disclosed-->" +
-        "<p>The disclosed transactions will be shown as a <strong>bar chart</strong> " +
+        "<p>The disclosed transactions will be shown as a <strong>pie chart</strong> " +
         "displaying the composition of what the manager selected (Normal, Unusual, " +
-        "Highly Unusual). A small text note will indicate how many transactions " +
+        "Highly Unusual). A text note will indicate how many transactions " +
         "were not disclosed.</p>" +
         "<div class='info-box' style='padding:16px;'>" +
-          "<p style='margin:0 0 8px 0;'><strong>Example:</strong> A firm with 10 total transactions. " +
+          "<p style='margin:0 0 12px 0;'><strong>Example:</strong> A firm with 10 total transactions. " +
           "The manager shows you 3:</p>" +
-          "<div style='background:#f8f9fa; border-radius:8px; padding:12px 16px;'>" +
-            "<p style='margin:0 0 8px 0;'><strong>Disclosed transactions (3 of 10):</strong></p>" +
-            "<div style='display:flex; align-items:flex-end; height:80px; gap:8px; margin:0 0 8px 0;'>" +
-              "<div style='flex:0 0 60px; text-align:center;'>" +
-                "<div style='background:#2d6a4f; height:60px; border-radius:4px 4px 0 0;'></div>" +
-                "<div style='font-size:0.75em; margin-top:4px;'>Normal (2)</div>" +
-              "</div>" +
-              "<div style='flex:0 0 60px; text-align:center;'>" +
-                "<div style='background:#e67700; height:30px; border-radius:4px 4px 0 0;'></div>" +
-                "<div style='font-size:0.75em; margin-top:4px;'>Unusual (1)</div>" +
-              "</div>" +
-              "<div style='flex:0 0 60px; text-align:center;'>" +
-                "<div style='background:#c92a2a; height:0px; border-radius:4px 4px 0 0;'></div>" +
-                "<div style='font-size:0.75em; margin-top:4px;'>HU (0)</div>" +
-              "</div>" +
+          "<div style='background:#f8f9fa; border-radius:8px; padding:16px; display:flex; align-items:center; gap:24px; flex-wrap:wrap; justify-content:center;'>" +
+            "<div style='width:140px; height:140px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 240deg, #FF9800 240deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
+            "<div style='display:flex; flex-direction:column; gap:8px;'>" +
+              "<div style='display:flex; align-items:center; gap:8px;'><div style='width:14px; height:14px; background:#4CAF50; border-radius:3px;'></div><span><strong>Normal:</strong> 2 (67%)</span></div>" +
+              "<div style='display:flex; align-items:center; gap:8px;'><div style='width:14px; height:14px; background:#FF9800; border-radius:3px;'></div><span><strong>Unusual:</strong> 1 (33%)</span></div>" +
+              "<div style='display:flex; align-items:center; gap:8px;'><div style='width:14px; height:14px; background:#ef4444; border-radius:3px;'></div><span><strong>Highly Unusual:</strong> 0 (0%)</span></div>" +
             "</div>" +
-            "<p style='margin:0; color:#666; font-style:italic;'>" +
-              "7 transactions were not disclosed.</p>" +
           "</div>" +
+          "<p style='margin:8px 0 0 0; color:#666; font-style:italic;'>" +
+            "7 transactions were not disclosed.</p>" +
         "</div>" +
         "<!--endif:chart_disclosed-->" +
 
         "<!--if:chart_full-->" +
-        "<p>The disclosed transactions will be shown as a <strong>bar chart</strong> " +
+        "<p>The disclosed transactions will be shown as a <strong>pie chart</strong> " +
         "displaying the composition of what the manager selected. " +
-        "A <strong>gray bar</strong> will represent the undisclosed transactions, " +
+        "A <strong>gray segment</strong> will represent the undisclosed transactions, " +
         "so you can visually compare disclosed versus undisclosed.</p>" +
         "<div class='info-box' style='padding:16px;'>" +
-          "<p style='margin:0 0 8px 0;'><strong>Example:</strong> A firm with 10 total transactions. " +
+          "<p style='margin:0 0 12px 0;'><strong>Example:</strong> A firm with 10 total transactions. " +
           "The manager shows you 3:</p>" +
-          "<div style='background:#f8f9fa; border-radius:8px; padding:12px 16px;'>" +
-            "<p style='margin:0 0 8px 0;'><strong>All transactions (10 total):</strong></p>" +
-            "<div style='display:flex; align-items:flex-end; height:100px; gap:8px; margin:0 0 8px 0;'>" +
-              "<div style='flex:0 0 60px; text-align:center;'>" +
-                "<div style='background:#2d6a4f; height:28px; border-radius:4px 4px 0 0;'></div>" +
-                "<div style='font-size:0.75em; margin-top:4px;'>Normal (2)</div>" +
-              "</div>" +
-              "<div style='flex:0 0 60px; text-align:center;'>" +
-                "<div style='background:#e67700; height:14px; border-radius:4px 4px 0 0;'></div>" +
-                "<div style='font-size:0.75em; margin-top:4px;'>Unusual (1)</div>" +
-              "</div>" +
-              "<div style='flex:0 0 60px; text-align:center;'>" +
-                "<div style='background:#c92a2a; height:0px; border-radius:4px 4px 0 0;'></div>" +
-                "<div style='font-size:0.75em; margin-top:4px;'>HU (0)</div>" +
-              "</div>" +
-              "<div style='flex:0 0 60px; text-align:center;'>" +
-                "<div style='background:#bbb; height:96px; border-radius:4px 4px 0 0;'></div>" +
-                "<div style='font-size:0.75em; margin-top:4px;'>Not Disclosed (7)</div>" +
-              "</div>" +
+          "<div style='background:#f8f9fa; border-radius:8px; padding:16px; display:flex; align-items:center; gap:24px; flex-wrap:wrap; justify-content:center;'>" +
+            "<div style='width:140px; height:140px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 72deg, #FF9800 72deg 108deg, #9CA3AF 108deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
+            "<div style='display:flex; flex-direction:column; gap:8px;'>" +
+              "<div style='display:flex; align-items:center; gap:8px;'><div style='width:14px; height:14px; background:#4CAF50; border-radius:3px;'></div><span><strong>Normal:</strong> 2 (20%)</span></div>" +
+              "<div style='display:flex; align-items:center; gap:8px;'><div style='width:14px; height:14px; background:#FF9800; border-radius:3px;'></div><span><strong>Unusual:</strong> 1 (10%)</span></div>" +
+              "<div style='display:flex; align-items:center; gap:8px;'><div style='width:14px; height:14px; background:#ef4444; border-radius:3px;'></div><span><strong>Highly Unusual:</strong> 0 (0%)</span></div>" +
+              "<div style='display:flex; align-items:center; gap:8px;'><div style='width:14px; height:14px; background:#9CA3AF; border-radius:3px;'></div><span><strong>Undisclosed:</strong> 7 (70%)</span></div>" +
             "</div>" +
           "</div>" +
         "</div>" +
@@ -869,7 +848,7 @@ var SURVEY_CONFIG = {
             "transactions change how people reason about what might be concealed?</p>" +
 
             "<p>We also varied how the disclosed information was presented (text list " +
-            "vs. bar chart) to understand whether visual format affects " +
+            "vs. pie chart) to understand whether visual format affects " +
             "sensitivity to omitted information.</p>" +
 
             "<p>Your responses will help us understand how presentation format " +
@@ -1184,7 +1163,7 @@ var SURVEY_CONFIG = {
         "<!--endif:list-->" +
 
         "<!--if:chart_disclosed-->" +
-        "<p>The disclosed transactions will be shown as a <strong>bar chart</strong>.</p>" +
+        "<p>The disclosed transactions will be shown as a <strong>pie chart</strong>.</p>" +
         "<div class='info-box' style='padding:16px;'>" +
           "<p style='margin:0 0 8px 0;'><strong>Example:</strong> 3 of 10 disclosed:</p>" +
           "<div style='background:#f8f9fa; border-radius:8px; padding:12px 16px;'>" +
@@ -1208,7 +1187,7 @@ var SURVEY_CONFIG = {
         "<!--endif:chart_disclosed-->" +
 
         "<!--if:chart_full-->" +
-        "<p>The transactions will be shown as a <strong>bar chart</strong> with a " +
+        "<p>The transactions will be shown as a <strong>pie chart</strong> with a " +
         "<strong>gray bar</strong> for undisclosed transactions.</p>" +
         "<div class='info-box' style='padding:16px;'>" +
           "<p style='margin:0 0 8px 0;'><strong>Example:</strong> 3 of 10 total:</p>" +
@@ -1480,7 +1459,7 @@ var SURVEY_CONFIG = {
             "changes their reasoning.</p>" +
 
             "<p>We also varied how the disclosed information was presented -- as a text " +
-            "list, a bar chart of disclosed transactions, or a bar chart that also shows " +
+            "list, a pie chart of disclosed transactions, or a pie chart that also shows " +
             "a gray bar for the undisclosed count -- to understand whether visual format " +
             "affects sensitivity to omitted information.</p>" +
 
