@@ -205,35 +205,53 @@
         }
         var trials = (rawTrials || []).slice();
 
-        // Seeded random shuffle (deterministic per participant)
-        if (self.prolificPID) {
-          var baseSeed = hashString(self.prolificPID + '_trials_block' + block);
+        // For block 2: reuse block 1 trial order if available
+        if (block === 2 && self.block1TrialOrder) {
+          var orderMap = {};
+          self.block1TrialOrder.forEach(function (id, idx) { orderMap[id] = idx; });
+          trials.sort(function (a, b) { return (orderMap[a.id] !== undefined ? orderMap[a.id] : 999) - (orderMap[b.id] !== undefined ? orderMap[b.id] : 999); });
+        } else if (self.prolificPID) {
+          // Seeded random shuffle (deterministic per participant, same seed regardless of block)
+          var baseSeed = hashString(self.prolificPID + '_trials');
           trials = seededShuffle(trials, baseSeed);
         }
+
+        // Store block 1 trial order for block 2 to reuse
+        if (block === 1) {
+          self.block1TrialOrder = trials.map(function (t) { return t.id; });
+        }
+
+        // Read two-block DV flags from trial_block config
+        var askHiddenHU = page.askHiddenHU || false;
+        var askHiddenHUFirst = page.askHiddenHUFirst || false;
 
         // Record block boundary
         self.blockBoundaryIndices.push(self.pages.length);
 
         trials.forEach(function (trial, idx) {
+          var idSuffix = (block === 2) ? '_b2' : '';
           // Trial intro splash page
           self.pages.push({
-            id: trial.id + '_intro',
+            id: trial.id + idSuffix + '_intro',
             type: 'trial_intro',
             trial: trial,
             trialIndex: idx,
             totalTrials: trials.length,
             block: block,
+            askHiddenHU: askHiddenHU,
             minTimeSeconds: 3
           });
           // Fraud trial page
           self.pages.push({
-            id: trial.id,
+            id: trial.id + idSuffix,
             type: 'fraud_trial',
             trial: trial,
             trialIndex: idx,
             totalTrials: trials.length,
             block: block,
             blockId: page.id,
+            askHiddenHU: askHiddenHU,
+            askHiddenHUFirst: askHiddenHUFirst,
             minTimeSeconds: page.minTimeSeconds || 15
           });
         });
@@ -693,11 +711,13 @@
         valid = false;
       }
 
-      // DV3: HU estimate slider
-      var huSlider = document.getElementById('hu_estimate');
-      if (huSlider && huSlider.getAttribute('data-touched') === 'false') {
-        this.showError('hu_estimate', 'Please drag the slider to estimate the percentage of Highly Unusual transactions.');
-        valid = false;
+      // DV3: HU estimate slider (only required if askHiddenHU is true)
+      if (page.askHiddenHU) {
+        var huSlider = document.getElementById('hu_estimate');
+        if (huSlider && huSlider.getAttribute('data-touched') === 'false') {
+          this.showError('hu_estimate', 'Please drag the slider to estimate the percentage of Highly Unusual transactions.');
+          valid = false;
+        }
       }
     }
 
@@ -772,6 +792,8 @@
       this.trialResponses[page.id] = {
         trialId: trial.id,
         block: page.block || 1,
+        askHiddenHU: page.askHiddenHU || false,
+        askHiddenHUFirst: page.askHiddenHUFirst || false,
         fraudProb: fraudProb ? parseFloat(fraudProb.value) : null,
         confidence: confChecked ? parseInt(confChecked.value) : null,
         huEstimate: huEstimate ? parseFloat(huEstimate.value) : null,
@@ -1187,15 +1209,23 @@
     var trial = page.trial;
     var html = '';
 
+    var isBlock2 = page.block === 2;
+    var firmLabel = 'Firm ' + (page.trialIndex + 1) + ' of ' + page.totalTrials;
+    if (isBlock2) firmLabel += ' (second evaluation)';
+
     html += '<div class="trial-intro-splash">';
-    html += '<div class="page-subtitle" style="margin-bottom:24px;">Firm ' +
-            (page.trialIndex + 1) + ' of ' + page.totalTrials + '</div>';
+    html += '<div class="page-subtitle" style="margin-bottom:24px;">' + firmLabel + '</div>';
     html += '<div class="trial-intro-main">';
     html += '<div class="trial-intro-line" style="font-size:48px;font-weight:700;text-align:center;margin-bottom:24px;">' +
             'Firm ' + (page.trialIndex + 1) + '</div>';
-    html += '<div class="trial-intro-detail" style="font-size:22px;text-align:center;color:#4b5563;line-height:1.6;">' +
-            'This firm has <strong>' + trial.N + '</strong> transactions.<br>' +
-            'The manager will show you <strong>' + trial.k + '</strong>.</div>';
+    if (isBlock2) {
+      html += '<div class="trial-intro-detail" style="font-size:22px;text-align:center;color:#4b5563;line-height:1.6;">' +
+              'You evaluated this firm before.<br>Now think about what the manager <strong>chose not to show you</strong>.</div>';
+    } else {
+      html += '<div class="trial-intro-detail" style="font-size:22px;text-align:center;color:#4b5563;line-height:1.6;">' +
+              'This firm has <strong>' + trial.N + '</strong> transactions.<br>' +
+              'The manager will show you <strong>' + trial.k + '</strong>.</div>';
+    }
     html += '</div>';
     html += '</div>';
 
@@ -1264,7 +1294,28 @@
 
     // ── DV Section ──────────────────────────────────────────────────────
 
-    // DV1: Fraud Probability Slider (0-100)
+    // Helper: HU estimate slider HTML
+    var huSliderHtml = '';
+    huSliderHtml += '<div class="dv-card">';
+    huSliderHtml += '<div class="question-prompt">Of the <strong>' + hidden +
+            '</strong> transactions NOT shown to you, what percentage do you think are Highly Unusual?<span class="question-required">*</span></div>';
+    huSliderHtml += '<div class="slider-value-display" id="hu_estimate_display">50%</div>';
+    huSliderHtml += '<div class="slider-wrapper">';
+    huSliderHtml += '<span class="slider-label">0%</span>';
+    huSliderHtml += '<input type="range" class="slider-input" id="hu_estimate" name="hu_estimate" ' +
+            'min="0" max="100" step="1" value="50" data-touched="false" data-display="hu_estimate_display">';
+    huSliderHtml += '<span class="slider-label">100%</span>';
+    huSliderHtml += '</div>';
+    huSliderHtml += '<div class="slider-hint">Drag the slider to set your estimate</div>';
+    huSliderHtml += '<div class="field-error" id="error_hu_estimate"></div>';
+    huSliderHtml += '</div>';
+
+    // If askHiddenHU and askHiddenHUFirst, show HU question BEFORE fraud prob
+    if (page.askHiddenHU && page.askHiddenHUFirst) {
+      html += huSliderHtml;
+    }
+
+    // DV1: Fraud Probability Slider (0-100) -- always shown
     html += '<div class="dv-card">';
     html += '<div class="question-prompt">What is the probability that this firm is fraudulent?<span class="question-required">*</span></div>';
     html += '<div class="slider-value-display" id="fraud_prob_display">50%</div>';
@@ -1278,7 +1329,7 @@
     html += '<div class="field-error" id="error_fraud_prob"></div>';
     html += '</div>';
 
-    // DV2: Confidence (1-7 Likert)
+    // DV2: Confidence (1-7 Likert) -- always shown
     html += '<div class="dv-card" data-required="true" data-field-name="confidence" data-field-type="radio">';
     html += '<div class="question-prompt">How confident are you in your fraud assessment?<span class="question-required">*</span></div>';
     html += '<div class="option-list confidence-options">';
@@ -1301,20 +1352,10 @@
     html += '<div class="field-error" id="error_confidence"></div>';
     html += '</div>';
 
-    // DV3: Undisclosed HU Estimate Slider (0-100%)
-    html += '<div class="dv-card">';
-    html += '<div class="question-prompt">Of the <strong>' + hidden +
-            '</strong> transactions NOT shown to you, what percentage do you think are Highly Unusual?<span class="question-required">*</span></div>';
-    html += '<div class="slider-value-display" id="hu_estimate_display">50%</div>';
-    html += '<div class="slider-wrapper">';
-    html += '<span class="slider-label">0%</span>';
-    html += '<input type="range" class="slider-input" id="hu_estimate" name="hu_estimate" ' +
-            'min="0" max="100" step="1" value="50" data-touched="false" data-display="hu_estimate_display">';
-    html += '<span class="slider-label">100%</span>';
-    html += '</div>';
-    html += '<div class="slider-hint">Drag the slider to set your estimate</div>';
-    html += '<div class="field-error" id="error_hu_estimate"></div>';
-    html += '</div>';
+    // If askHiddenHU but NOT first, show HU question AFTER confidence
+    if (page.askHiddenHU && !page.askHiddenHUFirst) {
+      html += huSliderHtml;
+    }
 
     html += '</div>'; // end .trial-main-content
     html += '</div>'; // end .trial-layout
