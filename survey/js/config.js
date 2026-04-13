@@ -5,7 +5,9 @@
    Everything else (engine, styling, bot detection, storage) is generic.
 
    Design: 5 (scale) x 3 (format) between-subjects = 15 cells
-   Each participant sees 10 trials (randomized order) with 3 DVs each.
+   Within-participant: 2 blocks of 10 trials (same stimuli, same order)
+     Block 1: fraud probability + confidence (NO hidden HU question)
+     Block 2: hidden HU estimate FIRST, then fraud probability + confidence
 
    Scale conditions:
      small_low   : k=3,   N=10
@@ -16,36 +18,31 @@
 
    Format conditions:
      list           : Text list of transaction counts + text note of undisclosed
-     chart_disclosed: Bar chart of disclosed + small text note of undisclosed
-     chart_full     : Bar chart of disclosed + gray bar for undisclosed
-
-   Participants evaluate firms for fraud. A manager selects the k most
-   favorable transactions to disclose from N total. Participants see the
-   disclosed composition and rate fraud probability, confidence, and
-   estimate the hidden HU proportion.
+     chart_disclosed: Pie chart of disclosed + small text note of undisclosed
+     chart_full     : Pie chart of disclosed + gray segment for undisclosed
 
    Page types available:
    - welcome            : Title + body text + optional PID fallback
    - consent            : Consent form with required checkbox
    - instructions       : Instruction text (supports conditional blocks)
    - comprehension      : Questions with correct answers + pass/fail
-   - comprehension_result : Shows pass/fail with completion code
-   - fraud_trial        : Single trial with stimulus display + 3 DVs
+   - completion         : Shows pass/fail with completion code
    - trial_block        : Block of trials (auto-expanded, randomized)
+   - transition         : Between-block transition page
    - questionnaire      : Generic questions page (radio, number, text, likert, dropdown)
    - debrief            : Thank you + bonus display + completion code
    ========================================================================== */
 
 var SURVEY_CONFIG = {
 
-  // ── Study Metadata ───────────────────────────────────────────────────
+  // -- Study Metadata -------------------------------------------------------
   study: {
     title: "Fraud Assessment Study",
-    version: "1.0.0",
+    version: "2.0.0",
     dataEndpoint: ""  // Google Sheets Apps Script URL -- fill before deploy
   },
 
-  // ── Prolific Integration ─────────────────────────────────────────────
+  // -- Prolific Integration -------------------------------------------------
   prolific: {
     completionCodes: {
       pass1:  "PASS1SN",
@@ -60,7 +57,7 @@ var SURVEY_CONFIG = {
     part2StudyUrl: ""  // Fill after creating Part 2 study on Prolific
   },
 
-  // ── Between-Subjects Conditions (15 cells) ───────────────────────────
+  // -- Between-Subjects Conditions (15 cells) --------------------------------
   // Assigned deterministically: hash(PID) % 15 -> cell index
   // Cell index maps to one (scale, format) pair.
   conditions: {
@@ -73,29 +70,26 @@ var SURVEY_CONFIG = {
     ],
     formats: [
       { id: "list",             label: "Text list" },
-      { id: "chart_disclosed",  label: "Bar chart (disclosed only)" },
-      { id: "chart_full",       label: "Bar chart (full with gray)" }
+      { id: "chart_disclosed",  label: "Pie chart (disclosed only)" },
+      { id: "chart_full",       label: "Pie chart (full with gray)" }
     ],
-    // Cell assignment: cellIndex = hash(PID) % 15
-    // cellIndex -> (scaleIndex, formatIndex)
+    // cellIndex = hash(PID) % 15
     // scaleIndex  = Math.floor(cellIndex / 3)
     // formatIndex = cellIndex % 3
     cellCount: 15
   },
 
-  // ── Type Distributions (shown to participants) ───────────────────────
+  // -- Type Distributions ---------------------------------------------------
   typeDistributions: {
     nonFraudulent: { normal: 0.60, unusual: 0.30, highlyUnusual: 0.10 },
     fraudulent:    { normal: 0.40, unusual: 0.30, highlyUnusual: 0.30 },
     prior: 0.50
   },
 
-  // ── Trial Attention Checks ───────────────────────────────────────────
+  // -- Trial Attention Checks -----------------------------------------------
   trialAttentionCheckCount: 3,
 
-  // ── Bonus Parameters ─────────────────────────────────────────────────
-  // One random trial selected at debrief.
-  // bonus = max(0, base - penaltyPerUnit * |guess/100 - bayesPosterior|)
+  // -- Bonus Parameters -----------------------------------------------------
   bonus: {
     enabled: true,
     currency: "GBP",
@@ -106,16 +100,14 @@ var SURVEY_CONFIG = {
     selectionMethod: "random_trial"
   },
 
-  // ── Stimuli ──────────────────────────────────────────────────────────
+  // -- Stimuli --------------------------------------------------------------
   // 10 proportional compositions, constant across scale conditions.
   // For each trial: id, proportions (%N, %U, %HU), naivePosterior.
-  // Actual counts (nNormal, nUnusual, nHU) are computed from k and proportions.
+  // Actual counts computed from k and proportions.
   //
-  // Naive posterior calculated as:
+  // Naive posterior:
   //   P(F|disclosed) = P(disclosed|F)*P(F) / [P(disclosed|F)*P(F) + P(disclosed|NF)*P(NF)]
-  // where P(disclosed|type) = product over disclosed items of P(category|type)
   //
-  // Trial table:
   // | Trial | %N  | %U  | %HU | k=3       | k=30        | k=300         | Naive P(F) |
   // |-------|-----|-----|-----|-----------|-------------|---------------|------------|
   // | t1    | 100 |   0 |   0 | (3,0,0)   | (30,0,0)    | (300,0,0)     | 0.229      |
@@ -130,7 +122,6 @@ var SURVEY_CONFIG = {
   // | t10   |   0 |   0 | 100 | (0,0,3)   | (0,0,30)    | (0,0,300)     | 0.964      |
 
   stimuli: {
-    // Proportional templates (scale-independent)
     templates: [
       { id: "t1",  pctNormal: 100, pctUnusual:   0, pctHU:   0, naivePosterior: 0.229 },
       { id: "t2",  pctNormal:  67, pctUnusual:  33, pctHU:   0, naivePosterior: 0.308 },
@@ -144,8 +135,6 @@ var SURVEY_CONFIG = {
       { id: "t10", pctNormal:   0, pctUnusual:   0, pctHU: 100, naivePosterior: 0.964 }
     ],
 
-    // Pre-computed stimuli for each scale condition.
-    // Each entry: { id, k, N, nNormal, nUnusual, nHU, hidden, naivePosterior }
     byScale: {
 
       small_low: [
@@ -215,12 +204,14 @@ var SURVEY_CONFIG = {
     }
   },
 
-  // ── Dependent Variables (per trial) ──────────────────────────────────
+  // -- Dependent Variables (per trial) --------------------------------------
+  // Block 1 uses: fraud_probability, confidence
+  // Block 2 uses: hidden_hu_estimate (FIRST), fraud_probability, confidence
   trialDVs: [
     {
       id: "fraud_probability",
       type: "slider",
-      prompt: "Based on the disclosed transactions, what is the probability this firm is fraudulent?",
+      prompt: "How likely is it that this firm is fraudulent?",
       min: 0,
       max: 100,
       step: 1,
@@ -240,7 +231,7 @@ var SURVEY_CONFIG = {
     {
       id: "hidden_hu_estimate",
       type: "slider",
-      prompt: "Of the {hidden} transactions NOT shown to you, what percentage do you think are Highly Unusual?",
+      prompt: "What percentage of the {hidden} undisclosed transactions do you think are Highly Unusual?",
       min: 0,
       max: 100,
       step: 1,
@@ -254,267 +245,181 @@ var SURVEY_CONFIG = {
   // ====================================================================
   //  PART 1 PAGES -- Instructions + Comprehension (~5 min, GBP 1.00)
   // ====================================================================
-  // Accessed via ?part=1
 
   part1Pages: [
 
-    // ── 1. WELCOME ──
+    // -- Page 1: Welcome --
     {
       id: "p1_welcome",
       type: "welcome",
-      title: "Welcome!",
-      subtitle: "Part 1: Learning the Task",
-      body: "<p>In this short task (<strong>~5 minutes</strong>), we will teach you " +
-            "a fraud assessment exercise and ask you a short quiz.</p>" +
-            "<p>If you pass the quiz, you will be invited to <strong>Part 2</strong> " +
-            "(a separate Prolific study, ~15 minutes) where you complete the " +
-            "assessment for <strong>&pound;2.50 base pay</strong> plus an " +
-            "<strong>accuracy bonus of up to &pound;1.50</strong>.</p>" +
-            "<p>You will be paid <strong>&pound;1.00</strong> for completing this part, " +
-            "regardless of your quiz result.</p>",
-      buttonText: "Let's Go"
+      title: "Welcome",
+      subtitle: "",
+      body: "<p>Help us study how people evaluate firms for fraud.</p>" +
+            "<p>This part takes about <strong>5 minutes</strong>. " +
+            "You will be paid <strong>&pound;1.00</strong>.</p>",
+      buttonText: "Start"
     },
 
-    // ── 2. CONSENT ──
+    // -- Page 2: Consent --
     {
       id: "p1_consent",
       type: "consent",
-      title: "Informed Consent",
+      title: "Consent",
       body: "<p>You are being invited to participate in a research study about " +
             "decision-making under uncertainty.</p>" +
-            "<p><strong>What you will do:</strong> Learn the rules of a fraud " +
-            "assessment task and answer a short quiz.</p>" +
-            "<p><strong>Time:</strong> Approximately 5 minutes.</p>" +
-            "<p><strong>Compensation:</strong> &pound;1.00 for this part. If you pass the quiz, " +
-            "you will be invited to Part 2 (a separate Prolific study, ~15 minutes, " +
-            "&pound;2.50 base + up to &pound;1.50 accuracy bonus).</p>" +
-            "<p><strong>Risks:</strong> No known risks beyond those of everyday life.</p>" +
-            "<p><strong>Confidentiality:</strong> Your responses are anonymous. " +
-            "We collect your Prolific ID only to process payment.</p>" +
-            "<p><strong>Voluntary:</strong> You may withdraw at any time by closing " +
-            "this window.</p>",
+            "<p><strong>What you will do:</strong> Learn a fraud assessment task and answer a short quiz.</p>" +
+            "<p><strong>Time:</strong> ~5 minutes.</p>" +
+            "<p><strong>Pay:</strong> &pound;1.00 for this part. Pass the quiz and you will be invited " +
+            "to Part 2 (~15 min, &pound;2.50 + up to &pound;1.50 bonus).</p>" +
+            "<p><strong>Risks:</strong> None beyond everyday life.</p>" +
+            "<p><strong>Confidentiality:</strong> Anonymous. We collect your Prolific ID only for payment.</p>" +
+            "<p><strong>Voluntary:</strong> You may withdraw at any time by closing this window.</p>",
       mustAgree: true,
       declineMessage: "You must agree to participate in order to continue.",
-      minTimeSeconds: 20
-    },
-
-    // ── 3. INSTRUCTION: The Setting ──
-    {
-      id: "p1_inst_setting",
-      type: "instructions",
-      title: "The Setting",
-      body:
-        "<p>You are a <strong>fraud assessor</strong>. Your job is to evaluate " +
-        "whether firms are fraudulent based on their financial transactions.</p>" +
-
-        "<p>Each firm has a number of transactions. These transactions have already " +
-        "been classified by an automated system into three types:</p>" +
-
-        "<div class='info-box'>" +
-          "<div class='option-card'>" +
-            "<div class='option-card-header' style='color:#2d6a4f;'>Normal (N)</div>" +
-            "<div class='option-card-body'>Routine business activity. Nothing suspicious.</div>" +
-          "</div>" +
-          "<div class='option-card'>" +
-            "<div class='option-card-header' style='color:#e67700;'>Unusual (U)</div>" +
-            "<div class='option-card-body'>Somewhat atypical. Could occur at any firm.</div>" +
-          "</div>" +
-          "<div class='option-card'>" +
-            "<div class='option-card-header' style='color:#c92a2a;'>Highly Unusual (HU)</div>" +
-            "<div class='option-card-body'>Rare and potentially suspicious. Warrants attention.</div>" +
-          "</div>" +
-        "</div>" +
-
-        "<p>The total number of transactions varies across firms. " +
-        "You will be told how many transactions each firm has.</p>",
       minTimeSeconds: 15
     },
 
-    // ── 4. INSTRUCTION: Transaction Types ──
+    // -- Page 3: The Task --
     {
-      id: "p1_inst_types",
+      id: "p1_inst_task",
       type: "instructions",
-      title: "What the Transaction Types Tell You",
+      title: "The Task",
       body:
-        "<p>Here is the key information. The proportion of each transaction type " +
-        "differs between fraudulent and non-fraudulent firms:</p>" +
+        "<p>You will evaluate firms for fraud. Each firm has transactions classified as " +
+        "<span style='color:#2d6a4f; font-weight:600;'>Normal</span>, " +
+        "<span style='color:#e67700; font-weight:600;'>Unusual</span>, or " +
+        "<span style='color:#c92a2a; font-weight:600;'>Highly Unusual</span>.</p>" +
+
+        "<p>The mix of transaction types differs between firm types:</p>" +
 
         "<div style='display:flex; gap:32px; justify-content:center; flex-wrap:wrap; margin:20px 0;'>" +
-
           "<div style='text-align:center;'>" +
-            "<div style='font-weight:700; font-size:14px; margin-bottom:10px; color:#1e293b; text-transform:uppercase; letter-spacing:0.5px;'>Non-Fraudulent Firm</div>" +
+            "<div style='font-weight:600; font-size:15px; margin-bottom:10px; color:#1e293b;'>Non-Fraudulent Firm</div>" +
             "<div style='display:flex; align-items:center; gap:16px;'>" +
               "<div style='width:120px; height:120px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 216deg, #FF9800 216deg 324deg, #ef4444 324deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
-              "<div style='display:flex; flex-direction:column; gap:6px; text-align:left;'>" +
-                "<div style='display:flex; align-items:center; gap:8px; font-size:14px;'><span style='display:inline-block; width:14px; height:14px; background:#4CAF50; border-radius:3px;'></span><strong style='color:#2d6a4f;'>Normal 60%</strong></div>" +
-                "<div style='display:flex; align-items:center; gap:8px; font-size:14px;'><span style='display:inline-block; width:14px; height:14px; background:#FF9800; border-radius:3px;'></span><span style='color:#b45309;'>Unusual 30%</span></div>" +
-                "<div style='display:flex; align-items:center; gap:8px; font-size:14px;'><span style='display:inline-block; width:14px; height:14px; background:#ef4444; border-radius:3px;'></span><span style='color:#dc2626;'>HU 10%</span></div>" +
+              "<div style='display:flex; flex-direction:column; gap:6px; text-align:left; font-size:14px;'>" +
+                "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#4CAF50; border-radius:3px;'></span><strong>Normal 60%</strong></div>" +
+                "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#FF9800; border-radius:3px;'></span>Unusual 30%</div>" +
+                "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#ef4444; border-radius:3px;'></span>HU 10%</div>" +
               "</div>" +
             "</div>" +
           "</div>" +
-
           "<div style='text-align:center;'>" +
-            "<div style='font-weight:700; font-size:14px; margin-bottom:10px; color:#1e293b; text-transform:uppercase; letter-spacing:0.5px;'>Fraudulent Firm</div>" +
+            "<div style='font-weight:600; font-size:15px; margin-bottom:10px; color:#1e293b;'>Fraudulent Firm</div>" +
             "<div style='display:flex; align-items:center; gap:16px;'>" +
               "<div style='width:120px; height:120px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 144deg, #FF9800 144deg 252deg, #ef4444 252deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
-              "<div style='display:flex; flex-direction:column; gap:6px; text-align:left;'>" +
-                "<div style='display:flex; align-items:center; gap:8px; font-size:14px;'><span style='display:inline-block; width:14px; height:14px; background:#4CAF50; border-radius:3px;'></span><span style='color:#2d6a4f;'>Normal 40%</span></div>" +
-                "<div style='display:flex; align-items:center; gap:8px; font-size:14px;'><span style='display:inline-block; width:14px; height:14px; background:#FF9800; border-radius:3px;'></span><span style='color:#b45309;'>Unusual 30%</span></div>" +
-                "<div style='display:flex; align-items:center; gap:8px; font-size:14px;'><span style='display:inline-block; width:14px; height:14px; background:#ef4444; border-radius:3px;'></span><strong style='color:#dc2626;'>HU 30%</strong></div>" +
+              "<div style='display:flex; flex-direction:column; gap:6px; text-align:left; font-size:14px;'>" +
+                "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#4CAF50; border-radius:3px;'></span>Normal 40%</div>" +
+                "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#FF9800; border-radius:3px;'></span>Unusual 30%</div>" +
+                "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#ef4444; border-radius:3px;'></span><strong>HU 30%</strong></div>" +
               "</div>" +
             "</div>" +
           "</div>" +
-
-        "</div>" +
-
-        "<div class='info-box' style='background:#fff8e6; border-left:4px solid #e67700; padding:12px 16px;'>" +
-          "<p style='margin:0;'><strong>Notice:</strong> Unusual transactions occur at the " +
-          "<strong>same rate</strong> (30%) in both types of firms. " +
-          "So Unusual transactions are <em>not informative</em> about fraud.</p>" +
-          "<p style='margin:8px 0 0 0;'>The key difference is in Normal vs. Highly Unusual: " +
-          "non-fraudulent firms have <strong>more Normal</strong> and <strong>fewer Highly Unusual</strong> " +
-          "transactions.</p>" +
-        "</div>" +
-
-        "<p>Before you see any transactions, each firm has a <strong>50% chance</strong> " +
-        "of being fraudulent (50/50 prior).</p>",
-      minTimeSeconds: 20
+        "</div>",
+      minTimeSeconds: 12
     },
 
-    // ── 5. INSTRUCTION: The Manager ──
+    // -- Page 4: The Manager --
     {
       id: "p1_inst_manager",
       type: "instructions",
       title: "The Manager",
       body:
-        "<p>Each firm has a <strong>manager</strong> who has access to " +
-        "<strong>all</strong> of the firm's transactions.</p>" +
-
-        "<p>The manager must select exactly <strong>some</strong> of these transactions " +
-        "to show you. The manager cannot fabricate or change any transaction -- " +
-        "they can only choose <em>which ones</em> to disclose.</p>" +
-
-        "<div class='info-box' style='background:#fff0f0; border-left:4px solid #c92a2a; padding:12px 16px;'>" +
-          "<p style='margin:0;'><strong>Important:</strong> The manager earns a larger bonus " +
-          "when you rate the firm's fraud probability <strong>lower</strong>.</p>" +
-          "<p style='margin:8px 0 0 0;'>In other words, the manager wants to convince you " +
-          "the firm is <em>not</em> fraudulent. The manager will therefore try to show you " +
-          "the most favorable transactions.</p>" +
-        "</div>" +
-
-        "<p>You will always be told:</p>" +
-        "<ul>" +
-          "<li>How many <strong>total</strong> transactions the firm has (N)</li>" +
-          "<li>How many the manager is <strong>required to show</strong> you (k)</li>" +
-          "<li>The <strong>composition</strong> of the disclosed transactions (how many Normal, Unusual, HU)</li>" +
-        "</ul>" +
-
-        "<p>You will <strong>not</strong> be told the manager's exact selection strategy.</p>",
-      minTimeSeconds: 18
+        "<p>A manager sees <strong>all</strong> of a firm's transactions but shows you only some. " +
+        "The manager cannot fabricate transactions -- only choose which ones to reveal.</p>" +
+        "<p>The manager earns more when you rate fraud <strong>lower</strong> -- " +
+        "so the manager wants to show you the best-looking transactions.</p>",
+      minTimeSeconds: 10
     },
 
-    // ── 6. INSTRUCTION: Your Task ──
+    // -- Page 5: Your Job --
     {
-      id: "p1_inst_task",
+      id: "p1_inst_job",
       type: "instructions",
-      title: "Your Task",
+      title: "Your Job",
       body:
-        "<p>For each firm, you will see the disclosed transactions and then answer " +
-        "three questions:</p>" +
-
-        "<div class='info-box'>" +
-          "<div class='option-card'>" +
-            "<div class='option-card-header'>1. Fraud Probability</div>" +
-            "<div class='option-card-body'>Rate the probability that this firm " +
-            "is fraudulent (0-100%).</div>" +
-          "</div>" +
-          "<div class='option-card'>" +
-            "<div class='option-card-header'>2. Confidence</div>" +
-            "<div class='option-card-body'>How confident are you in your fraud " +
-            "assessment? (1-7 scale)</div>" +
-          "</div>" +
-          "<div class='option-card'>" +
-            "<div class='option-card-header'>3. Hidden Transactions</div>" +
-            "<div class='option-card-body'>Of the transactions NOT shown to you, what " +
-            "percentage do you think are Highly Unusual? (0-100%)</div>" +
-          "</div>" +
-        "</div>" +
-
-        "<p>Your <strong>accuracy bonus</strong> depends on how close your fraud " +
-        "probability rating is to the correct answer. One firm will be randomly " +
-        "selected for your bonus at the end.</p>",
-      minTimeSeconds: 15
+        "<p>Rate how likely the firm is fraudulent (0-100%) and how confident you are in that rating.</p>",
+      minTimeSeconds: 8
     },
 
-    // ── 7. INSTRUCTION: Example ──
+    // -- Page 6: Key Point --
     {
-      id: "p1_inst_example",
+      id: "p1_inst_key",
       type: "instructions",
-      title: "A Worked Example",
+      title: "Key Point",
       body:
-        "<p>Let's walk through a concrete example.</p>" +
+        "<p>Unusual transactions occur at the <strong>same rate (30%)</strong> in both firm types -- " +
+        "they tell you nothing about fraud. The difference is in Normal vs. Highly Unusual.</p>" +
 
-        "<p><strong>Setup:</strong> A firm has <strong>10 transactions</strong> total. " +
-        "The manager must show you <strong>3</strong> of them.</p>" +
-
-        "<p><strong>You see:</strong> The manager discloses 3 transactions: " +
-        "<strong>2 Normal</strong>, <strong>1 Unusual</strong>, <strong>0 Highly Unusual</strong>.</p>" +
-
-        "<div class='info-box' style='background:#f0f4ff; border-left:4px solid #4361ee; padding:12px 16px;'>" +
-          "<p style='margin:0;'><strong>What should you think?</strong></p>" +
-          "<p style='margin:8px 0 0 0;'>The disclosed sample looks fairly clean " +
-          "(mostly Normal, no HU). But remember:</p>" +
-          "<ul style='margin:4px 0 0 0;'>" +
-            "<li>The manager <em>chose</em> these 3 out of 10.</li>" +
-            "<li>The manager wants you to think fraud is low.</li>" +
-            "<li>There are still <strong>7 hidden</strong> transactions you haven't seen.</li>" +
-            "<li>A skeptical evaluator would ask: what might the other 7 look like?</li>" +
-          "</ul>" +
-        "</div>" +
-
-        "<p>If the firm were truly non-fraudulent, we'd expect about 60% Normal, " +
-        "30% Unusual, and 10% HU among all 10 transactions. " +
-        "The manager showing you the 2 most Normal plus 1 Unusual is consistent " +
-        "with <em>either</em> a clean firm or a dirty firm where the manager " +
-        "cherry-picked the best transactions.</p>" +
-
-        "<p>The right answer depends on weighing the disclosed evidence against " +
-        "what might be hidden. There is no trick -- just careful reasoning.</p>",
-      minTimeSeconds: 20
+        "<div style='display:flex; gap:24px; justify-content:center; flex-wrap:wrap; margin:16px 0;'>" +
+          "<div style='text-align:center;'>" +
+            "<div style='font-weight:600; font-size:13px; margin-bottom:8px; color:#1e293b;'>Non-Fraudulent</div>" +
+            "<div style='display:flex; align-items:center; gap:12px;'>" +
+              "<div style='width:90px; height:90px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 216deg, #FF9800 216deg 324deg, #ef4444 324deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
+              "<div style='display:flex; flex-direction:column; gap:4px; text-align:left; font-size:13px;'>" +
+                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#4CAF50; border-radius:2px;'></span><strong>N 60%</strong></div>" +
+                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#FF9800; border-radius:2px;'></span>U 30%</div>" +
+                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#ef4444; border-radius:2px;'></span>HU 10%</div>" +
+              "</div>" +
+            "</div>" +
+          "</div>" +
+          "<div style='text-align:center;'>" +
+            "<div style='font-weight:600; font-size:13px; margin-bottom:8px; color:#1e293b;'>Fraudulent</div>" +
+            "<div style='display:flex; align-items:center; gap:12px;'>" +
+              "<div style='width:90px; height:90px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 144deg, #FF9800 144deg 252deg, #ef4444 252deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
+              "<div style='display:flex; flex-direction:column; gap:4px; text-align:left; font-size:13px;'>" +
+                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#4CAF50; border-radius:2px;'></span>N 40%</div>" +
+                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#FF9800; border-radius:2px;'></span>U 30%</div>" +
+                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#ef4444; border-radius:2px;'></span><strong>HU 30%</strong></div>" +
+              "</div>" +
+            "</div>" +
+          "</div>" +
+        "</div>",
+      minTimeSeconds: 10
     },
 
-    // ── 8. COMPREHENSION QUIZ ──
+    // -- Page 7: Before the Quiz --
+    {
+      id: "p1_inst_pre_quiz",
+      type: "instructions",
+      title: "Before the Quiz",
+      body:
+        "<p>Each firm starts with a <strong>50% chance</strong> of being fraudulent. " +
+        "Let's check you understood the basics.</p>",
+      minTimeSeconds: 5
+    },
+
+    // -- Pages 8-11: Quiz (4 questions, comprehension type) --
     {
       id: "p1_comprehension",
       type: "comprehension",
-      title: "Quick Quiz",
-      description: "<p>Answer these questions to show you understand the task. " +
-                   "You must get all correct to proceed to Part 2.</p>",
+      title: "Quiz",
+      description: "<p>Answer all questions correctly to proceed to Part 2.</p>",
       questions: [
         {
           prompt: "Who picks which transactions you see?",
           type: "radio",
           correct: "manager",
           options: [
-            { value: "manager",  label: "The manager selects which transactions to disclose" },
-            { value: "you",      label: "I choose which transactions to look at" },
-            { value: "random",   label: "A random process selects the transactions" },
-            { value: "nobody",   label: "Nobody -- I see all transactions" }
+            { value: "manager",  label: "The manager" },
+            { value: "you",      label: "You" },
+            { value: "random",   label: "A random process" },
+            { value: "nobody",   label: "Nobody" }
           ]
         },
         {
-          prompt: "Does the manager earn more when you rate fraud probability high or low?",
+          prompt: "Does the manager earn more when you rate fraud high or low?",
           type: "radio",
           correct: "low",
           options: [
-            { value: "low",        label: "Low -- the manager benefits when I rate fraud as less likely" },
-            { value: "high",       label: "High -- the manager benefits when I rate fraud as more likely" },
-            { value: "no_effect",  label: "It doesn't matter -- the manager's pay is unrelated to my rating" },
-            { value: "depends",    label: "It depends on whether the firm is actually fraudulent" }
+            { value: "low",        label: "Low" },
+            { value: "high",       label: "High" },
+            { value: "no_effect",  label: "It doesn't matter" },
+            { value: "depends",    label: "Depends on the firm" }
           ]
         },
         {
-          prompt: "If a firm has 10 transactions and the manager shows you 3, how many transactions are hidden from you?",
+          prompt: "If a firm has 10 transactions and the manager shows 3, how many are hidden?",
           type: "radio",
           correct: "7",
           options: [
@@ -529,191 +434,156 @@ var SURVEY_CONFIG = {
           type: "radio",
           correct: "yes",
           options: [
-            { value: "yes",       label: "Yes -- 10% of a non-fraudulent firm's transactions are Highly Unusual" },
-            { value: "no",        label: "No -- Highly Unusual only occurs in fraudulent firms" },
-            { value: "only_fraud", label: "Only if the firm turns out to be fraudulent" },
-            { value: "not_enough", label: "Not enough information to say" }
+            { value: "yes",        label: "Yes" },
+            { value: "no",         label: "No" },
+            { value: "only_fraud", label: "Only if it's fraud" },
+            { value: "not_enough", label: "Not enough information" }
           ]
         }
       ],
-      minTimeSeconds: 20,
+      minTimeSeconds: 15,
       maxAttempts: 1,
-      failMessage: "Unfortunately, you did not answer all comprehension questions correctly. " +
-                   "We are unable to include you in Part 2. Thank you for your time -- you will " +
-                   "still be paid &pound;1.00 for completing this part."
+      failMessage: "You did not answer all questions correctly. " +
+                   "You will still be paid &pound;1.00 for this part. Thank you for your time."
     },
 
-    // ── 9. COMPREHENSION RESULT ──
+    // -- Page 12: Result --
     {
       id: "p1_comprehension_result",
       type: "completion",
       title: "You Passed!",
-      body: "<p>Great job -- you understand the task!</p>" +
-            "<p><strong>Part 2</strong> is a separate Prolific study (~15 minutes, " +
-            "&pound;2.50 base + up to &pound;1.50 accuracy bonus).</p>"
+      body: "<p>You understand the task.</p>" +
+            "<p><strong>Part 2</strong> is a separate Prolific study (~15 min, " +
+            "&pound;2.50 + up to &pound;1.50 accuracy bonus).</p>"
     }
   ],
 
 
   // ====================================================================
-  //  PART 2 PAGES -- Trials + Debrief (~15 min, GBP 2.50 + bonus)
+  //  PART 2 PAGES -- Two blocks of 10 trials + Debrief
   // ====================================================================
-  // Accessed via ?part=2
 
   part2Pages: [
 
-    // ── 1. WELCOME BACK ──
+    // -- Welcome back --
     {
       id: "p2_welcome",
       type: "welcome",
-      title: "Welcome to Part 2!",
-      subtitle: "Fraud Assessment Task",
-      body: "<p>Thank you for returning! This part takes about <strong>15 minutes</strong>.</p>" +
-            "<p>You will receive <strong>&pound;2.50 base payment</strong> plus an " +
-            "<strong>accuracy-based bonus of up to &pound;1.50</strong>.</p>" +
-            "<p>You will evaluate <strong>10 firms</strong> for potential fraud.</p>",
+      title: "Welcome Back",
+      subtitle: "",
+      body: "<p>This part takes about <strong>15 minutes</strong>. " +
+            "You will evaluate <strong>10 firms</strong> twice.</p>" +
+            "<p>Pay: <strong>&pound;2.50</strong> base + up to <strong>&pound;1.50</strong> accuracy bonus.</p>",
       buttonText: "Continue"
     },
 
-    // ── 2. REMINDER ──
+    // -- Quick reminder --
     {
       id: "p2_reminder",
       type: "instructions",
       title: "Quick Reminder",
       body:
-        "<div class='game-flow game-flow-compact'>" +
-          "<div class='flow-step'>" +
-            "<div class='flow-step-number'>1</div>" +
-            "<div class='flow-step-content'>" +
-              "Each firm has <strong>N transactions</strong> classified as Normal, Unusual, or Highly Unusual" +
+        "<p>Firms have transactions classified as Normal, Unusual, or Highly Unusual. " +
+        "A manager picks which ones to show you. The manager earns more when you rate fraud lower.</p>" +
+
+        "<div style='display:flex; gap:24px; justify-content:center; flex-wrap:wrap; margin:16px 0;'>" +
+          "<div style='text-align:center;'>" +
+            "<div style='font-weight:600; font-size:13px; margin-bottom:8px; color:#1e293b;'>Non-Fraudulent</div>" +
+            "<div style='display:flex; align-items:center; gap:12px;'>" +
+              "<div style='width:90px; height:90px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 216deg, #FF9800 216deg 324deg, #ef4444 324deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
+              "<div style='display:flex; flex-direction:column; gap:4px; text-align:left; font-size:13px;'>" +
+                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#4CAF50; border-radius:2px;'></span><strong>N 60%</strong></div>" +
+                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#FF9800; border-radius:2px;'></span>U 30%</div>" +
+                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#ef4444; border-radius:2px;'></span>HU 10%</div>" +
+              "</div>" +
             "</div>" +
           "</div>" +
-          "<div class='flow-arrow'>&#9660;</div>" +
-          "<div class='flow-step'>" +
-            "<div class='flow-step-number'>2</div>" +
-            "<div class='flow-step-content'>" +
-              "The <strong>manager</strong> selects <strong>k transactions</strong> to show you (wants you to rate fraud <em>low</em>)" +
-            "</div>" +
-          "</div>" +
-          "<div class='flow-arrow'>&#9660;</div>" +
-          "<div class='flow-step'>" +
-            "<div class='flow-step-number'>3</div>" +
-            "<div class='flow-step-content'>" +
-              "You see the disclosed transactions and <strong>rate fraud probability</strong>, " +
-              "your <strong>confidence</strong>, and <strong>estimate hidden HU %</strong>" +
+          "<div style='text-align:center;'>" +
+            "<div style='font-weight:600; font-size:13px; margin-bottom:8px; color:#1e293b;'>Fraudulent</div>" +
+            "<div style='display:flex; align-items:center; gap:12px;'>" +
+              "<div style='width:90px; height:90px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 144deg, #FF9800 144deg 252deg, #ef4444 252deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
+              "<div style='display:flex; flex-direction:column; gap:4px; text-align:left; font-size:13px;'>" +
+                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#4CAF50; border-radius:2px;'></span>N 40%</div>" +
+                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#FF9800; border-radius:2px;'></span>U 30%</div>" +
+                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#ef4444; border-radius:2px;'></span><strong>HU 30%</strong></div>" +
+              "</div>" +
             "</div>" +
           "</div>" +
         "</div>" +
 
-        "<div class='info-box' style='background:#fff8e6; border-left:4px solid #e67700; padding:12px 16px; margin-top:16px;'>" +
-          "<p style='margin:0;'><strong>Distributions reminder:</strong></p>" +
-          "<table style='width:100%; border-collapse:collapse; margin:8px 0 0 0; font-size:0.9em;'>" +
-            "<tr>" +
-              "<td></td>" +
-              "<td style='text-align:center;'><strong>Non-Fraud</strong></td>" +
-              "<td style='text-align:center;'><strong>Fraud</strong></td>" +
-            "</tr>" +
-            "<tr><td style='color:#2d6a4f;'>Normal</td><td style='text-align:center;'>60%</td><td style='text-align:center;'>40%</td></tr>" +
-            "<tr><td style='color:#e67700;'>Unusual</td><td style='text-align:center;'>30%</td><td style='text-align:center;'>30%</td></tr>" +
-            "<tr><td style='color:#c92a2a;'>Highly Unusual</td><td style='text-align:center;'>10%</td><td style='text-align:center;'>30%</td></tr>" +
-          "</table>" +
-          "<p style='margin:8px 0 0 0;'>Prior: 50% chance of fraud before seeing any transactions.</p>" +
-        "</div>",
-      minTimeSeconds: 10
+        "<p style='color:#64748b; font-size:14px;'>Prior: each firm starts at 50% chance of fraud.</p>",
+      minTimeSeconds: 8
     },
 
-    // ── 3. FORMAT INTRO (condition-specific) ──
+    // -- Format intro (condition-specific) --
     {
       id: "p2_format_intro",
       type: "instructions",
-      title: "How Transactions Will Be Displayed",
+      title: "How You Will See Transactions",
       body:
         "<p>For each firm, you will see the transactions the manager chose to disclose.</p>" +
 
         "<!--if:list-->" +
-        "<p>The disclosed transactions will be shown as a <strong>text summary</strong> " +
-        "listing how many of each type (Normal, Unusual, Highly Unusual) the manager " +
-        "selected. The number of undisclosed transactions will also be noted.</p>" +
-        "<div class='info-box' style='padding:16px;'>" +
-          "<p style='margin:0 0 8px 0;'><strong>Example:</strong> A firm with 10 total transactions. " +
-          "The manager shows you 3:</p>" +
-          "<div style='background:#f8f9fa; border-radius:8px; padding:12px 16px; font-size:0.95em;'>" +
-            "<p style='margin:0 0 4px 0;'><strong>Disclosed transactions (3 of 10):</strong></p>" +
-            "<ul style='margin:0; padding-left:20px;'>" +
-              "<li><span style='color:#2d6a4f;'>Normal:</span> <strong>2</strong></li>" +
-              "<li><span style='color:#e67700;'>Unusual:</span> <strong>1</strong></li>" +
-              "<li><span style='color:#c92a2a;'>Highly Unusual:</span> <strong>0</strong></li>" +
-            "</ul>" +
-            "<p style='margin:8px 0 0 0; color:#666; font-style:italic;'>" +
-              "7 transactions were not disclosed.</p>" +
-          "</div>" +
+        "<p>Transactions are shown as a <strong>text summary</strong> listing counts by type.</p>" +
+        "<div style='background:#f8f9fa; border-radius:8px; padding:12px 16px; margin:12px 0; font-size:0.95em;'>" +
+          "<p style='margin:0 0 4px 0;'><strong>Example</strong> -- 3 of 10 disclosed:</p>" +
+          "<ul style='margin:0; padding-left:20px;'>" +
+            "<li><span style='color:#2d6a4f;'>Normal:</span> <strong>2</strong></li>" +
+            "<li><span style='color:#e67700;'>Unusual:</span> <strong>1</strong></li>" +
+            "<li><span style='color:#c92a2a;'>Highly Unusual:</span> <strong>0</strong></li>" +
+          "</ul>" +
+          "<p style='margin:8px 0 0 0; color:#666; font-style:italic;'>7 transactions were not disclosed.</p>" +
         "</div>" +
         "<!--endif:list-->" +
 
         "<!--if:chart_disclosed-->" +
-        "<p>The disclosed transactions will be shown as a <strong>pie chart</strong> " +
-        "displaying the composition of what the manager selected (Normal, Unusual, " +
-        "Highly Unusual). A text note will indicate how many transactions " +
-        "were not disclosed.</p>" +
-        "<div class='info-box' style='padding:16px;'>" +
-          "<p style='margin:0 0 12px 0;'><strong>Example:</strong> A firm with 10 total transactions. " +
-          "The manager shows you 3:</p>" +
-          "<div style='background:#f8f9fa; border-radius:8px; padding:16px; display:flex; align-items:center; gap:24px; flex-wrap:wrap; justify-content:center;'>" +
-            "<div style='width:140px; height:140px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 240deg, #FF9800 240deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
-            "<div style='display:flex; flex-direction:column; gap:8px;'>" +
-              "<div style='display:flex; align-items:center; gap:8px;'><div style='width:14px; height:14px; background:#4CAF50; border-radius:3px;'></div><span><strong>Normal:</strong> 2 (67%)</span></div>" +
-              "<div style='display:flex; align-items:center; gap:8px;'><div style='width:14px; height:14px; background:#FF9800; border-radius:3px;'></div><span><strong>Unusual:</strong> 1 (33%)</span></div>" +
-              "<div style='display:flex; align-items:center; gap:8px;'><div style='width:14px; height:14px; background:#ef4444; border-radius:3px;'></div><span><strong>Highly Unusual:</strong> 0 (0%)</span></div>" +
-            "</div>" +
+        "<p>Transactions are shown as a <strong>pie chart</strong> of the disclosed composition. " +
+        "A note tells you how many were not disclosed.</p>" +
+        "<div style='background:#f8f9fa; border-radius:8px; padding:16px; margin:12px 0; display:flex; align-items:center; gap:20px; flex-wrap:wrap; justify-content:center;'>" +
+          "<div style='text-align:center;'>" +
+            "<div style='font-size:13px; color:#64748b; margin-bottom:6px;'>Example: 3 of 10 disclosed</div>" +
+            "<div style='width:120px; height:120px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 240deg, #FF9800 240deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1); margin:0 auto;'></div>" +
           "</div>" +
-          "<p style='margin:8px 0 0 0; color:#666; font-style:italic;'>" +
-            "7 transactions were not disclosed.</p>" +
+          "<div style='display:flex; flex-direction:column; gap:6px; font-size:14px;'>" +
+            "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#4CAF50; border-radius:3px;'></span><strong>Normal:</strong> 2 (67%)</div>" +
+            "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#FF9800; border-radius:3px;'></span><strong>Unusual:</strong> 1 (33%)</div>" +
+            "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#ef4444; border-radius:3px;'></span><strong>HU:</strong> 0 (0%)</div>" +
+            "<div style='color:#666; font-style:italic; margin-top:4px;'>7 transactions not disclosed.</div>" +
+          "</div>" +
         "</div>" +
         "<!--endif:chart_disclosed-->" +
 
         "<!--if:chart_full-->" +
-        "<p>The disclosed transactions will be shown as a <strong>pie chart</strong> " +
-        "displaying the composition of what the manager selected. " +
-        "A <strong>gray segment</strong> will represent the undisclosed transactions, " +
-        "so you can visually compare disclosed versus undisclosed.</p>" +
-        "<div class='info-box' style='padding:16px;'>" +
-          "<p style='margin:0 0 12px 0;'><strong>Example:</strong> A firm with 10 total transactions. " +
-          "The manager shows you 3:</p>" +
-          "<div style='background:#f8f9fa; border-radius:8px; padding:16px; display:flex; align-items:center; gap:24px; flex-wrap:wrap; justify-content:center;'>" +
-            "<div style='width:140px; height:140px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 72deg, #FF9800 72deg 108deg, #9CA3AF 108deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
-            "<div style='display:flex; flex-direction:column; gap:8px;'>" +
-              "<div style='display:flex; align-items:center; gap:8px;'><div style='width:14px; height:14px; background:#4CAF50; border-radius:3px;'></div><span><strong>Normal:</strong> 2 (20%)</span></div>" +
-              "<div style='display:flex; align-items:center; gap:8px;'><div style='width:14px; height:14px; background:#FF9800; border-radius:3px;'></div><span><strong>Unusual:</strong> 1 (10%)</span></div>" +
-              "<div style='display:flex; align-items:center; gap:8px;'><div style='width:14px; height:14px; background:#ef4444; border-radius:3px;'></div><span><strong>Highly Unusual:</strong> 0 (0%)</span></div>" +
-              "<div style='display:flex; align-items:center; gap:8px;'><div style='width:14px; height:14px; background:#9CA3AF; border-radius:3px;'></div><span><strong>Undisclosed:</strong> 7 (70%)</span></div>" +
-            "</div>" +
+        "<p>Transactions are shown as a <strong>pie chart</strong> with a " +
+        "<strong style='color:#9CA3AF;'>gray segment</strong> for undisclosed transactions.</p>" +
+        "<div style='background:#f8f9fa; border-radius:8px; padding:16px; margin:12px 0; display:flex; align-items:center; gap:20px; flex-wrap:wrap; justify-content:center;'>" +
+          "<div style='text-align:center;'>" +
+            "<div style='font-size:13px; color:#64748b; margin-bottom:6px;'>Example: 3 of 10 total</div>" +
+            "<div style='width:120px; height:120px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 72deg, #FF9800 72deg 108deg, #9CA3AF 108deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1); margin:0 auto;'></div>" +
+          "</div>" +
+          "<div style='display:flex; flex-direction:column; gap:6px; font-size:14px;'>" +
+            "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#4CAF50; border-radius:3px;'></span><strong>Normal:</strong> 2 (20%)</div>" +
+            "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#FF9800; border-radius:3px;'></span><strong>Unusual:</strong> 1 (10%)</div>" +
+            "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#ef4444; border-radius:3px;'></span><strong>HU:</strong> 0 (0%)</div>" +
+            "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#9CA3AF; border-radius:3px;'></span><strong>Undisclosed:</strong> 7 (70%)</div>" +
           "</div>" +
         "</div>" +
-        "<!--endif:chart_full-->" +
-
-        "<p>Remember: the manager chose these transactions strategically. " +
-        "Think about what the undisclosed transactions might look like.</p>",
-      minTimeSeconds: 12
+        "<!--endif:chart_full-->",
+      minTimeSeconds: 10
     },
 
-    // ── 4-13. TRIAL BLOCK (10 trials, randomized) ──
-    // The engine will look up the participant's scale condition and
-    // pull the appropriate stimuli from stimuli.byScale[scaleId].
-    // Each trial is rendered as a fraud_trial page with 3 DVs.
+    // -- BLOCK 1: 10 trials, NO hidden HU question --
     {
-      id: "trials_main",
+      id: "block1",
       type: "trial_block",
       block: 1,
       randomize: true,
       trialCount: 10,
-      // Trials are populated dynamically from stimuli.byScale[assigned scale]
-      // Each trial page shows:
-      //   1. Firm intro splash: "This firm has [N] transactions. The manager shows you [k]."
-      //   2. Disclosed composition in the assigned format
-      //   3. Three DV inputs (fraud_probability slider, confidence likert, hidden_hu_estimate slider)
+      askHiddenHU: false,
+      askHiddenHUFirst: false,
       trialIntroTemplate:
-        "<p>This firm has <strong>{N} transactions</strong> in total.</p>" +
-        "<p>The manager has selected <strong>{k} transactions</strong> to show you.</p>",
+        "<p>This firm has <strong>{N} transactions</strong> in total. " +
+        "The manager shows you <strong>{k}</strong>.</p>",
       trialStimulusTemplates: {
         list:
           "<div class='stimulus-card stimulus-list'>" +
@@ -748,16 +618,74 @@ var SURVEY_CONFIG = {
       minTimePerTrial: 10
     },
 
-    // ── 14. DEMOGRAPHICS ──
+    // -- Transition between blocks --
+    {
+      id: "p2_transition",
+      type: "transition",
+      title: "Part 2 of the Evaluation",
+      body: "<p>You've now seen all 10 firms.</p>" +
+            "<p>Next, you will see the <strong>same firms again</strong>. " +
+            "This time, we will first ask you to think about the transactions " +
+            "the manager chose <strong>not</strong> to show you, before you rate fraud probability.</p>"
+    },
+
+    // -- BLOCK 2: SAME 10 trials, WITH hidden HU question FIRST --
+    {
+      id: "block2",
+      type: "trial_block",
+      block: 2,
+      randomize: false,       // Same order as block 1 (engine preserves block 1 order)
+      trialCount: 10,
+      askHiddenHU: true,
+      askHiddenHUFirst: true, // HU estimate comes before fraud probability
+      trialIdSuffix: "_b2",  // Trial IDs become t1_b2, t2_b2, etc.
+      trialIntroTemplate:
+        "<p>This firm has <strong>{N} transactions</strong> in total. " +
+        "The manager shows you <strong>{k}</strong>.</p>",
+      trialStimulusTemplates: {
+        list:
+          "<div class='stimulus-card stimulus-list'>" +
+            "<p class='stimulus-header'><strong>Disclosed transactions ({k} of {N}):</strong></p>" +
+            "<ul class='stimulus-list-items'>" +
+              "<li><span style='color:#2d6a4f;'>Normal:</span> <strong>{nNormal}</strong></li>" +
+              "<li><span style='color:#e67700;'>Unusual:</span> <strong>{nUnusual}</strong></li>" +
+              "<li><span style='color:#c92a2a;'>Highly Unusual:</span> <strong>{nHU}</strong></li>" +
+            "</ul>" +
+            "<p class='stimulus-hidden-note'>{hidden} transactions were not disclosed.</p>" +
+          "</div>",
+
+        chart_disclosed:
+          "<div class='stimulus-card stimulus-chart'>" +
+            "<p class='stimulus-header'><strong>Disclosed transactions ({k} of {N}):</strong></p>" +
+            "<div class='stimulus-chart-container' " +
+              "data-n-normal='{nNormal}' data-n-unusual='{nUnusual}' data-n-hu='{nHU}' " +
+              "data-chart-type='disclosed'>" +
+            "</div>" +
+            "<p class='stimulus-hidden-note'>{hidden} transactions were not disclosed.</p>" +
+          "</div>",
+
+        chart_full:
+          "<div class='stimulus-card stimulus-chart'>" +
+            "<p class='stimulus-header'><strong>All transactions ({N} total):</strong></p>" +
+            "<div class='stimulus-chart-container' " +
+              "data-n-normal='{nNormal}' data-n-unusual='{nUnusual}' data-n-hu='{nHU}' " +
+              "data-hidden='{hidden}' data-chart-type='full'>" +
+            "</div>" +
+          "</div>"
+      },
+      minTimePerTrial: 10
+    },
+
+    // -- Demographics (3 questions only) --
     {
       id: "demographics",
       type: "questionnaire",
       title: "About You",
-      minTimeSeconds: 20,
+      minTimeSeconds: 10,
       questions: [
         {
           id: "age",
-          prompt: "What is your age?",
+          prompt: "Age",
           type: "dropdown",
           required: true,
           options: [
@@ -771,7 +699,7 @@ var SURVEY_CONFIG = {
         },
         {
           id: "gender",
-          prompt: "What is your gender?",
+          prompt: "Gender",
           type: "dropdown",
           required: true,
           options: [
@@ -783,78 +711,31 @@ var SURVEY_CONFIG = {
           ]
         },
         {
-          id: "education",
-          prompt: "What is your highest level of education?",
-          type: "dropdown",
-          required: true,
-          options: [
-            { value: "high_school",  label: "High school or equivalent" },
-            { value: "some_college", label: "Some college" },
-            { value: "bachelors",    label: "Bachelor's degree" },
-            { value: "masters",      label: "Master's degree" },
-            { value: "doctorate",    label: "Doctorate or professional degree" },
-            { value: "other",        label: "Other" }
-          ]
-        },
-        {
           id: "stats_comfort",
           prompt: "How comfortable are you with probability and statistics?",
           type: "likert",
           required: true,
           min: 1,
           max: 5,
-          minLabel: "Not at all comfortable",
+          minLabel: "Not at all",
           maxLabel: "Very comfortable"
-        },
-        {
-          id: "fin_literacy_compound",
-          prompt: "Suppose you had $100 in a savings account and the interest rate was 2% per year. After 5 years, how much would you have?",
-          type: "radio",
-          required: true,
-          options: [
-            { value: "more_than_102", label: "More than $102" },
-            { value: "exactly_102",   label: "Exactly $102" },
-            { value: "less_than_102", label: "Less than $102" },
-            { value: "dont_know",     label: "I don't know" }
-          ]
-        },
-        {
-          id: "fin_literacy_inflation",
-          prompt: "Imagine that the interest rate on your savings account was 1% per year and inflation was 2% per year. After 1 year, how much would you be able to buy with the money in this account?",
-          type: "radio",
-          required: true,
-          options: [
-            { value: "more",      label: "More than today" },
-            { value: "same",      label: "Exactly the same" },
-            { value: "less",      label: "Less than today" },
-            { value: "dont_know", label: "I don't know" }
-          ]
         }
       ]
     },
 
-    // ── 15. DEBRIEF ──
+    // -- Debrief --
     {
       id: "debrief",
       type: "debrief",
-      title: "Thank You!",
-      body: "<p>This study examines how people assess fraud risk when a strategic " +
-            "manager selectively discloses financial transactions. The manager always " +
-            "shows the most favorable transactions, meaning the undisclosed transactions " +
-            "are likely to contain more Highly Unusual items than what you saw.</p>" +
-
-            "<p>A key question is whether people sufficiently account for the " +
-            "<em>undisclosed</em> information when forming their judgments. " +
-            "When many transactions are hidden, does the sheer number of unseen " +
-            "transactions change how people reason about what might be concealed?</p>" +
-
-            "<p>We also varied how the disclosed information was presented (text list " +
-            "vs. pie chart) to understand whether visual format affects " +
-            "sensitivity to omitted information.</p>" +
-
-            "<p>Your responses will help us understand how presentation format " +
-            "and disclosure scale interact to shape fraud judgments under " +
-            "strategic selection. Thank you for contributing to this research!</p>",
+      title: "Thank You",
+      body: "<p>This study examines how people assess fraud risk when a manager " +
+            "strategically selects which transactions to disclose.</p>" +
+            "<p>We are interested in whether asking people to think about what was " +
+            "<em>not</em> shown changes their fraud judgments, and how the number " +
+            "of hidden transactions affects reasoning.</p>" +
+            "<p>We also varied how disclosed information was presented (text vs. pie chart) " +
+            "to understand whether format affects sensitivity to omitted information.</p>" +
+            "<p>Thank you for contributing to this research.</p>",
       showBonus: true,
       completionCode: "COMP2SN"
     }
@@ -864,256 +745,182 @@ var SURVEY_CONFIG = {
   // ====================================================================
   //  FULL SURVEY PAGES (legacy, used when ?part is not specified)
   // ====================================================================
-  // Complete single-session version combining Part 1 and Part 2.
 
   pages: [
 
-    // ── WELCOME ──
+    // -- Welcome --
     {
       id: "welcome",
       type: "welcome",
-      title: "Welcome to this Research Study",
-      subtitle: "Fraud Assessment Task",
-      body: "<p>In this study, you will evaluate firms for potential fraud based on " +
-            "disclosed financial transactions. It takes approximately " +
-            "<strong>20 minutes</strong> to complete.</p>" +
-            "<p>You will receive <strong>&pound;3.50 base payment</strong> plus an " +
-            "<strong>accuracy-based bonus of up to &pound;1.50</strong> depending on " +
-            "how close your assessments are to the correct answers.</p>" +
-            "<p>Your responses are anonymous and will be used for academic research only.</p>" +
-            "<p>Please complete this study on a <strong>desktop or laptop computer</strong> " +
-            "for the best experience.</p>",
+      title: "Welcome",
+      subtitle: "Fraud Assessment Study",
+      body: "<p>Help us study how people evaluate firms for fraud. " +
+            "This takes about <strong>20 minutes</strong>.</p>" +
+            "<p>Pay: <strong>&pound;3.50</strong> base + up to <strong>&pound;1.50</strong> accuracy bonus.</p>" +
+            "<p>Please use a <strong>desktop or laptop</strong> for the best experience.</p>",
       buttonText: "Begin"
     },
 
-    // ── CONSENT ──
+    // -- Consent --
     {
       id: "consent",
       type: "consent",
-      title: "Informed Consent",
+      title: "Consent",
       body: "<p>You are being invited to participate in a research study about " +
             "decision-making under uncertainty.</p>" +
-            "<p><strong>What you will do:</strong> You will learn about a fraud " +
-            "assessment task, pass a comprehension quiz, then evaluate 10 firms.</p>" +
-            "<p><strong>Time:</strong> Approximately 20 minutes.</p>" +
-            "<p><strong>Compensation:</strong> &pound;3.50 base payment plus an " +
-            "accuracy-based bonus of up to &pound;1.50.</p>" +
-            "<p><strong>Risks:</strong> No known risks beyond those of everyday life.</p>" +
-            "<p><strong>Confidentiality:</strong> Your responses are anonymous. " +
-            "We collect your Prolific ID only to process payment.</p>" +
-            "<p><strong>Voluntary:</strong> You may withdraw at any time by closing " +
-            "this window.</p>",
+            "<p><strong>What you will do:</strong> Learn a fraud assessment task, pass a quiz, " +
+            "then evaluate 10 firms twice.</p>" +
+            "<p><strong>Time:</strong> ~20 minutes.</p>" +
+            "<p><strong>Pay:</strong> &pound;3.50 base + up to &pound;1.50 accuracy bonus.</p>" +
+            "<p><strong>Risks:</strong> None beyond everyday life.</p>" +
+            "<p><strong>Confidentiality:</strong> Anonymous. Prolific ID collected only for payment.</p>" +
+            "<p><strong>Voluntary:</strong> Withdraw at any time by closing this window.</p>",
       mustAgree: true,
-      declineMessage: "You must agree to participate in order to continue with this study.",
-      minTimeSeconds: 20
-    },
-
-    // ── INSTRUCTION: The Setting ──
-    {
-      id: "inst_setting",
-      type: "instructions",
-      title: "The Setting",
-      body:
-        "<p>You are a <strong>fraud assessor</strong>. Your job is to evaluate " +
-        "whether firms are fraudulent based on their financial transactions.</p>" +
-
-        "<p>Each firm has a number of transactions. These transactions have already " +
-        "been classified by an automated system into three types:</p>" +
-
-        "<div class='info-box'>" +
-          "<div class='option-card'>" +
-            "<div class='option-card-header' style='color:#2d6a4f;'>Normal (N)</div>" +
-            "<div class='option-card-body'>Routine business activity. Nothing suspicious.</div>" +
-          "</div>" +
-          "<div class='option-card'>" +
-            "<div class='option-card-header' style='color:#e67700;'>Unusual (U)</div>" +
-            "<div class='option-card-body'>Somewhat atypical. Could occur at any firm.</div>" +
-          "</div>" +
-          "<div class='option-card'>" +
-            "<div class='option-card-header' style='color:#c92a2a;'>Highly Unusual (HU)</div>" +
-            "<div class='option-card-body'>Rare and potentially suspicious. Warrants attention.</div>" +
-          "</div>" +
-        "</div>" +
-
-        "<p>The total number of transactions varies across firms.</p>",
+      declineMessage: "You must agree to participate in order to continue.",
       minTimeSeconds: 15
     },
 
-    // ── INSTRUCTION: Transaction Types ──
+    // -- The Task --
     {
-      id: "inst_types",
+      id: "inst_task",
       type: "instructions",
-      title: "What the Transaction Types Tell You",
+      title: "The Task",
       body:
-        "<p>The proportion of each transaction type differs between " +
-        "fraudulent and non-fraudulent firms:</p>" +
+        "<p>You will evaluate firms for fraud. Each firm has transactions classified as " +
+        "<span style='color:#2d6a4f; font-weight:600;'>Normal</span>, " +
+        "<span style='color:#e67700; font-weight:600;'>Unusual</span>, or " +
+        "<span style='color:#c92a2a; font-weight:600;'>Highly Unusual</span>.</p>" +
+
+        "<p>The mix differs between firm types:</p>" +
 
         "<div style='display:flex; gap:32px; justify-content:center; flex-wrap:wrap; margin:20px 0;'>" +
-
           "<div style='text-align:center;'>" +
-            "<div style='font-weight:700; font-size:14px; margin-bottom:10px; color:#1e293b; text-transform:uppercase; letter-spacing:0.5px;'>Non-Fraudulent Firm</div>" +
+            "<div style='font-weight:600; font-size:15px; margin-bottom:10px; color:#1e293b;'>Non-Fraudulent Firm</div>" +
             "<div style='display:flex; align-items:center; gap:16px;'>" +
               "<div style='width:120px; height:120px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 216deg, #FF9800 216deg 324deg, #ef4444 324deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
-              "<div style='display:flex; flex-direction:column; gap:6px; text-align:left;'>" +
-                "<div style='display:flex; align-items:center; gap:8px; font-size:14px;'><span style='display:inline-block; width:14px; height:14px; background:#4CAF50; border-radius:3px;'></span><strong style='color:#2d6a4f;'>Normal 60%</strong></div>" +
-                "<div style='display:flex; align-items:center; gap:8px; font-size:14px;'><span style='display:inline-block; width:14px; height:14px; background:#FF9800; border-radius:3px;'></span><span style='color:#b45309;'>Unusual 30%</span></div>" +
-                "<div style='display:flex; align-items:center; gap:8px; font-size:14px;'><span style='display:inline-block; width:14px; height:14px; background:#ef4444; border-radius:3px;'></span><span style='color:#dc2626;'>HU 10%</span></div>" +
+              "<div style='display:flex; flex-direction:column; gap:6px; text-align:left; font-size:14px;'>" +
+                "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#4CAF50; border-radius:3px;'></span><strong>Normal 60%</strong></div>" +
+                "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#FF9800; border-radius:3px;'></span>Unusual 30%</div>" +
+                "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#ef4444; border-radius:3px;'></span>HU 10%</div>" +
               "</div>" +
             "</div>" +
           "</div>" +
-
           "<div style='text-align:center;'>" +
-            "<div style='font-weight:700; font-size:14px; margin-bottom:10px; color:#1e293b; text-transform:uppercase; letter-spacing:0.5px;'>Fraudulent Firm</div>" +
+            "<div style='font-weight:600; font-size:15px; margin-bottom:10px; color:#1e293b;'>Fraudulent Firm</div>" +
             "<div style='display:flex; align-items:center; gap:16px;'>" +
               "<div style='width:120px; height:120px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 144deg, #FF9800 144deg 252deg, #ef4444 252deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
-              "<div style='display:flex; flex-direction:column; gap:6px; text-align:left;'>" +
-                "<div style='display:flex; align-items:center; gap:8px; font-size:14px;'><span style='display:inline-block; width:14px; height:14px; background:#4CAF50; border-radius:3px;'></span><span style='color:#2d6a4f;'>Normal 40%</span></div>" +
-                "<div style='display:flex; align-items:center; gap:8px; font-size:14px;'><span style='display:inline-block; width:14px; height:14px; background:#FF9800; border-radius:3px;'></span><span style='color:#b45309;'>Unusual 30%</span></div>" +
-                "<div style='display:flex; align-items:center; gap:8px; font-size:14px;'><span style='display:inline-block; width:14px; height:14px; background:#ef4444; border-radius:3px;'></span><strong style='color:#dc2626;'>HU 30%</strong></div>" +
+              "<div style='display:flex; flex-direction:column; gap:6px; text-align:left; font-size:14px;'>" +
+                "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#4CAF50; border-radius:3px;'></span>Normal 40%</div>" +
+                "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#FF9800; border-radius:3px;'></span>Unusual 30%</div>" +
+                "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#ef4444; border-radius:3px;'></span><strong>HU 30%</strong></div>" +
               "</div>" +
             "</div>" +
           "</div>" +
-
-        "</div>" +
-
-        "<div class='info-box' style='background:#fff8e6; border-left:4px solid #e67700; padding:12px 16px;'>" +
-          "<p style='margin:0;'><strong>Key insight:</strong> Unusual transactions occur at the " +
-          "<strong>same rate</strong> (30%) in both types of firms, so they are " +
-          "<em>not informative</em> about fraud.</p>" +
-          "<p style='margin:8px 0 0 0;'>The real signal is in Normal vs. Highly Unusual: " +
-          "non-fraudulent firms have <strong>more Normal</strong> and " +
-          "<strong>fewer Highly Unusual</strong> transactions.</p>" +
-        "</div>" +
-
-        "<p>Before you see any transactions, each firm has a <strong>50% chance</strong> " +
-        "of being fraudulent.</p>",
-      minTimeSeconds: 20
+        "</div>",
+      minTimeSeconds: 12
     },
 
-    // ── INSTRUCTION: The Manager ──
+    // -- The Manager --
     {
       id: "inst_manager",
       type: "instructions",
       title: "The Manager",
       body:
-        "<p>Each firm has a <strong>manager</strong> who has access to " +
-        "<strong>all</strong> of the firm's transactions.</p>" +
-
-        "<p>The manager must select exactly <strong>some</strong> of these transactions " +
-        "to show you. The manager cannot fabricate or change any transaction -- " +
-        "they can only choose <em>which ones</em> to disclose.</p>" +
-
-        "<div class='info-box' style='background:#fff0f0; border-left:4px solid #c92a2a; padding:12px 16px;'>" +
-          "<p style='margin:0;'><strong>Important:</strong> The manager earns a larger bonus " +
-          "when you rate the firm's fraud probability <strong>lower</strong>.</p>" +
-          "<p style='margin:8px 0 0 0;'>The manager wants to convince you " +
-          "the firm is <em>not</em> fraudulent. The manager will therefore try to show you " +
-          "the most favorable transactions.</p>" +
-        "</div>" +
-
-        "<p>You will always be told:</p>" +
-        "<ul>" +
-          "<li>How many <strong>total</strong> transactions the firm has (N)</li>" +
-          "<li>How many the manager is <strong>required to show</strong> you (k)</li>" +
-          "<li>The <strong>composition</strong> of the disclosed transactions</li>" +
-        "</ul>" +
-
-        "<p>You will <strong>not</strong> be told the manager's exact selection strategy.</p>",
-      minTimeSeconds: 18
+        "<p>A manager sees <strong>all</strong> of a firm's transactions but shows you only some. " +
+        "The manager cannot fabricate transactions -- only choose which ones to reveal.</p>" +
+        "<p>The manager earns more when you rate fraud <strong>lower</strong> -- " +
+        "so the manager wants to show you the best-looking transactions.</p>",
+      minTimeSeconds: 10
     },
 
-    // ── INSTRUCTION: Your Task ──
+    // -- Your Job --
     {
-      id: "inst_task",
+      id: "inst_job",
       type: "instructions",
-      title: "Your Task",
+      title: "Your Job",
       body:
-        "<p>For each firm, you will see the disclosed transactions and then answer " +
-        "three questions:</p>" +
-
-        "<div class='info-box'>" +
-          "<div class='option-card'>" +
-            "<div class='option-card-header'>1. Fraud Probability</div>" +
-            "<div class='option-card-body'>Rate the probability that this firm " +
-            "is fraudulent (0-100%).</div>" +
-          "</div>" +
-          "<div class='option-card'>" +
-            "<div class='option-card-header'>2. Confidence</div>" +
-            "<div class='option-card-body'>How confident are you in your fraud " +
-            "assessment? (1-7 scale)</div>" +
-          "</div>" +
-          "<div class='option-card'>" +
-            "<div class='option-card-header'>3. Hidden Transactions</div>" +
-            "<div class='option-card-body'>Of the transactions NOT shown to you, what " +
-            "percentage do you think are Highly Unusual? (0-100%)</div>" +
-          "</div>" +
-        "</div>" +
-
-        "<p>Your <strong>accuracy bonus</strong> (up to &pound;1.50) depends on how close " +
-        "your fraud probability rating is to the correct answer for one randomly " +
-        "selected firm.</p>",
-      minTimeSeconds: 15
+        "<p>Rate how likely the firm is fraudulent (0-100%) and how confident you are in that rating.</p>",
+      minTimeSeconds: 8
     },
 
-    // ── INSTRUCTION: Example ──
+    // -- Key Point --
     {
-      id: "inst_example",
+      id: "inst_key",
       type: "instructions",
-      title: "A Worked Example",
+      title: "Key Point",
       body:
-        "<p>Let's walk through a concrete example.</p>" +
+        "<p>Unusual transactions occur at the <strong>same rate (30%)</strong> in both firm types -- " +
+        "they tell you nothing about fraud. The difference is in Normal vs. Highly Unusual.</p>" +
 
-        "<p><strong>Setup:</strong> A firm has <strong>10 transactions</strong> total. " +
-        "The manager must show you <strong>3</strong> of them.</p>" +
-
-        "<p><strong>You see:</strong> 2 Normal, 1 Unusual, 0 Highly Unusual.</p>" +
-
-        "<div class='info-box' style='background:#f0f4ff; border-left:4px solid #4361ee; padding:12px 16px;'>" +
-          "<p style='margin:0;'><strong>What should you think?</strong></p>" +
-          "<ul style='margin:8px 0 0 0;'>" +
-            "<li>The manager <em>chose</em> these 3 out of 10.</li>" +
-            "<li>The manager wants you to think fraud is low.</li>" +
-            "<li>There are still <strong>7 hidden</strong> transactions.</li>" +
-            "<li>A skeptical evaluator would ask: what might the other 7 look like?</li>" +
-          "</ul>" +
-        "</div>" +
-
-        "<p>The right answer depends on weighing the disclosed evidence against " +
-        "what might be hidden. There is no trick -- just careful reasoning.</p>",
-      minTimeSeconds: 18
+        "<div style='display:flex; gap:24px; justify-content:center; flex-wrap:wrap; margin:16px 0;'>" +
+          "<div style='text-align:center;'>" +
+            "<div style='font-weight:600; font-size:13px; margin-bottom:8px; color:#1e293b;'>Non-Fraudulent</div>" +
+            "<div style='display:flex; align-items:center; gap:12px;'>" +
+              "<div style='width:90px; height:90px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 216deg, #FF9800 216deg 324deg, #ef4444 324deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
+              "<div style='display:flex; flex-direction:column; gap:4px; text-align:left; font-size:13px;'>" +
+                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#4CAF50; border-radius:2px;'></span><strong>N 60%</strong></div>" +
+                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#FF9800; border-radius:2px;'></span>U 30%</div>" +
+                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#ef4444; border-radius:2px;'></span>HU 10%</div>" +
+              "</div>" +
+            "</div>" +
+          "</div>" +
+          "<div style='text-align:center;'>" +
+            "<div style='font-weight:600; font-size:13px; margin-bottom:8px; color:#1e293b;'>Fraudulent</div>" +
+            "<div style='display:flex; align-items:center; gap:12px;'>" +
+              "<div style='width:90px; height:90px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 144deg, #FF9800 144deg 252deg, #ef4444 252deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
+              "<div style='display:flex; flex-direction:column; gap:4px; text-align:left; font-size:13px;'>" +
+                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#4CAF50; border-radius:2px;'></span>N 40%</div>" +
+                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#FF9800; border-radius:2px;'></span>U 30%</div>" +
+                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#ef4444; border-radius:2px;'></span><strong>HU 30%</strong></div>" +
+              "</div>" +
+            "</div>" +
+          "</div>" +
+        "</div>",
+      minTimeSeconds: 10
     },
 
-    // ── COMPREHENSION QUIZ ──
+    // -- Before the Quiz --
+    {
+      id: "inst_pre_quiz",
+      type: "instructions",
+      title: "Before the Quiz",
+      body:
+        "<p>Each firm starts with a <strong>50% chance</strong> of being fraudulent. " +
+        "Let's check you understood the basics.</p>",
+      minTimeSeconds: 5
+    },
+
+    // -- Comprehension Quiz --
     {
       id: "comprehension",
       type: "comprehension",
-      title: "Quick Quiz",
-      description: "<p>Answer these questions to show you understand the task.</p>",
+      title: "Quiz",
+      description: "<p>Answer all questions correctly to continue.</p>",
       questions: [
         {
           prompt: "Who picks which transactions you see?",
           type: "radio",
           correct: "manager",
           options: [
-            { value: "manager",  label: "The manager selects which transactions to disclose" },
-            { value: "you",      label: "I choose which transactions to look at" },
-            { value: "random",   label: "A random process selects the transactions" },
-            { value: "nobody",   label: "Nobody -- I see all transactions" }
+            { value: "manager",  label: "The manager" },
+            { value: "you",      label: "You" },
+            { value: "random",   label: "A random process" },
+            { value: "nobody",   label: "Nobody" }
           ]
         },
         {
-          prompt: "Does the manager earn more when you rate fraud probability high or low?",
+          prompt: "Does the manager earn more when you rate fraud high or low?",
           type: "radio",
           correct: "low",
           options: [
-            { value: "low",        label: "Low -- the manager benefits when I rate fraud as less likely" },
-            { value: "high",       label: "High -- the manager benefits when I rate fraud as more likely" },
+            { value: "low",        label: "Low" },
+            { value: "high",       label: "High" },
             { value: "no_effect",  label: "It doesn't matter" },
-            { value: "depends",    label: "It depends on the firm" }
+            { value: "depends",    label: "Depends on the firm" }
           ]
         },
         {
-          prompt: "If a firm has 10 transactions and the manager shows you 3, how many are hidden?",
+          prompt: "If a firm has 10 transactions and the manager shows 3, how many are hidden?",
           type: "radio",
           correct: "7",
           options: [
@@ -1128,140 +935,87 @@ var SURVEY_CONFIG = {
           type: "radio",
           correct: "yes",
           options: [
-            { value: "yes",       label: "Yes -- 10% of non-fraudulent firms' transactions are Highly Unusual" },
-            { value: "no",        label: "No -- only fraudulent firms have HU transactions" },
-            { value: "only_fraud", label: "Only if the firm turns out to be fraudulent" },
-            { value: "not_enough", label: "Not enough information to say" }
+            { value: "yes",        label: "Yes" },
+            { value: "no",         label: "No" },
+            { value: "only_fraud", label: "Only if it's fraud" },
+            { value: "not_enough", label: "Not enough information" }
           ]
         }
       ],
-      minTimeSeconds: 20,
+      minTimeSeconds: 15,
       maxAttempts: 1,
-      failMessage: "Unfortunately, you did not answer all comprehension questions correctly. " +
-                   "We are unable to include your responses in the study. Thank you for your time."
+      failMessage: "You did not answer all questions correctly. Thank you for your time."
     },
 
-    // ── FORMAT EXPLANATION (condition-specific) ──
+    // -- Format intro (condition-specific) --
     {
       id: "inst_format",
       type: "instructions",
-      title: "What You Will See",
+      title: "How You Will See Transactions",
       body:
         "<p>For each firm, you will see the transactions the manager chose to disclose.</p>" +
 
         "<!--if:list-->" +
-        "<p>The disclosed transactions will be shown as a <strong>text summary</strong>.</p>" +
-        "<div class='info-box' style='padding:16px;'>" +
-          "<p style='margin:0 0 8px 0;'><strong>Example:</strong> 3 of 10 disclosed:</p>" +
-          "<div style='background:#f8f9fa; border-radius:8px; padding:12px 16px; font-size:0.95em;'>" +
-            "<ul style='margin:0; padding-left:20px;'>" +
-              "<li><span style='color:#2d6a4f;'>Normal:</span> <strong>2</strong></li>" +
-              "<li><span style='color:#e67700;'>Unusual:</span> <strong>1</strong></li>" +
-              "<li><span style='color:#c92a2a;'>Highly Unusual:</span> <strong>0</strong></li>" +
-            "</ul>" +
-            "<p style='margin:8px 0 0 0; color:#666; font-style:italic;'>7 transactions were not disclosed.</p>" +
-          "</div>" +
+        "<p>Transactions are shown as a <strong>text summary</strong> listing counts by type.</p>" +
+        "<div style='background:#f8f9fa; border-radius:8px; padding:12px 16px; margin:12px 0; font-size:0.95em;'>" +
+          "<p style='margin:0 0 4px 0;'><strong>Example</strong> -- 3 of 10 disclosed:</p>" +
+          "<ul style='margin:0; padding-left:20px;'>" +
+            "<li><span style='color:#2d6a4f;'>Normal:</span> <strong>2</strong></li>" +
+            "<li><span style='color:#e67700;'>Unusual:</span> <strong>1</strong></li>" +
+            "<li><span style='color:#c92a2a;'>Highly Unusual:</span> <strong>0</strong></li>" +
+          "</ul>" +
+          "<p style='margin:8px 0 0 0; color:#666; font-style:italic;'>7 transactions were not disclosed.</p>" +
         "</div>" +
         "<!--endif:list-->" +
 
         "<!--if:chart_disclosed-->" +
-        "<p>The disclosed transactions will be shown as a <strong>pie chart</strong>.</p>" +
-        "<div class='info-box' style='padding:16px;'>" +
-          "<p style='margin:0 0 8px 0;'><strong>Example:</strong> 3 of 10 disclosed:</p>" +
-          "<div style='background:#f8f9fa; border-radius:8px; padding:12px 16px;'>" +
-            "<div style='display:flex; align-items:flex-end; height:80px; gap:8px;'>" +
-              "<div style='flex:0 0 60px; text-align:center;'>" +
-                "<div style='background:#2d6a4f; height:60px; border-radius:4px 4px 0 0;'></div>" +
-                "<div style='font-size:0.75em; margin-top:4px;'>Normal (2)</div>" +
-              "</div>" +
-              "<div style='flex:0 0 60px; text-align:center;'>" +
-                "<div style='background:#e67700; height:30px; border-radius:4px 4px 0 0;'></div>" +
-                "<div style='font-size:0.75em; margin-top:4px;'>Unusual (1)</div>" +
-              "</div>" +
-              "<div style='flex:0 0 60px; text-align:center;'>" +
-                "<div style='background:#c92a2a; height:0px; border-radius:4px 4px 0 0;'></div>" +
-                "<div style='font-size:0.75em; margin-top:4px;'>HU (0)</div>" +
-              "</div>" +
-            "</div>" +
-            "<p style='margin:8px 0 0 0; color:#666; font-style:italic;'>7 transactions were not disclosed.</p>" +
+        "<p>Transactions are shown as a <strong>pie chart</strong> of the disclosed composition. " +
+        "A note tells you how many were not disclosed.</p>" +
+        "<div style='background:#f8f9fa; border-radius:8px; padding:16px; margin:12px 0; display:flex; align-items:center; gap:20px; flex-wrap:wrap; justify-content:center;'>" +
+          "<div style='text-align:center;'>" +
+            "<div style='font-size:13px; color:#64748b; margin-bottom:6px;'>Example: 3 of 10 disclosed</div>" +
+            "<div style='width:120px; height:120px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 240deg, #FF9800 240deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1); margin:0 auto;'></div>" +
+          "</div>" +
+          "<div style='display:flex; flex-direction:column; gap:6px; font-size:14px;'>" +
+            "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#4CAF50; border-radius:3px;'></span><strong>Normal:</strong> 2 (67%)</div>" +
+            "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#FF9800; border-radius:3px;'></span><strong>Unusual:</strong> 1 (33%)</div>" +
+            "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#ef4444; border-radius:3px;'></span><strong>HU:</strong> 0 (0%)</div>" +
+            "<div style='color:#666; font-style:italic; margin-top:4px;'>7 transactions not disclosed.</div>" +
           "</div>" +
         "</div>" +
         "<!--endif:chart_disclosed-->" +
 
         "<!--if:chart_full-->" +
-        "<p>The transactions will be shown as a <strong>pie chart</strong> with a " +
-        "<strong>gray bar</strong> for undisclosed transactions.</p>" +
-        "<div class='info-box' style='padding:16px;'>" +
-          "<p style='margin:0 0 8px 0;'><strong>Example:</strong> 3 of 10 total:</p>" +
-          "<div style='background:#f8f9fa; border-radius:8px; padding:12px 16px;'>" +
-            "<div style='display:flex; align-items:flex-end; height:100px; gap:8px;'>" +
-              "<div style='flex:0 0 60px; text-align:center;'>" +
-                "<div style='background:#2d6a4f; height:28px; border-radius:4px 4px 0 0;'></div>" +
-                "<div style='font-size:0.75em; margin-top:4px;'>Normal (2)</div>" +
-              "</div>" +
-              "<div style='flex:0 0 60px; text-align:center;'>" +
-                "<div style='background:#e67700; height:14px; border-radius:4px 4px 0 0;'></div>" +
-                "<div style='font-size:0.75em; margin-top:4px;'>Unusual (1)</div>" +
-              "</div>" +
-              "<div style='flex:0 0 60px; text-align:center;'>" +
-                "<div style='background:#c92a2a; height:0px; border-radius:4px 4px 0 0;'></div>" +
-                "<div style='font-size:0.75em; margin-top:4px;'>HU (0)</div>" +
-              "</div>" +
-              "<div style='flex:0 0 60px; text-align:center;'>" +
-                "<div style='background:#bbb; height:96px; border-radius:4px 4px 0 0;'></div>" +
-                "<div style='font-size:0.75em; margin-top:4px;'>Not Disclosed (7)</div>" +
-              "</div>" +
-            "</div>" +
+        "<p>Transactions are shown as a <strong>pie chart</strong> with a " +
+        "<strong style='color:#9CA3AF;'>gray segment</strong> for undisclosed transactions.</p>" +
+        "<div style='background:#f8f9fa; border-radius:8px; padding:16px; margin:12px 0; display:flex; align-items:center; gap:20px; flex-wrap:wrap; justify-content:center;'>" +
+          "<div style='text-align:center;'>" +
+            "<div style='font-size:13px; color:#64748b; margin-bottom:6px;'>Example: 3 of 10 total</div>" +
+            "<div style='width:120px; height:120px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 72deg, #FF9800 72deg 108deg, #9CA3AF 108deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1); margin:0 auto;'></div>" +
+          "</div>" +
+          "<div style='display:flex; flex-direction:column; gap:6px; font-size:14px;'>" +
+            "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#4CAF50; border-radius:3px;'></span><strong>Normal:</strong> 2 (20%)</div>" +
+            "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#FF9800; border-radius:3px;'></span><strong>Unusual:</strong> 1 (10%)</div>" +
+            "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#ef4444; border-radius:3px;'></span><strong>HU:</strong> 0 (0%)</div>" +
+            "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#9CA3AF; border-radius:3px;'></span><strong>Undisclosed:</strong> 7 (70%)</div>" +
           "</div>" +
         "</div>" +
-        "<!--endif:chart_full-->" +
-
-        "<p>Think carefully about what the undisclosed transactions might look like.</p>",
-      minTimeSeconds: 12
+        "<!--endif:chart_full-->",
+      minTimeSeconds: 10
     },
 
-    // ── READY ──
+    // -- Block 1: 10 trials, NO hidden HU question --
     {
-      id: "inst_ready",
-      type: "instructions",
-      title: "Ready to Start!",
-      body:
-        "<p>You will evaluate <strong>10 firms</strong>.</p>" +
-        "<p>Remember:</p>" +
-        "<ul>" +
-          "<li>The manager wants you to rate fraud <strong>low</strong></li>" +
-          "<li>You want to rate fraud <strong>accurately</strong></li>" +
-          "<li>Think about what the manager chose to show -- and what they might be hiding</li>" +
-        "</ul>" +
-
-        "<div class='info-box' style='background:#fff8e6; border-left:4px solid #e67700; padding:12px 16px;'>" +
-          "<table style='width:100%; border-collapse:collapse; font-size:0.9em;'>" +
-            "<tr>" +
-              "<td></td>" +
-              "<td style='text-align:center;'><strong>Non-Fraud</strong></td>" +
-              "<td style='text-align:center;'><strong>Fraud</strong></td>" +
-            "</tr>" +
-            "<tr><td style='color:#2d6a4f;'>Normal</td><td style='text-align:center;'>60%</td><td style='text-align:center;'>40%</td></tr>" +
-            "<tr><td style='color:#e67700;'>Unusual</td><td style='text-align:center;'>30%</td><td style='text-align:center;'>30%</td></tr>" +
-            "<tr><td style='color:#c92a2a;'>Highly Unusual</td><td style='text-align:center;'>10%</td><td style='text-align:center;'>30%</td></tr>" +
-          "</table>" +
-          "<p style='margin:8px 0 0 0;'>Prior: 50% chance of fraud. Unusual is uninformative (30% both).</p>" +
-        "</div>" +
-
-        "<p>Good luck!</p>",
-      minTimeSeconds: 8
-    },
-
-    // ── TRIAL BLOCK (10 trials, randomized) ──
-    {
-      id: "trials_main",
+      id: "trials_block1",
       type: "trial_block",
       block: 1,
       randomize: true,
       trialCount: 10,
+      askHiddenHU: false,
+      askHiddenHUFirst: false,
       trialIntroTemplate:
-        "<p>This firm has <strong>{N} transactions</strong> in total.</p>" +
-        "<p>The manager has selected <strong>{k} transactions</strong> to show you.</p>",
+        "<p>This firm has <strong>{N} transactions</strong> in total. " +
+        "The manager shows you <strong>{k}</strong>.</p>",
       trialStimulusTemplates: {
         list:
           "<div class='stimulus-card stimulus-list'>" +
@@ -1296,80 +1050,74 @@ var SURVEY_CONFIG = {
       minTimePerTrial: 10
     },
 
-    // ── ATTENTION CHECK ──
+    // -- Transition --
     {
-      id: "attention1",
-      type: "attention_check",
-      question: "People sometimes answer surveys without reading the questions carefully. " +
-                "To show that you are paying attention, please select " +
-                "\"Strongly Disagree\" below.",
-      options: [
-        { value: "strongly_disagree", label: "Strongly Disagree" },
-        { value: "disagree",          label: "Disagree" },
-        { value: "neutral",           label: "Neutral" },
-        { value: "agree",             label: "Agree" },
-        { value: "strongly_agree",    label: "Strongly Agree" }
-      ],
-      correctAnswer: "strongly_disagree",
-      minTimeSeconds: 8
+      id: "transition",
+      type: "transition",
+      title: "Part 2 of the Evaluation",
+      body: "<p>You've now seen all 10 firms.</p>" +
+            "<p>Next, you will see the <strong>same firms again</strong>. " +
+            "This time, we will first ask you to think about the transactions " +
+            "the manager chose <strong>not</strong> to show you, before you rate fraud probability.</p>"
     },
 
-    // ── POST-TASK QUESTIONNAIRE ──
+    // -- Block 2: SAME 10 trials, WITH hidden HU question FIRST --
     {
-      id: "posttask",
-      type: "questionnaire",
-      title: "Your Experience",
-      minTimeSeconds: 15,
-      questions: [
-        {
-          id: "strategy_awareness",
-          prompt: "When making your fraud assessments, how much did you think about what the manager might be hiding?",
-          type: "radio",
-          required: true,
-          options: [
-            { value: "a_lot",      label: "A lot -- I was very focused on what was NOT shown" },
-            { value: "somewhat",   label: "Somewhat -- I considered hidden transactions for some firms" },
-            { value: "a_little",   label: "A little -- I mostly focused on what was disclosed" },
-            { value: "not_at_all", label: "Not at all -- I based my ratings on the disclosed transactions" }
-          ]
-        },
-        {
-          id: "hidden_belief",
-          prompt: "In general, what did you think the hidden transactions looked like compared to the disclosed ones?",
-          type: "radio",
-          required: true,
-          options: [
-            { value: "worse",       label: "Worse -- more Highly Unusual than what was disclosed" },
-            { value: "similar",     label: "Similar -- roughly the same mix as disclosed" },
-            { value: "better",      label: "Better -- more Normal than what was disclosed" },
-            { value: "didnt_think", label: "I didn't really think about it" }
-          ]
-        },
-        {
-          id: "scale_impact",
-          prompt: "Did the number of hidden transactions (how many were NOT shown) affect your fraud assessment?",
-          type: "radio",
-          required: true,
-          options: [
-            { value: "yes_a_lot",   label: "Yes, a lot -- more hidden transactions made me rate fraud higher" },
-            { value: "yes_somewhat", label: "Yes, somewhat -- it influenced my thinking" },
-            { value: "not_really",  label: "Not really -- I focused mainly on the disclosed composition" },
-            { value: "no",          label: "No -- the number of hidden transactions didn't matter to me" }
-          ]
-        }
-      ]
+      id: "trials_block2",
+      type: "trial_block",
+      block: 2,
+      randomize: false,
+      trialCount: 10,
+      askHiddenHU: true,
+      askHiddenHUFirst: true,
+      trialIdSuffix: "_b2",
+      trialIntroTemplate:
+        "<p>This firm has <strong>{N} transactions</strong> in total. " +
+        "The manager shows you <strong>{k}</strong>.</p>",
+      trialStimulusTemplates: {
+        list:
+          "<div class='stimulus-card stimulus-list'>" +
+            "<p class='stimulus-header'><strong>Disclosed transactions ({k} of {N}):</strong></p>" +
+            "<ul class='stimulus-list-items'>" +
+              "<li><span style='color:#2d6a4f;'>Normal:</span> <strong>{nNormal}</strong></li>" +
+              "<li><span style='color:#e67700;'>Unusual:</span> <strong>{nUnusual}</strong></li>" +
+              "<li><span style='color:#c92a2a;'>Highly Unusual:</span> <strong>{nHU}</strong></li>" +
+            "</ul>" +
+            "<p class='stimulus-hidden-note'>{hidden} transactions were not disclosed.</p>" +
+          "</div>",
+
+        chart_disclosed:
+          "<div class='stimulus-card stimulus-chart'>" +
+            "<p class='stimulus-header'><strong>Disclosed transactions ({k} of {N}):</strong></p>" +
+            "<div class='stimulus-chart-container' " +
+              "data-n-normal='{nNormal}' data-n-unusual='{nUnusual}' data-n-hu='{nHU}' " +
+              "data-chart-type='disclosed'>" +
+            "</div>" +
+            "<p class='stimulus-hidden-note'>{hidden} transactions were not disclosed.</p>" +
+          "</div>",
+
+        chart_full:
+          "<div class='stimulus-card stimulus-chart'>" +
+            "<p class='stimulus-header'><strong>All transactions ({N} total):</strong></p>" +
+            "<div class='stimulus-chart-container' " +
+              "data-n-normal='{nNormal}' data-n-unusual='{nUnusual}' data-n-hu='{nHU}' " +
+              "data-hidden='{hidden}' data-chart-type='full'>" +
+            "</div>" +
+          "</div>"
+      },
+      minTimePerTrial: 10
     },
 
-    // ── DEMOGRAPHICS ──
+    // -- Demographics --
     {
       id: "demographics",
       type: "questionnaire",
       title: "About You",
-      minTimeSeconds: 15,
+      minTimeSeconds: 10,
       questions: [
         {
           id: "age",
-          prompt: "What is your age?",
+          prompt: "Age",
           type: "dropdown",
           required: true,
           options: [
@@ -1383,7 +1131,7 @@ var SURVEY_CONFIG = {
         },
         {
           id: "gender",
-          prompt: "What is your gender?",
+          prompt: "Gender",
           type: "dropdown",
           required: true,
           options: [
@@ -1395,79 +1143,31 @@ var SURVEY_CONFIG = {
           ]
         },
         {
-          id: "education",
-          prompt: "What is your highest level of education?",
-          type: "dropdown",
-          required: true,
-          options: [
-            { value: "high_school",  label: "High school or equivalent" },
-            { value: "some_college", label: "Some college" },
-            { value: "bachelors",    label: "Bachelor's degree" },
-            { value: "masters",      label: "Master's degree" },
-            { value: "doctorate",    label: "Doctorate or professional degree" },
-            { value: "other",        label: "Other" }
-          ]
-        },
-        {
           id: "stats_comfort",
           prompt: "How comfortable are you with probability and statistics?",
           type: "likert",
           required: true,
           min: 1,
           max: 5,
-          minLabel: "Not at all comfortable",
+          minLabel: "Not at all",
           maxLabel: "Very comfortable"
-        },
-        {
-          id: "fin_literacy_compound",
-          prompt: "Suppose you had $100 in a savings account and the interest rate was 2% per year. After 5 years, how much would you have?",
-          type: "radio",
-          required: true,
-          options: [
-            { value: "more_than_102", label: "More than $102" },
-            { value: "exactly_102",   label: "Exactly $102" },
-            { value: "less_than_102", label: "Less than $102" },
-            { value: "dont_know",     label: "I don't know" }
-          ]
-        },
-        {
-          id: "fin_literacy_inflation",
-          prompt: "Imagine that the interest rate on your savings account was 1% per year and inflation was 2% per year. After 1 year, how much would you be able to buy with the money in this account?",
-          type: "radio",
-          required: true,
-          options: [
-            { value: "more",      label: "More than today" },
-            { value: "same",      label: "Exactly the same" },
-            { value: "less",      label: "Less than today" },
-            { value: "dont_know", label: "I don't know" }
-          ]
         }
       ]
     },
 
-    // ── DEBRIEF ──
+    // -- Debrief --
     {
       id: "debrief",
       type: "debrief",
-      title: "Thank You!",
-      body: "<p>This study examines how people assess fraud risk when a strategic " +
-            "manager selectively discloses financial transactions. The manager always " +
-            "shows the most favorable transactions, meaning the undisclosed transactions " +
-            "are likely to contain more Highly Unusual items than what you saw.</p>" +
-
-            "<p>A key question is whether people sufficiently account for the " +
-            "<em>undisclosed</em> information when forming their judgments, " +
-            "and whether the scale of undisclosed information (7 hidden vs. 700 hidden) " +
-            "changes their reasoning.</p>" +
-
-            "<p>We also varied how the disclosed information was presented -- as a text " +
-            "list, a pie chart of disclosed transactions, or a pie chart that also shows " +
-            "a gray bar for the undisclosed count -- to understand whether visual format " +
-            "affects sensitivity to omitted information.</p>" +
-
-            "<p>Your responses will help us understand how presentation format " +
-            "and disclosure scale interact to shape fraud judgments under " +
-            "strategic selection. Thank you for contributing to this research!</p>",
+      title: "Thank You",
+      body: "<p>This study examines how people assess fraud risk when a manager " +
+            "strategically selects which transactions to disclose.</p>" +
+            "<p>We are interested in whether asking people to think about what was " +
+            "<em>not</em> shown changes their fraud judgments, and how the number " +
+            "of hidden transactions affects reasoning.</p>" +
+            "<p>We also varied how disclosed information was presented (text vs. pie chart) " +
+            "to understand whether format affects sensitivity to omitted information.</p>" +
+            "<p>Thank you for contributing to this research.</p>",
       showBonus: true,
       completionCode: "COMP2SN"
     }
