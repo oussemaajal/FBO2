@@ -1,0 +1,191 @@
+================================================================================
+  FBO 2 -- TRIAL PREDICTIONS BY INVESTOR TYPE
+  Design: N={10,20,50}, D=4 (fixed), d_N={0, 3, 4}
+  Prior P(fraud) = 20%
+  P(Normal|non-fraud) = 50%,  P(Normal|fraud) = 40%
+  P(Flagged|non-fraud) = 50%, P(Flagged|fraud) = 60%
+  P_unc(Normal) = 0.80*0.50 + 0.20*0.40 = 0.48
+================================================================================
+
+
+1. ALL 9 TRIALS: Predicted P(fraud) for Each Investor Type
+================================================================================
+
+  N   D   hid  d_N  nFlg |  Bayesian       SN        MR     |   B-SN      SN-MR
+  ------------------------------------------------------------------------------------
+  10   4    6    0    4   |    60.8%      34.1%     32.5%     | +26.6 pp   +1.6 pp
+  10   4    6    3    1   |    31.4%      13.3%     12.5%     | +18.1 pp   +0.8 pp
+  10   4    6    4    0   |    15.7%       9.3%      8.7%     |  +6.4 pp   +0.6 pp
+
+  20   4   16    0    4   |    90.6%      34.1%     29.9%     | +56.4 pp   +4.3 pp
+  20   4   16    3    1   |    74.0%      13.3%     11.2%     | +60.6 pp   +2.1 pp
+  20   4   16    4    0   |    19.8%       9.3%      7.8%     | +10.5 pp   +1.5 pp
+
+  50   4   46    0    4   |   100.0%      34.1%     22.7%     | +65.8 pp  +11.4 pp
+  50   4   46    3    1   |    99.9%      13.3%      8.0%     | +86.5 pp   +5.3 pp
+  50   4   46    4    0   |    20.0%       9.3%      5.5%     | +10.7 pp   +3.8 pp
+
+  Columns:
+    N     = total signals in pool
+    D     = disclosed by manager (always 4)
+    hid   = hidden (N - D)
+    d_N   = Normal among disclosed
+    nFlg  = Flagged among disclosed (D - d_N)
+    B-SN  = Bayesian minus SN (positive = Bayesian thinks more fraud)
+    SN-MR = SN minus MR (positive = SN thinks more fraud than MR)
+
+
+2. N-SENSITIVITY: Fix d_N, vary N from 10 to 50
+================================================================================
+   SN is INVARIANT to N. It only uses the D=4 disclosed signals.
+   Bayesian accounts for undisclosed signals, so it moves with N.
+   MR imputes undisclosed at the unconditional mean, so it drifts slightly.
+
+   d_N=0 (0 Normal, 4 Flagged disclosed)
+   ----------------------------------------------------------------
+     N=10:  B=60.8%   SN=34.1%   MR=32.5%
+     N=20:  B=90.6%   SN=34.1%   MR=29.9%
+     N=50:  B=100.0%  SN=34.1%   MR=22.7%
+     Range: B=+39.2pp  SN=0.0pp   MR=9.8pp
+
+   d_N=3 (3 Normal, 1 Flagged disclosed)
+   ----------------------------------------------------------------
+     N=10:  B=31.4%   SN=13.3%   MR=12.5%
+     N=20:  B=74.0%   SN=13.3%   MR=11.2%
+     N=50:  B=99.9%   SN=13.3%   MR= 8.0%
+     Range: B=+68.4pp  SN=0.0pp   MR=4.5pp
+
+   d_N=4 (4 Normal, 0 Flagged disclosed)
+   ----------------------------------------------------------------
+     N=10:  B=15.7%   SN= 9.3%   MR= 8.7%
+     N=20:  B=19.8%   SN= 9.3%   MR= 7.8%
+     N=50:  B=20.0%   SN= 9.3%   MR= 5.5%
+     Range: B=+4.3pp   SN=0.0pp   MR=3.2pp
+
+
+3. d_N-SENSITIVITY: Fix N, vary d_N from 0 to 3 to 4
+================================================================================
+   This varies the quality of what the manager disclosed.
+   All three types respond strongly (more Normal = less fraud).
+
+   N=10 (hidden=6)
+   ----------------------------------------------------------------
+     d_N=0 (0N,4F):  B=60.8%  SN=34.1%  MR=32.5%
+     d_N=3 (3N,1F):  B=31.4%  SN=13.3%  MR=12.5%
+     d_N=4 (4N,0F):  B=15.7%  SN= 9.3%  MR= 8.7%
+
+   N=20 (hidden=16)
+   ----------------------------------------------------------------
+     d_N=0 (0N,4F):  B=90.6%  SN=34.1%  MR=29.9%
+     d_N=3 (3N,1F):  B=74.0%  SN=13.3%  MR=11.2%
+     d_N=4 (4N,0F):  B=19.8%  SN= 9.3%  MR= 7.8%
+
+   N=50 (hidden=46)
+   ----------------------------------------------------------------
+     d_N=0 (0N,4F):  B=100.0% SN=34.1%  MR=22.7%
+     d_N=3 (3N,1F):  B= 99.9% SN=13.3%  MR= 8.0%
+     d_N=4 (4N,0F):  B= 20.0% SN= 9.3%  MR= 5.5%
+
+
+4. SENSITIVITY DELTAS: How Each Type Reacts to Parameter Changes
+================================================================================
+
+A. REACTION TO INCREASING N (pool size)
+   Fix d_N. Increase N: 10->20 then 20->50.
+   KEY: SN has ZERO reaction. Bayesian reacts strongly. MR reacts weakly.
+
+   d_N=0 (0 Normal, 4 Flagged disclosed)
+     Change |  B level SN level MR level |    B delta   SN delta   MR delta
+   ---------------------------------------------------------------------------
+       N=10 |    60.8%    34.1%    32.5% |       --         --         --
+       N=20 |    90.6%    34.1%    29.9% |    +29.8 pp    +0.0 pp    -2.6 pp
+       N=50 |   100.0%    34.1%    22.7% |     +9.4 pp    +0.0 pp    -7.1 pp
+   ---------------------------------------------------------------------------
+      TOTAL |                            |    +39.2 pp    +0.0 pp    -9.8 pp
+
+   d_N=3 (3 Normal, 1 Flagged disclosed)
+     Change |  B level SN level MR level |    B delta   SN delta   MR delta
+   ---------------------------------------------------------------------------
+       N=10 |    31.4%    13.3%    12.5% |       --         --         --
+       N=20 |    74.0%    13.3%    11.2% |    +42.5 pp    +0.0 pp    -1.3 pp
+       N=50 |    99.9%    13.3%     8.0% |    +25.9 pp    +0.0 pp    -3.2 pp
+   ---------------------------------------------------------------------------
+      TOTAL |                            |    +68.4 pp    +0.0 pp    -4.5 pp
+
+   d_N=4 (4 Normal, 0 Flagged disclosed)
+     Change |  B level SN level MR level |    B delta   SN delta   MR delta
+   ---------------------------------------------------------------------------
+       N=10 |    15.7%     9.3%     8.7% |       --         --         --
+       N=20 |    19.8%     9.3%     7.8% |     +4.0 pp    +0.0 pp    -0.9 pp
+       N=50 |    20.0%     9.3%     5.5% |     +0.2 pp    +0.0 pp    -2.3 pp
+   ---------------------------------------------------------------------------
+      TOTAL |                            |     +4.3 pp    +0.0 pp    -3.2 pp
+
+
+B. REACTION TO INCREASING d_N (more Normal among disclosed)
+   Fix N. Increase d_N: 0 -> 3 -> 4.
+   All three types react (more Normal = less fraud).
+
+   N=10 (hidden=6)
+     Change |  B level SN level MR level |    B delta   SN delta   MR delta
+   ---------------------------------------------------------------------------
+     d_N=0  |    60.8%    34.1%    32.5% |       --         --         --
+     d_N=3  |    31.4%    13.3%    12.5% |    -29.3 pp   -20.8 pp   -20.0 pp
+     d_N=4  |    15.7%     9.3%     8.7% |    -15.7 pp    -4.0 pp    -3.8 pp
+   ---------------------------------------------------------------------------
+      TOTAL |                            |    -45.1 pp   -24.8 pp   -23.8 pp
+
+   N=20 (hidden=16)
+     Change |  B level SN level MR level |    B delta   SN delta   MR delta
+   ---------------------------------------------------------------------------
+     d_N=0  |    90.6%    34.1%    29.9% |       --         --         --
+     d_N=3  |    74.0%    13.3%    11.2% |    -16.6 pp   -20.8 pp   -18.7 pp
+     d_N=4  |    19.8%     9.3%     7.8% |    -54.2 pp    -4.0 pp    -3.5 pp
+   ---------------------------------------------------------------------------
+      TOTAL |                            |    -70.8 pp   -24.8 pp   -22.1 pp
+
+   N=50 (hidden=46)
+     Change |  B level SN level MR level |    B delta   SN delta   MR delta
+   ---------------------------------------------------------------------------
+     d_N=0  |   100.0%    34.1%    22.7% |       --         --         --
+     d_N=3  |    99.9%    13.3%     8.0% |     -0.1 pp   -20.8 pp   -14.7 pp
+     d_N=4  |    20.0%     9.3%     5.5% |    -79.9 pp    -4.0 pp    -2.5 pp
+   ---------------------------------------------------------------------------
+      TOTAL |                            |    -80.0 pp   -24.8 pp   -17.2 pp
+
+
+5. SUMMARY: Key Diagnostic Comparisons
+================================================================================
+
+  TYPE SEPARATION    | BEST TEST                           | GAP     | PATTERN
+  -------------------------------------------------------------------------------------
+  B vs SN (primary)  | d_N=3, N: 10->50                    | 68 pp   | B: 31%->100%, SN: flat 13%
+  B vs SN (second)   | d_N=0, N: 10->50                    | 39 pp   | B: 61%->100%, SN: flat 34%
+  SN vs MR (primary) | d_N=0, N: 10->50                    | 10 pp   | SN: 34%(flat), MR: 33%->23%
+  SN vs MR (second)  | d_N=3, N: 10->50                    |  5 pp   | SN: 13%(flat), MR: 13%->8%
+
+  B vs SN is trivially easy (27-87 pp gaps at N=50).
+  SN vs MR is the binding constraint (max ~10 pp gap at d_N=0, N=50).
+  The N-test at d_N=0 is the single most powerful comparison.
+
+
+6. SIGNATURE REACTIONS (what distinguishes the three types)
+================================================================================
+
+  Increase N (10->50) holding d_N fixed:
+    Bayesian: LARGE positive reaction when d_N < D (+39 to +68 pp)
+              SMALL positive reaction when d_N = D (+4 pp)
+    SN:       ZERO reaction (exactly 0.0 pp, always)
+    MR:       SMALL negative reaction (-3 to -10 pp, drift toward prior)
+
+  Increase d_N (0->4) holding N fixed:
+    All three: LARGE negative reaction (more Normal = less fraud)
+    At N=10: B drops 45 pp, SN drops 25 pp, MR drops 24 pp
+    At N=50: B drops 80 pp, SN drops 25 pp, MR drops 17 pp
+
+  THE KEY DIAGNOSTIC:
+    N-sensitivity is what separates the types.
+    - A participant who REACTS to N is Bayesian.
+    - A participant who IGNORES N is SN or MR.
+    - Among N-ignorers, one who DRIFTS DOWN with N is MR;
+      one who is perfectly flat is SN.

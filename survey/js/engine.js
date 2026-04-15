@@ -1,6 +1,8 @@
 /* ==========================================================================
-   FBO 2 (Selection Neglect) Survey Engine
-   Adapted from FBO engine.js -- Config-driven, generic survey framework
+   FBO 2 (Selection Neglect) Survey Engine v3.2
+   Config-driven, generic survey framework.
+   Design: Within-subject, 9 trials (3N x 1D x 3d_N), 2 transaction types, D=4 fixed.
+   Firm sizes: Small (10), Medium (20), Large (50).
    ========================================================================== */
 
 (function () {
@@ -44,18 +46,6 @@
     return div.innerHTML;
   }
 
-  // ── Scale & Format Condition Definitions ───────────────────────────────
-  // 5 scale conditions x 3 format conditions = 15 cells
-  var SCALE_CONDITIONS = [
-    { name: 'small_low',   k: 3,   N: 10 },    // scaleIndex 0
-    { name: 'small_high',  k: 3,   N: 100 },   // scaleIndex 1
-    { name: 'small_vhigh', k: 3,   N: 1000 },  // scaleIndex 2
-    { name: 'large_high',  k: 30,  N: 100 },    // scaleIndex 3
-    { name: 'large_vhigh', k: 300, N: 1000 }    // scaleIndex 4
-  ];
-
-  var FORMAT_CONDITIONS = ['list', 'chart_disclosed', 'chart_full'];
-
   // ── SurveyEngine ───────────────────────────────────────────────────────
   function SurveyEngine(config) {
     this.config = config;
@@ -63,19 +53,10 @@
     this.currentPageIndex = 0;
     this.responses = {};
     this.timing = {};
-    this.trialResponses = {};    // trialId -> {fraudProb, confidence, huEstimate, ...}
+    this.trialResponses = {};
     this.prolificPID = '';
     this.studyID = '';
     this.sessionID = '';
-
-    // Condition assignment (set in init)
-    this.cellIndex = 0;
-    this.scaleIndex = 0;
-    this.formatIndex = 0;
-    this.scaleCondition = '';
-    this.formatCondition = '';
-    this.k = 0;
-    this.N = 0;
 
     this.comprehensionAttempts = 0;
     this.comprehensionFailed = false;
@@ -101,11 +82,9 @@
 
   // ── Init ───────────────────────────────────────────────────────────────
   SurveyEngine.prototype.init = function () {
-    // Parse URL params (Prolific)
     var params = new URLSearchParams(window.location.search);
     var rawPID = params.get('PROLIFIC_PID') || params.get('prolific_pid') || '';
     this.devMode = params.get('dev') === 'true';
-    // Validate Prolific PID: 24 hex chars (skip in dev mode)
     if (rawPID && (/^[0-9a-f]{24}$/i.test(rawPID) || this.devMode)) {
       this.prolificPID = rawPID;
     } else {
@@ -113,7 +92,7 @@
     }
     this.studyID = params.get('STUDY_ID') || params.get('study_id') || '';
     this.sessionID = params.get('SESSION_ID') || params.get('session_id') || '';
-    this.part = parseInt(params.get('part')) || 0;  // 1 = instructions, 2 = trials, 0 = full
+    this.part = parseInt(params.get('part')) || 0;
 
     // Select pages based on part
     if (this.part === 1 && this.config.part1Pages) {
@@ -122,8 +101,7 @@
       this.config.pages = this.config.part2Pages;
     }
 
-    // Assign condition (15 cells)
-    this.assignCondition(this.prolificPID);
+    console.log('[FBO2] Init: part=' + this.part + ' PID=' + this.prolificPID);
 
     // Build page sequence
     this.buildPageSequence();
@@ -136,13 +114,6 @@
           this.responses = saved.responses || {};
           this.timing = saved.timing || {};
           this.trialResponses = saved.trialResponses || {};
-          this.cellIndex = saved.cellIndex !== undefined ? saved.cellIndex : this.cellIndex;
-          this.scaleIndex = saved.scaleIndex !== undefined ? saved.scaleIndex : this.scaleIndex;
-          this.formatIndex = saved.formatIndex !== undefined ? saved.formatIndex : this.formatIndex;
-          this.scaleCondition = saved.scaleCondition || this.scaleCondition;
-          this.formatCondition = saved.formatCondition || this.formatCondition;
-          this.k = saved.k || this.k;
-          this.N = saved.N || this.N;
           this.comprehensionAttempts = saved.comprehensionAttempts || 0;
           this.attentionResults = saved.attentionResults || [];
           this.trialAttentionResults = saved.trialAttentionResults || [];
@@ -165,29 +136,6 @@
     this.renderPage(this.currentPageIndex);
   };
 
-  // ── Condition Assignment (15 cells) ────────────────────────────────────
-  // cellIndex = hash(PID) % 15
-  // scaleIndex = floor(cellIndex / 3)  -> determines k, N
-  // formatIndex = cellIndex % 3        -> determines display style
-  SurveyEngine.prototype.assignCondition = function (pid) {
-    if (!pid) {
-      // Default to cell 0 if no PID
-      this.cellIndex = 0;
-    } else {
-      this.cellIndex = hashString(pid) % 15;
-    }
-
-    this.scaleIndex = Math.floor(this.cellIndex / 3);
-    this.formatIndex = this.cellIndex % 3;
-
-    var scale = SCALE_CONDITIONS[this.scaleIndex];
-    this.scaleCondition = scale.name;
-    this.k = scale.k;
-    this.N = scale.N;
-    this.formatCondition = FORMAT_CONDITIONS[this.formatIndex];
-    console.log('[FBO2] Assigned: cell=' + this.cellIndex + ' scale=' + this.scaleCondition + ' format=' + this.formatCondition);
-  };
-
   // ── Build Page Sequence ────────────────────────────────────────────────
   SurveyEngine.prototype.buildPageSequence = function () {
     var self = this;
@@ -198,38 +146,23 @@
       if (page.type === 'trial_block') {
         var block = page.block || 1;
 
-        // Populate trials from stimuli.byScale based on assigned condition
-        var rawTrials = page.trials;
-        if (!rawTrials && self.config.stimuli && self.config.stimuli.byScale) {
-          rawTrials = self.config.stimuli.byScale[self.scaleCondition] || [];
-        }
-        var trials = (rawTrials || []).slice();
+        // Get trials from config.stimuli (flat array)
+        var trials = (self.config.stimuli || []).slice();
 
-        // For block 2: reuse block 1 trial order if available
-        if (block === 2 && self.block1TrialOrder) {
-          var orderMap = {};
-          self.block1TrialOrder.forEach(function (id, idx) { orderMap[id] = idx; });
-          trials.sort(function (a, b) { return (orderMap[a.id] !== undefined ? orderMap[a.id] : 999) - (orderMap[b.id] !== undefined ? orderMap[b.id] : 999); });
-        } else if (self.prolificPID) {
-          // Seeded random shuffle (deterministic per participant, same seed regardless of block)
-          var baseSeed = hashString(self.prolificPID + '_trials');
+        // Randomize if requested
+        if (page.randomize && self.prolificPID) {
+          var baseSeed = hashString(self.prolificPID + '_trials_b' + block);
           trials = seededShuffle(trials, baseSeed);
         }
 
-        // Store block 1 trial order for block 2 to reuse
-        if (block === 1) {
-          self.block1TrialOrder = trials.map(function (t) { return t.id; });
-        }
-
-        // Read two-block DV flags from trial_block config
-        var askHiddenHU = page.askHiddenHU || false;
-        var askHiddenHUFirst = page.askHiddenHUFirst || false;
+        // Read DV flags from trial_block config
+        var askFlaggedEstimate = page.askFlaggedEstimate || false;
 
         // Record block boundary
         self.blockBoundaryIndices.push(self.pages.length);
 
         trials.forEach(function (trial, idx) {
-          var idSuffix = (block === 2) ? '_b2' : '';
+          var idSuffix = (block > 1) ? '_b' + block : '';
           // Trial intro splash page
           self.pages.push({
             id: trial.id + idSuffix + '_intro',
@@ -238,7 +171,6 @@
             trialIndex: idx,
             totalTrials: trials.length,
             block: block,
-            askHiddenHU: askHiddenHU,
             minTimeSeconds: 3
           });
           // Fraud trial page
@@ -250,9 +182,8 @@
             totalTrials: trials.length,
             block: block,
             blockId: page.id,
-            askHiddenHU: askHiddenHU,
-            askHiddenHUFirst: askHiddenHUFirst,
-            minTimeSeconds: page.minTimeSeconds || 15
+            askFlaggedEstimate: askFlaggedEstimate,
+            minTimeSeconds: page.minTimePerTrial || 10
           });
         });
       } else if (page.type === 'transition') {
@@ -268,20 +199,16 @@
   };
 
   // ── Trial Attention Check Insertion ──────────────────────────────────
-  // Inserts recall-based attention checks after 3 seeded trial pages,
-  // spread across thirds of the experiment.
   SurveyEngine.prototype.insertTrialAttentionChecks = function () {
-    var numChecks = this.config.trialAttentionCount || 0;
+    var numChecks = this.config.trialAttentionCheckCount || 0;
     if (numChecks <= 0 || !this.prolificPID) return;
 
-    // Find all fraud_trial page indices
     var trialIndices = [];
     for (var i = 0; i < this.pages.length; i++) {
       if (this.pages[i].type === 'fraud_trial') trialIndices.push(i);
     }
     if (trialIndices.length === 0) return;
 
-    // Select one trial from each third (seeded by PID)
     var thirdSize = Math.floor(trialIndices.length / numChecks);
     var seed = hashString(this.prolificPID + '_attn_select');
     var rng = mulberry32(seed);
@@ -293,7 +220,6 @@
       selected.push(trialIndices[pick]);
     }
 
-    // Insert in reverse order so splicing doesn't shift earlier indices
     selected.sort(function (a, b) { return b - a; });
     for (var s = 0; s < selected.length; s++) {
       var idx = selected[s];
@@ -307,7 +233,7 @@
       });
     }
 
-    // Recompute block boundary indices
+    // Recompute block boundaries
     this.blockBoundaryIndices = [];
     var seenBlocks = {};
     for (var bi = 0; bi < this.pages.length; bi++) {
@@ -337,12 +263,9 @@
     if (!page) return;
 
     this.currentPageIndex = index;
-
-    // Clear min-time state
     this.clearMinTime();
     this.minTimeReady = true;
 
-    // Animate transition
     var self = this;
     this.elContent.classList.add('page-exit');
     setTimeout(function () {
@@ -368,7 +291,7 @@
 
       self.elContent.innerHTML = html;
 
-      // Toggle wider wrapper for trial pages (two-column layout)
+      // Toggle wider wrapper for trial pages
       var wrapper = document.querySelector('.survey-wrapper');
       if (wrapper) {
         if (page.type === 'fraud_trial') {
@@ -414,13 +337,8 @@
         self.enforceMinTime(page.minTimeSeconds);
       }
 
-      // Update progress
       self.updateProgress();
-
-      // Record page start time
       self.recordPageStart(index);
-
-      // Attach click handlers
       self.attachOptionCardHandlers();
       self.attachConsentHandler();
 
@@ -432,7 +350,6 @@
         if (display) {
           slider.addEventListener('input', function () {
             var val = parseFloat(slider.value);
-            // Format: show integer for 0-100 sliders, one decimal for others
             if (parseFloat(slider.max) === 100 && parseFloat(slider.step) === 1) {
               display.textContent = Math.round(val) + '%';
             } else {
@@ -443,30 +360,21 @@
         }
       });
 
-      // Scroll to top
       window.scrollTo(0, 0);
     }, 200);
   };
 
   // ── Stealth AI Check ───────────────────────────────────────────────────
   SurveyEngine.prototype._stealthQuestions = [
-    "What is 8 + 3?",
-    "What color is the sky on a clear day?",
-    "What planet do humans live on?",
-    "How many legs does a dog have?",
-    "What is the capital of France?",
-    "What is 15 minus 7?",
-    "How many days are in a week?",
-    "What animal says meow?",
+    "What is 8 + 3?", "What color is the sky on a clear day?",
+    "What planet do humans live on?", "How many legs does a dog have?",
+    "What is the capital of France?", "What is 15 minus 7?",
+    "How many days are in a week?", "What animal says meow?",
     "What is the boiling point of water in Celsius?",
-    "In what year did World War II end?",
-    "What is the square root of 64?",
-    "What is 6 times 7?",
-    "What language is spoken in Brazil?",
-    "How many sides does a triangle have?",
-    "What is the chemical symbol for water?",
-    "Who painted the Mona Lisa?",
-    "What is 100 divided by 5?",
+    "In what year did World War II end?", "What is the square root of 64?",
+    "What is 6 times 7?", "What language is spoken in Brazil?",
+    "How many sides does a triangle have?", "What is the chemical symbol for water?",
+    "Who painted the Mona Lisa?", "What is 100 divided by 5?",
     "What continent is Egypt in?"
   ];
 
@@ -501,9 +409,7 @@
     if (!wrapper) return;
     wrapper.addEventListener('click', function (e) {
       var cb = document.getElementById('consent_agree');
-      if (e.target !== cb) {
-        cb.checked = !cb.checked;
-      }
+      if (e.target !== cb) { cb.checked = !cb.checked; }
     });
   };
 
@@ -532,9 +438,7 @@
   // ── Timing ─────────────────────────────────────────────────────────────
   SurveyEngine.prototype.recordPageStart = function (index) {
     var page = this.pages[index];
-    if (!this.timing[page.id]) {
-      this.timing[page.id] = {};
-    }
+    if (!this.timing[page.id]) { this.timing[page.id] = {}; }
     this.timing[page.id].startTime = Date.now();
   };
 
@@ -584,39 +488,27 @@
 
     var page = this.pages[this.currentPageIndex];
 
-    // Special handling for comprehension
     if (!this.devMode && page.type === 'comprehension') {
       var passed = this.handleComprehensionCheck(page);
       if (!passed) return;
     }
 
-    // Special handling for attention checks
     if (!this.devMode && page.type === 'attention_check') {
       this.handleAttentionCheck(page);
     }
 
-    // Validate current page
     if (!this.devMode && !this.validatePage()) return;
 
-    // Collect data from current page
     this.collectPageData(this.currentPageIndex);
-
-    // Collect stealth AI check answers
     this.collectStealthAnswers();
-
-    // Record timing
     this.recordPageEnd(this.currentPageIndex);
-
-    // Save progress
     this.saveProgress();
 
-    // If this is the last navigable page before debrief, calculate bonus
     var nextPage = this.pages[this.currentPageIndex + 1];
     if (nextPage && nextPage.type === 'debrief') {
       this.calculateBonus();
     }
 
-    // Advance
     if (this.currentPageIndex < this.pages.length - 1) {
       this.renderPage(this.currentPageIndex + 1);
     }
@@ -624,9 +516,7 @@
 
   SurveyEngine.prototype.prevPage = function () {
     if (this.currentPageIndex > 0) {
-      if (this.blockBoundaryIndices.indexOf(this.currentPageIndex) !== -1) {
-        return;
-      }
+      if (this.blockBoundaryIndices.indexOf(this.currentPageIndex) !== -1) return;
       this.recordPageEnd(this.currentPageIndex);
       this.renderPage(this.currentPageIndex - 1);
     }
@@ -638,7 +528,7 @@
     var page = this.pages[this.currentPageIndex];
     var valid = true;
 
-    // Consent page: must agree
+    // Consent
     if (page.type === 'consent' && page.mustAgree) {
       var cb = document.getElementById('consent_agree');
       if (cb && !cb.checked) {
@@ -647,7 +537,7 @@
       }
     }
 
-    // Check all required fields on the page
+    // Required fields
     var required = document.querySelectorAll('#pageContent [data-required="true"]');
     for (var i = 0; i < required.length; i++) {
       var field = required[i];
@@ -656,72 +546,44 @@
 
       if (field.getAttribute('data-field-type') === 'radio' || field.getAttribute('data-field-type') === 'likert') {
         var checked = document.querySelector('input[name="' + name + '"]:checked');
-        if (!checked) {
-          this.showError(name, 'Please select an option.');
-          valid = false;
-        }
+        if (!checked) { this.showError(name, 'Please select an option.'); valid = false; }
       } else if (field.getAttribute('data-field-type') === 'number') {
         var input = document.getElementById(name);
-        if (!input || input.value === '') {
-          this.showError(name, 'Please enter a number.');
-          valid = false;
-        } else {
+        if (!input || input.value === '') { this.showError(name, 'Please enter a number.'); valid = false; }
+        else {
           var val = parseFloat(input.value);
           var min = parseFloat(input.getAttribute('min'));
           var max = parseFloat(input.getAttribute('max'));
-          if (isNaN(val)) {
-            this.showError(name, 'Please enter a valid number.');
-            valid = false;
-          } else if (!isNaN(min) && val < min) {
-            this.showError(name, 'Value must be at least ' + min + '.');
-            valid = false;
-          } else if (!isNaN(max) && val > max) {
-            this.showError(name, 'Value must be at most ' + max + '.');
-            valid = false;
-          }
+          if (isNaN(val)) { this.showError(name, 'Please enter a valid number.'); valid = false; }
+          else if (!isNaN(min) && val < min) { this.showError(name, 'Value must be at least ' + min + '.'); valid = false; }
+          else if (!isNaN(max) && val > max) { this.showError(name, 'Value must be at most ' + max + '.'); valid = false; }
         }
       } else if (field.getAttribute('data-field-type') === 'text') {
         var inp = document.getElementById(name);
-        if (!inp || inp.value.trim() === '') {
-          this.showError(name, 'Please provide a response.');
-          valid = false;
-        }
+        if (!inp || inp.value.trim() === '') { this.showError(name, 'Please provide a response.'); valid = false; }
       } else if (field.getAttribute('data-field-type') === 'dropdown') {
         var sel = document.getElementById(name);
-        if (!sel || sel.value === '') {
-          this.showError(name, 'Please make a selection.');
-          valid = false;
-        }
+        if (!sel || sel.value === '') { this.showError(name, 'Please make a selection.'); valid = false; }
       }
     }
 
-    // Fraud trial page: require all three DVs
+    // Fraud trial: require fraud prob slider + confidence + optional flagged estimate
     if (page.type === 'fraud_trial') {
-      // DV1: fraud probability slider
       var fraudSlider = document.getElementById('fraud_prob');
       if (fraudSlider && fraudSlider.getAttribute('data-touched') === 'false') {
         this.showError('fraud_prob', 'Please drag the slider to set your fraud probability estimate.');
         valid = false;
       }
 
-      // DV2: confidence (radio)
       var confChecked = document.querySelector('input[name="confidence"]:checked');
       if (!confChecked) {
         this.showError('confidence', 'Please select your confidence level.');
         valid = false;
       }
 
-      // DV3: HU estimate slider (only required if askHiddenHU is true)
-      if (page.askHiddenHU) {
-        var huSlider = document.getElementById('hu_estimate');
-        if (huSlider && huSlider.getAttribute('data-touched') === 'false') {
-          this.showError('hu_estimate', 'Please drag the slider to estimate the percentage of Highly Unusual transactions.');
-          valid = false;
-        }
-      }
     }
 
-    // Prolific PID fallback
+    // PID fallback
     if (page.type === 'welcome' && !this.prolificPID) {
       var pidInput = document.getElementById('pid_fallback_input');
       if (pidInput && pidInput.value.trim()) {
@@ -731,7 +593,6 @@
           valid = false;
         } else {
           this.prolificPID = pidVal;
-          this.assignCondition(this.prolificPID);
           var savedIndex = this.currentPageIndex;
           this.buildPageSequence();
           this.currentPageIndex = savedIndex;
@@ -747,18 +608,12 @@
 
   SurveyEngine.prototype.showError = function (fieldName, message) {
     var errEl = document.getElementById('error_' + fieldName);
-    if (errEl) {
-      errEl.textContent = message;
-      errEl.classList.add('visible');
-    }
+    if (errEl) { errEl.textContent = message; errEl.classList.add('visible'); }
   };
 
   SurveyEngine.prototype.clearErrors = function () {
     var errors = document.querySelectorAll('.field-error');
-    for (var i = 0; i < errors.length; i++) {
-      errors[i].classList.remove('visible');
-      errors[i].textContent = '';
-    }
+    for (var i = 0; i < errors.length; i++) { errors[i].classList.remove('visible'); errors[i].textContent = ''; }
   };
 
   // ── Data Collection ────────────────────────────────────────────────────
@@ -766,63 +621,53 @@
     var page = this.pages[index];
     var data = {};
 
-    // Collect all inputs/selects on the page
     var inputs = document.querySelectorAll('#pageContent input, #pageContent select, #pageContent textarea');
     for (var i = 0; i < inputs.length; i++) {
       var el = inputs[i];
       var name = el.name || el.id;
       if (!name || name.startsWith('hp_') || name.startsWith('ai_') || name.startsWith('sc_')) continue;
-
-      if (el.type === 'radio') {
-        if (el.checked) data[name] = el.value;
-      } else if (el.type === 'checkbox') {
-        data[name] = el.checked;
-      } else {
-        data[name] = el.value;
-      }
+      if (el.type === 'radio') { if (el.checked) data[name] = el.value; }
+      else if (el.type === 'checkbox') { data[name] = el.checked; }
+      else { data[name] = el.value; }
     }
 
-    // Store fraud trial response with full stimulus data
+    // Store fraud trial response
     if (page.type === 'fraud_trial' && page.trial) {
       var trial = page.trial;
       var fraudProb = document.getElementById('fraud_prob');
       var confChecked = document.querySelector('input[name="confidence"]:checked');
-      var huEstimate = document.getElementById('hu_estimate');
 
       this.trialResponses[page.id] = {
         trialId: trial.id,
         block: page.block || 1,
-        askHiddenHU: page.askHiddenHU || false,
-        askHiddenHUFirst: page.askHiddenHUFirst || false,
+        askFlaggedEstimate: false,
         fraudProb: fraudProb ? parseFloat(fraudProb.value) : null,
         confidence: confChecked ? parseInt(confChecked.value) : null,
-        huEstimate: huEstimate ? parseFloat(huEstimate.value) : null,
-        k: trial.k,
+        flaggedEstimate: null,
         N: trial.N,
-        nNormal: trial.nNormal,
-        nUnusual: trial.nUnusual,
-        nHU: trial.nHU,
-        hidden: trial.N - trial.k,
-        naivePosterior: trial.naivePosterior,
+        D: trial.D,
+        dN: trial.dN,
+        nFlagged: trial.nFlagged,
+        hidden: trial.hidden,
         bayesPosterior: trial.bayesPosterior,
-        formatCondition: this.formatCondition,
-        scaleCondition: this.scaleCondition
+        snPosterior: trial.snPosterior,
+        mrPosterior: trial.mrPosterior
       };
     }
 
-    // Store trial attention check results
+    // Trial attention check
     if (page.type === 'trial_attention' && page.trial) {
       var t = page.trial;
       var nAns = data['attn_n'] ? parseInt(data['attn_n']) : null;
-      var kAns = data['attn_k'] ? parseInt(data['attn_k']) : null;
-      var huAns = data['attn_hu'] ? parseInt(data['attn_hu']) : null;
+      var dAns = data['attn_d'] ? parseInt(data['attn_d']) : null;
+      var flagAns = data['attn_flag'] ? parseInt(data['attn_flag']) : null;
       this.trialAttentionResults.push({
         trialId: t.id,
         block: page.block,
         nAnswer: nAns, nCorrect: nAns === t.N,
-        kAnswer: kAns, kCorrect: kAns === t.k,
-        huAnswer: huAns, huCorrect: huAns === t.nHU,
-        allCorrect: nAns === t.N && kAns === t.k && huAns === t.nHU
+        dAnswer: dAns, dCorrect: dAns === t.D,
+        flagAnswer: flagAns, flagCorrect: flagAns === t.nFlagged,
+        allCorrect: nAns === t.N && dAns === t.D && flagAns === t.nFlagged
       });
     }
 
@@ -831,62 +676,30 @@
 
   SurveyEngine.prototype.getAllData = function () {
     var botMetrics = window.BotDetector ? window.BotDetector.getMetrics() : {};
-
     return {
-      // Metadata
-      surveyVersion: this.config.version || '1.0',
-      surveyTitle: this.config.title || '',
+      surveyVersion: this.config.study ? this.config.study.version : '3.0',
       timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
       screenWidth: window.screen.width,
       screenHeight: window.screen.height,
       viewportWidth: window.innerWidth,
       viewportHeight: window.innerHeight,
-
-      // Prolific
       prolificPID: this.prolificPID,
       studyID: this.studyID,
       sessionID: this.sessionID,
       part: this.part,
-
-      // Condition assignment
-      cellIndex: this.cellIndex,
-      scaleIndex: this.scaleIndex,
-      formatIndex: this.formatIndex,
-      scaleCondition: this.scaleCondition,
-      formatCondition: this.formatCondition,
-      k: this.k,
-      N: this.N,
-
-      // Responses (all pages)
       responses: this.responses,
-
-      // Trial responses (flat for easy analysis)
       trialResponses: this.trialResponses,
-
-      // Timing
       timing: this.timing,
-
-      // Comprehension
       comprehensionAttempts: this.comprehensionAttempts,
       comprehensionFailed: this.comprehensionFailed,
-
-      // Attention checks (end-of-survey)
       attentionResults: this.attentionResults,
       attentionPassed: this.attentionResults.filter(function (r) { return r.passed; }).length,
       attentionFailed: this.attentionResults.filter(function (r) { return !r.passed; }).length,
-
-      // Trial attention checks (recall after selected rounds)
       trialAttentionResults: this.trialAttentionResults,
       trialAttentionAllCorrect: this.trialAttentionResults.filter(function (r) { return r.allCorrect; }).length,
-
-      // Bonus
       bonus: this.bonusInfo,
-
-      // Bot detection
       botMetrics: botMetrics,
-
-      // Stealth AI check
       stealthCheck: this.collectStealthAnswers()
     };
   };
@@ -896,13 +709,6 @@
     if (!window.DataStorage) return;
     window.DataStorage.saveProgress({
       prolificPID: this.prolificPID,
-      cellIndex: this.cellIndex,
-      scaleIndex: this.scaleIndex,
-      formatIndex: this.formatIndex,
-      scaleCondition: this.scaleCondition,
-      formatCondition: this.formatCondition,
-      k: this.k,
-      N: this.N,
       currentPageIndex: this.currentPageIndex + 1,
       responses: this.responses,
       timing: this.timing,
@@ -921,50 +727,31 @@
     for (var i = 0; i < questions.length; i++) {
       var q = questions[i];
       var fieldId = 'comp_' + i;
-
       var answer;
       if (q.type === 'number') {
         var input = document.getElementById(fieldId);
-        if (!input || input.value === '') {
-          allCorrect = false;
-          continue;
-        }
+        if (!input || input.value === '') { allCorrect = false; continue; }
         answer = parseFloat(input.value);
         var correct = parseFloat(q.correct);
         var tol = q.tolerance || 0.01;
-        if (isNaN(answer) || Math.abs(answer - correct) > tol) {
-          allCorrect = false;
-        }
+        if (isNaN(answer) || Math.abs(answer - correct) > tol) allCorrect = false;
       } else if (q.type === 'radio') {
         var checked = document.querySelector('input[name="' + fieldId + '"]:checked');
-        if (!checked) {
-          allCorrect = false;
-          continue;
-        }
+        if (!checked) { allCorrect = false; continue; }
         answer = checked.value;
-        if (answer !== q.correct) {
-          allCorrect = false;
-        }
-      } else {
-        allCorrect = false;
-      }
+        if (answer !== q.correct) allCorrect = false;
+      } else { allCorrect = false; }
     }
 
-    // Check if any questions unanswered
+    // Check if any unanswered
     var anyUnanswered = false;
     for (var j = 0; j < questions.length; j++) {
       var fid = 'comp_' + j;
       if (questions[j].type === 'radio') {
-        if (!document.querySelector('input[name="' + fid + '"]:checked')) {
-          anyUnanswered = true;
-          break;
-        }
+        if (!document.querySelector('input[name="' + fid + '"]:checked')) { anyUnanswered = true; break; }
       } else if (questions[j].type === 'number') {
         var inp = document.getElementById(fid);
-        if (!inp || inp.value === '') {
-          anyUnanswered = true;
-          break;
-        }
+        if (!inp || inp.value === '') { anyUnanswered = true; break; }
       }
     }
 
@@ -985,42 +772,29 @@
 
     this.comprehensionAttempts++;
 
-    // Build results page showing right/wrong
     var resultsHtml = '<h1 class="page-title">Quiz Results</h1>';
-
     for (var r = 0; r < questions.length; r++) {
       var rq = questions[r];
       var rFieldId = 'comp_' + r;
-      var rAnswer;
-      var rCorrect = false;
-
+      var rAnswer, rCorrect = false;
       if (rq.type === 'number') {
         var rInput = document.getElementById(rFieldId);
         rAnswer = rInput ? parseFloat(rInput.value) : NaN;
-        var rExpected = parseFloat(rq.correct);
-        var rTol = rq.tolerance || 0.01;
-        rCorrect = !isNaN(rAnswer) && Math.abs(rAnswer - rExpected) <= rTol;
+        rCorrect = !isNaN(rAnswer) && Math.abs(rAnswer - parseFloat(rq.correct)) <= (rq.tolerance || 0.01);
       } else if (rq.type === 'radio') {
         var rChecked = document.querySelector('input[name="' + rFieldId + '"]:checked');
         rAnswer = rChecked ? rChecked.value : '';
         rCorrect = rAnswer === rq.correct;
       }
-
       var icon = rCorrect ? '&#10003;' : '&#10007;';
       var cls = rCorrect ? 'comp-result-correct' : 'comp-result-wrong';
-      resultsHtml += '<div class="comp-result-item ' + cls + '">';
-      resultsHtml += '<span class="comp-result-icon">' + icon + '</span> ';
-      resultsHtml += '<span class="comp-result-prompt">' + rq.prompt + '</span>';
-      resultsHtml += '</div>';
+      resultsHtml += '<div class="comp-result-item ' + cls + '"><span class="comp-result-icon">' + icon + '</span> <span class="comp-result-prompt">' + rq.prompt + '</span></div>';
     }
 
     if (allCorrect) {
-      resultsHtml += '<div class="alert alert-success" style="margin-top:24px;">' +
-        '<strong>All correct!</strong> You may continue.</div>';
+      resultsHtml += '<div class="alert alert-success" style="margin-top:24px;"><strong>All correct!</strong> You may continue.</div>';
     } else {
-      resultsHtml += '<div class="alert alert-error" style="margin-top:24px;">' +
-        '<p><strong>' + (page.failMessage || 'You did not pass the comprehension check. Thank you for your time.') + '</strong></p>' +
-        '</div>';
+      resultsHtml += '<div class="alert alert-error" style="margin-top:24px;"><p><strong>' + (page.failMessage || 'You did not pass. Thank you for your time.') + '</strong></p></div>';
     }
 
     this.elContent.innerHTML = resultsHtml;
@@ -1030,19 +804,15 @@
       var self = this;
       setTimeout(function () {
         self.elNavButtons.style.display = '';
-        var nextIdx = self.currentPageIndex + 1;
-        self.renderPage(nextIdx);
+        self.renderPage(self.currentPageIndex + 1);
       }, 2000);
     } else {
       this.comprehensionFailed = true;
-      if (this.part === 1 && this.config.failCompletionCode) {
+      if (this.part === 1) {
         var self2 = this;
-        setTimeout(function () {
-          self2.renderPart1Fail();
-        }, 3000);
+        setTimeout(function () { self2.renderPart1Fail(); }, 3000);
       }
     }
-
     return false;
   };
 
@@ -1050,40 +820,30 @@
   SurveyEngine.prototype.handleAttentionCheck = function (page) {
     var checked = document.querySelector('input[name="attn_' + page.id + '"]:checked');
     var answer = checked ? checked.value : '';
-    var passed = answer === page.correctAnswer;
     this.attentionResults.push({
       checkId: page.id,
-      passed: passed,
+      passed: answer === page.correctAnswer,
       answer: answer,
       expected: page.correctAnswer
     });
   };
 
   // ── Bonus Calculation ──────────────────────────────────────────────────
-  // Selects one random trial. Bonus = max(0, 1.50 - 3.00 * |fraudProb/100 - bayesPosterior|)
-  // bayesPosterior is stored in each trial's stimulus data.
   SurveyEngine.prototype.calculateBonus = function () {
     var bonusCfg = this.config.bonus;
-    if (!bonusCfg || !bonusCfg.enabled) {
-      this.bonusInfo = { enabled: false };
-      return;
-    }
+    if (!bonusCfg || !bonusCfg.enabled) { this.bonusInfo = { enabled: false }; return; }
 
     var trialIds = Object.keys(this.trialResponses);
-    if (trialIds.length === 0) {
-      this.bonusInfo = { enabled: true, amount: 0, reason: 'no_trials' };
-      return;
-    }
+    if (trialIds.length === 0) { this.bonusInfo = { enabled: true, amount: 0, reason: 'no_trials' }; return; }
 
-    // Pick one trial at random (seeded by PID)
     var seed = hashString(this.prolificPID + '_bonus');
     var rng = mulberry32(seed);
     var selectedIdx = Math.floor(rng() * trialIds.length);
     var selectedId = trialIds[selectedIdx];
     var trial = this.trialResponses[selectedId];
 
-    var guess = trial.fraudProb / 100;  // convert 0-100 to 0-1
-    var truth = trial.bayesPosterior;   // already 0-1
+    var guess = trial.fraudProb / 100;
+    var truth = trial.bayesPosterior;
 
     var baseAmount = bonusCfg.baseAmount || 1.50;
     var penalty = bonusCfg.penaltyMultiplier || 3.00;
@@ -1098,7 +858,7 @@
       selectedTrialId: selectedId,
       fraudProb: trial.fraudProb,
       bayesPosterior: truth,
-      errorPp: Math.round(error * 10000) / 100,  // error in percentage points
+      errorPp: Math.round(error * 10000) / 100,
       amount: amount,
       currency: bonusCfg.currency || 'GBP'
     };
@@ -1106,13 +866,10 @@
 
   // ── Page Renderers ─────────────────────────────────────────────────────
 
-  // Welcome
   SurveyEngine.prototype.renderWelcome = function (page) {
-    var html = '';
-    html += '<h1 class="page-title">' + (page.title || 'Welcome') + '</h1>';
+    var html = '<h1 class="page-title">' + (page.title || 'Welcome') + '</h1>';
     if (page.subtitle) html += '<p class="page-subtitle">' + page.subtitle + '</p>';
     html += '<div class="page-body">' + (page.body || '') + '</div>';
-
     if (!this.prolificPID) {
       html += '<div class="pid-fallback">';
       html += '<label for="pid_fallback_input">Please enter your Prolific ID to continue:</label>';
@@ -1120,14 +877,11 @@
       html += '<div class="field-error" id="error_pid_fallback_input"></div>';
       html += '</div>';
     }
-
     return html;
   };
 
-  // Consent
   SurveyEngine.prototype.renderConsent = function (page) {
-    var html = '';
-    html += '<h1 class="page-title">' + (page.title || 'Consent') + '</h1>';
+    var html = '<h1 class="page-title">' + (page.title || 'Consent') + '</h1>';
     html += '<div class="page-body">' + (page.body || '') + '</div>';
     if (page.mustAgree) {
       html += '<div class="consent-check" id="consent_wrapper">';
@@ -1139,508 +893,256 @@
     return html;
   };
 
-  // Instructions
   SurveyEngine.prototype.renderInstructions = function (page) {
-    var html = '';
-    html += '<h1 class="page-title">' + (page.title || 'Instructions') + '</h1>';
-    var body = page.body || '';
-    // Template substitution for conditions
-    body = body.replace(/\{scaleCondition\}/g, this.scaleCondition);
-    body = body.replace(/\{formatCondition\}/g, this.formatCondition);
-    body = body.replace(/\{k\}/g, this.k);
-    body = body.replace(/\{N\}/g, this.N);
-    body = body.replace(/\{hidden\}/g, this.N - this.k);
-    // Conditional blocks: <!--if:name-->...<!--endif:name-->
-    var fmt = this.formatCondition;
-    body = body.replace(/<!--if:(\w+)-->([\s\S]*?)<!--endif:\1-->/g,
-      function (match, cond, inner) {
-        return cond === fmt ? inner : '';
-      }
-    );
-    html += '<div class="page-body">' + body + '</div>';
+    var html = '<h1 class="page-title">' + (page.title || 'Instructions') + '</h1>';
+    html += '<div class="page-body">' + (page.body || '') + '</div>';
     return html;
   };
 
-  // Comprehension Check
   SurveyEngine.prototype.renderComprehension = function (page) {
-    var html = '';
-    html += '<h1 class="page-title">' + (page.title || 'Comprehension Check') + '</h1>';
+    var html = '<h1 class="page-title">' + (page.title || 'Comprehension Check') + '</h1>';
     if (page.description) html += '<div class="page-body">' + page.description + '</div>';
-
     (page.questions || []).forEach(function (q, idx) {
       var fieldId = 'comp_' + idx;
       html += '<div class="question-block">';
       html += '<div class="question-prompt">' + q.prompt + '</div>';
-
       if (q.type === 'number') {
         html += '<div class="number-input-wrapper">';
-        html += '<input type="number" class="number-input" id="' + fieldId + '" ';
-        if (q.min !== undefined) html += 'min="' + q.min + '" ';
-        if (q.max !== undefined) html += 'max="' + q.max + '" ';
-        if (q.step !== undefined) html += 'step="' + q.step + '" ';
-        html += 'placeholder="?">';
+        html += '<input type="number" class="number-input" id="' + fieldId + '"';
+        if (q.min !== undefined) html += ' min="' + q.min + '"';
+        if (q.max !== undefined) html += ' max="' + q.max + '"';
+        if (q.step !== undefined) html += ' step="' + q.step + '"';
+        html += ' placeholder="?">';
         html += '</div>';
-        if (q.hint) html += '<div class="number-input-hint">' + q.hint + '</div>';
       } else if (q.type === 'radio') {
         html += '<div class="option-list">';
         (q.options || []).forEach(function (opt) {
           var val = typeof opt === 'object' ? opt.value : opt;
           var label = typeof opt === 'object' ? opt.label : opt;
-          html += '<div class="option-card">';
-          html += '<input type="radio" name="' + fieldId + '" value="' + esc(val) + '">';
-          html += '<span class="option-label">' + esc(label) + '</span>';
-          html += '</div>';
+          html += '<div class="option-card"><input type="radio" name="' + fieldId + '" value="' + esc(val) + '"><span class="option-label">' + esc(label) + '</span></div>';
         });
         html += '</div>';
       }
-
-      html += '<div class="field-error" id="error_' + fieldId + '"></div>';
-      html += '</div>';
+      html += '<div class="field-error" id="error_' + fieldId + '"></div></div>';
     });
-
-    html += '<div class="comp-note" style="margin-top:16px;color:#6b7280;font-size:15px;">' +
-            'You have one attempt. All answers must be correct to continue.</div>';
-
+    html += '<div class="comp-note" style="margin-top:16px;color:#6b7280;font-size:15px;">You have one attempt. All answers must be correct to continue.</div>';
     return html;
   };
 
-  // ── Trial Intro (splash page before each fraud trial) ──────────────────
+  // ── Trial Intro ────────────────────────────────────────────────────────
+  SurveyEngine.prototype.getFirmSizeLabel = function (N) {
+    if (N <= 10) return 'Small';
+    if (N <= 20) return 'Medium';
+    return 'Large';
+  };
+
+  SurveyEngine.prototype.getFirmSizeBadgeClass = function (N) {
+    if (N <= 10) return 'firm-size-badge-small';
+    if (N <= 20) return 'firm-size-badge-medium';
+    return 'firm-size-badge-large';
+  };
+
   SurveyEngine.prototype.renderTrialIntro = function (page) {
     var trial = page.trial;
-    var html = '';
-
-    var isBlock2 = page.block === 2;
     var firmLabel = 'Firm ' + (page.trialIndex + 1) + ' of ' + page.totalTrials;
-    if (isBlock2) firmLabel += ' (second evaluation)';
-
-    html += '<div class="trial-intro-splash">';
+    var sizeLabel = this.getFirmSizeLabel(trial.N);
+    var html = '<div class="trial-intro-splash">';
     html += '<div class="page-subtitle" style="margin-bottom:24px;">' + firmLabel + '</div>';
     html += '<div class="trial-intro-main">';
-    html += '<div class="trial-intro-line" style="font-size:48px;font-weight:700;text-align:center;margin-bottom:24px;">' +
-            'Firm ' + (page.trialIndex + 1) + '</div>';
-    if (isBlock2) {
-      html += '<div class="trial-intro-detail" style="font-size:22px;text-align:center;color:#4b5563;line-height:1.6;">' +
-              'You evaluated this firm before.<br>Now think about what the manager <strong>chose not to show you</strong>.</div>';
-    } else {
-      html += '<div class="trial-intro-detail" style="font-size:22px;text-align:center;color:#4b5563;line-height:1.6;">' +
-              'This firm has <strong>' + trial.N + '</strong> transactions.<br>' +
-              'The manager will show you <strong>' + trial.k + '</strong>.</div>';
-    }
-    html += '</div>';
-    html += '</div>';
-
+    html += '<div class="trial-intro-line" style="font-size:48px;font-weight:700;text-align:center;margin-bottom:24px;">Firm ' + (page.trialIndex + 1) + '</div>';
+    html += '<div class="trial-intro-detail" style="font-size:22px;text-align:center;color:#4b5563;line-height:1.6;">';
+    html += 'This is a <strong>' + sizeLabel + ' Firm</strong> with <strong>' + trial.N + '</strong> transactions.<br>';
+    html += 'The manager will show you <strong>' + trial.D + '</strong> transactions.';
+    html += '</div></div></div>';
     return html;
   };
 
   // ── Fraud Trial Renderer ───────────────────────────────────────────────
-  // Renders the disclosed transaction breakdown in one of three formats,
-  // plus three dependent variables (fraud prob, confidence, HU estimate).
   SurveyEngine.prototype.renderFraudTrial = function (page) {
-    console.log('[FBO2] renderFraudTrial: formatCondition=' + this.formatCondition);
     var trial = page.trial;
-    var hidden = trial.N - trial.k;
+    var sizeLabel = this.getFirmSizeLabel(trial.N);
+    var badgeClass = this.getFirmSizeBadgeClass(trial.N);
     var html = '';
 
-    // ── Two-Column Layout: Reference Panel + Main Content ───────────────
+    // Two-column layout
     html += '<div class="trial-layout">';
 
-    // LEFT: Reference Panel (always visible) with mini pie charts
+    // LEFT: Reference Panel
     html += '<div class="reference-panel">';
-    html += '<div class="reference-title">Reference Distributions</div>';
+    html += '<div class="reference-title">Reference</div>';
 
-    // Non-fraud pie: 60% Normal, 30% Unusual, 10% HU
+    // Firm Type distribution pie (blue/orange) -- ABOVE transaction pies
+    html += '<div class="ref-firm-type-section">';
+    html += '<div class="ref-firm-type-label">How Common Is Fraud?</div>';
+    html += '<div class="ref-firm-type-row">';
+    html += '<div class="ref-firm-type-pie" style="background:conic-gradient(#3b82f6 0deg 288deg, #f59e0b 288deg 360deg);"></div>';
+    html += '<div class="ref-firm-type-legend">';
+    html += '<div class="ref-firm-type-legend-item"><span class="ref-firm-type-swatch" style="background:#3b82f6;"></span><span><strong>80%</strong> Non-Fraud</span></div>';
+    html += '<div class="ref-firm-type-legend-item"><span class="ref-firm-type-swatch" style="background:#f59e0b;"></span><span><strong>20%</strong> Fraud</span></div>';
+    html += '</div></div></div>';
+
+    // Non-fraud pie: 50% Normal, 50% Flagged
     html += '<div class="ref-pie-section">';
     html += '<div class="ref-pie-label">Non-Fraudulent Firm</div>';
     html += '<div class="ref-pie-row">';
-    html += '<div class="ref-pie" style="background:conic-gradient(#4CAF50 0deg 216deg, #FF9800 216deg 324deg, #ef4444 324deg 360deg);"></div>';
+    html += '<div class="ref-pie" style="background:conic-gradient(#4CAF50 0deg 180deg, #ef4444 180deg 360deg);"></div>';
     html += '<div class="ref-pie-legend">';
-    html += '<div class="ref-legend-item"><span class="ref-swatch" style="background:#4CAF50;"></span><span>Normal 60%</span></div>';
-    html += '<div class="ref-legend-item"><span class="ref-swatch" style="background:#FF9800;"></span><span>Unusual 30%</span></div>';
-    html += '<div class="ref-legend-item"><span class="ref-swatch" style="background:#ef4444;"></span><span>HU 10%</span></div>';
-    html += '</div>';
-    html += '</div></div>';
+    html += '<div class="ref-legend-item"><span class="ref-swatch" style="background:#4CAF50;"></span><span>Normal 50%</span></div>';
+    html += '<div class="ref-legend-item"><span class="ref-swatch" style="background:#ef4444;"></span><span>Flagged 50%</span></div>';
+    html += '</div></div></div>';
 
-    // Fraud pie: 40% Normal, 30% Unusual, 30% HU
+    // Fraud pie: 40% Normal, 60% Flagged
     html += '<div class="ref-pie-section">';
     html += '<div class="ref-pie-label">Fraudulent Firm</div>';
     html += '<div class="ref-pie-row">';
-    html += '<div class="ref-pie" style="background:conic-gradient(#4CAF50 0deg 144deg, #FF9800 144deg 252deg, #ef4444 252deg 360deg);"></div>';
+    html += '<div class="ref-pie" style="background:conic-gradient(#4CAF50 0deg 144deg, #ef4444 144deg 360deg);"></div>';
     html += '<div class="ref-pie-legend">';
     html += '<div class="ref-legend-item"><span class="ref-swatch" style="background:#4CAF50;"></span><span>Normal 40%</span></div>';
-    html += '<div class="ref-legend-item"><span class="ref-swatch" style="background:#FF9800;"></span><span>Unusual 30%</span></div>';
-    html += '<div class="ref-legend-item"><span class="ref-swatch" style="background:#ef4444;"></span><span>HU 30%</span></div>';
-    html += '</div>';
-    html += '</div></div>';
+    html += '<div class="ref-legend-item"><span class="ref-swatch" style="background:#ef4444;"></span><span>Flagged 60%</span></div>';
+    html += '</div></div></div>';
 
-    html += '<div class="reference-prior">Each firm has a <strong>50%</strong> prior chance of being fraudulent</div>';
     html += '</div>';
 
     // RIGHT: Main trial content
     html += '<div class="trial-main-content">';
 
-    // ── Header Card ─────────────────────────────────────────────────────
+    // Header Card -- firm size label
     html += '<div class="trial-header-card">';
     html += '<div class="trial-header-firm">Firm ' + (page.trialIndex + 1) + ' of ' + page.totalTrials + '</div>';
     html += '<div class="trial-header-stats">';
-    html += '<div class="trial-header-stat"><span class="trial-header-stat-label">Total transactions</span><span class="trial-header-stat-value">' + trial.N + '</span></div>';
-    html += '<div class="trial-header-stat"><span class="trial-header-stat-label">Manager disclosed</span><span class="trial-header-stat-value">' + trial.k + ' of ' + trial.N + '</span></div>';
-    html += '</div>';
-    html += '</div>';
+    html += '<div class="trial-header-stat"><span class="trial-header-stat-label">' + sizeLabel + ' Firm</span><span class="trial-header-stat-value">' + trial.N + ' transactions<span class="firm-size-badge ' + badgeClass + '">' + sizeLabel + '</span></span></div>';
+    html += '</div></div>';
 
-    // ── Stimulus Display (format-dependent) ─────────────────────────────
+    // Stimulus Display (list format with document icons)
     html += '<div class="stimulus-display">';
-    html += this.renderTransactionDisplay(trial);
+    html += '<div class="stimulus-title">Disclosed Transactions</div>';
+    html += '<div class="disclosed-list">';
+    html += '<div class="disclosed-list-item"><span class="doc-icon doc-icon-normal">N</span><span class="disclosed-list-label">Normal</span><span class="disclosed-list-count">' + trial.dN + '</span></div>';
+    html += '<div class="disclosed-list-item"><span class="doc-icon doc-icon-flagged">F</span><span class="disclosed-list-label">Flagged</span><span class="disclosed-list-count">' + trial.nFlagged + '</span></div>';
+    html += '</div>';
     html += '</div>';
 
-    // ── DV Section ──────────────────────────────────────────────────────
-
-    // Helper: HU estimate slider HTML
-    var huSliderHtml = '';
-    huSliderHtml += '<div class="dv-card">';
-    huSliderHtml += '<div class="question-prompt">Of the <strong>' + hidden +
-            '</strong> transactions NOT shown to you, what percentage do you think are Highly Unusual?<span class="question-required">*</span></div>';
-    huSliderHtml += '<div class="slider-value-display" id="hu_estimate_display">50%</div>';
-    huSliderHtml += '<div class="slider-wrapper">';
-    huSliderHtml += '<span class="slider-label">0%</span>';
-    huSliderHtml += '<input type="range" class="slider-input" id="hu_estimate" name="hu_estimate" ' +
-            'min="0" max="100" step="1" value="50" data-touched="false" data-display="hu_estimate_display">';
-    huSliderHtml += '<span class="slider-label">100%</span>';
-    huSliderHtml += '</div>';
-    huSliderHtml += '<div class="slider-hint">Drag the slider to set your estimate</div>';
-    huSliderHtml += '<div class="field-error" id="error_hu_estimate"></div>';
-    huSliderHtml += '</div>';
-
-    // If askHiddenHU and askHiddenHUFirst, show HU question BEFORE fraud prob
-    if (page.askHiddenHU && page.askHiddenHUFirst) {
-      html += huSliderHtml;
-    }
-
-    // DV1: Fraud Probability Slider (0-100) -- always shown
+    // DV1: Fraud Probability Slider (default 20%)
     html += '<div class="dv-card">';
     html += '<div class="question-prompt">What is the probability that this firm is fraudulent?<span class="question-required">*</span></div>';
-    html += '<div class="slider-value-display" id="fraud_prob_display">50%</div>';
+    html += '<div class="slider-value-display" id="fraud_prob_display">20%</div>';
     html += '<div class="slider-wrapper">';
     html += '<span class="slider-label">0%</span>';
-    html += '<input type="range" class="slider-input" id="fraud_prob" name="fraud_prob" ' +
-            'min="0" max="100" step="1" value="50" data-touched="false" data-display="fraud_prob_display">';
+    html += '<input type="range" class="slider-input" id="fraud_prob" name="fraud_prob" min="0" max="100" step="1" value="20" data-touched="false" data-display="fraud_prob_display">';
     html += '<span class="slider-label">100%</span>';
     html += '</div>';
     html += '<div class="slider-hint">Drag the slider to set your estimate</div>';
     html += '<div class="field-error" id="error_fraud_prob"></div>';
     html += '</div>';
 
-    // DV2: Confidence (1-7 Likert) -- always shown
+    // DV2: Confidence (1-7 Likert)
     html += '<div class="dv-card" data-required="true" data-field-name="confidence" data-field-type="radio">';
     html += '<div class="question-prompt">How confident are you in your fraud assessment?<span class="question-required">*</span></div>';
     html += '<div class="option-list confidence-options">';
-    var confLabels = [
-      '1 - Not at all',
-      '2 - Very slightly',
-      '3 - Slightly',
-      '4 - Moderately',
-      '5 - Fairly',
-      '6 - Very',
-      '7 - Extremely confident'
-    ];
+    var confLabels = ['1 - Not at all', '2 - Very slightly', '3 - Slightly', '4 - Moderately', '5 - Fairly', '6 - Very', '7 - Extremely confident'];
     for (var ci = 0; ci < confLabels.length; ci++) {
-      html += '<div class="option-card">';
-      html += '<input type="radio" name="confidence" value="' + (ci + 1) + '">';
-      html += '<span class="option-label">' + esc(confLabels[ci]) + '</span>';
-      html += '</div>';
+      html += '<div class="option-card"><input type="radio" name="confidence" value="' + (ci + 1) + '"><span class="option-label">' + esc(confLabels[ci]) + '</span></div>';
     }
     html += '</div>';
     html += '<div class="field-error" id="error_confidence"></div>';
     html += '</div>';
 
-    // If askHiddenHU but NOT first, show HU question AFTER confidence
-    if (page.askHiddenHU && !page.askHiddenHUFirst) {
-      html += huSliderHtml;
-    }
-
     html += '</div>'; // end .trial-main-content
     html += '</div>'; // end .trial-layout
-
     return html;
   };
 
-  // ── Transaction Display (format-dependent) ─────────────────────────────
-  // Renders the disclosed transaction breakdown as list, chart_disclosed,
-  // or chart_full depending on this.formatCondition.
-  SurveyEngine.prototype.renderTransactionDisplay = function (trial) {
-    var format = this.formatCondition;
-    var hidden = trial.N - trial.k;
-    console.log('[FBO2] Rendering format: ' + format + ' for trial ' + trial.id);
-
-    if (format === 'list') {
-      return this.renderListFormat(trial, hidden);
-    } else if (format === 'chart_disclosed') {
-      return this.renderChartDisclosed(trial, hidden);
-    } else if (format === 'chart_full') {
-      return this.renderChartFull(trial, hidden);
-    }
-    // fallback
-    console.log('[FBO2] WARNING: format "' + format + '" not recognized, falling back to list');
-    return this.renderListFormat(trial, hidden);
-  };
-
-  // ── Format: List ───────────────────────────────────────────────────────
-  // Shows ONLY the disclosed transaction counts. No mention of undisclosed.
-  // The undisclosed count is visible in the header card ("Manager disclosed k of N").
-  SurveyEngine.prototype.renderListFormat = function (trial, hidden) {
-    var html = '';
-    html += '<div class="stimulus-title">Disclosed Transactions</div>';
-    html += '<div class="disclosed-list">';
-    html += '<div class="disclosed-list-item">';
-    html += '<span class="type-dot" style="background:#4CAF50;"></span>';
-    html += '<span class="disclosed-list-label">Normal</span>';
-    html += '<span class="disclosed-list-count">' + trial.nNormal + '</span>';
-    html += '</div>';
-    html += '<div class="disclosed-list-item">';
-    html += '<span class="type-dot" style="background:#FF9800;"></span>';
-    html += '<span class="disclosed-list-label">Unusual</span>';
-    html += '<span class="disclosed-list-count">' + trial.nUnusual + '</span>';
-    html += '</div>';
-    html += '<div class="disclosed-list-item">';
-    html += '<span class="type-dot" style="background:#ef4444;"></span>';
-    html += '<span class="disclosed-list-label">Highly Unusual</span>';
-    html += '<span class="disclosed-list-count">' + trial.nHU + '</span>';
-    html += '</div>';
-    html += '</div>';
-    return html;
-  };
-
-  // ── Format: Chart (disclosed only) ─────────────────────────────────────
-  // Pie shows proportions of disclosed (k) only. Text note about undisclosed below.
-  SurveyEngine.prototype.renderChartDisclosed = function (trial, hidden) {
-    var html = '';
-    html += '<div class="stimulus-title">Disclosed Transactions</div>';
-    html += '<div class="pie-chart-section">';
-    html += this.renderPieChart(trial, false);
-    html += '</div>';
-    html += '<div class="pie-undisclosed-note">' + hidden + ' transactions were not disclosed to you.</div>';
-    return html;
-  };
-
-  // ── Format: Chart (full with undisclosed segment) ──────────────────────
-  // Pie shows proportions of all N transactions. Gray segment = undisclosed.
-  SurveyEngine.prototype.renderChartFull = function (trial, hidden) {
-    var html = '';
-    html += '<div class="stimulus-title">All Transactions</div>';
-    html += '<div class="pie-chart-section">';
-    html += this.renderPieChart(trial, true);
-    html += '</div>';
-    return html;
-  };
-
-  // ── Pie Chart Builder (CSS conic-gradient with legend) ─────────────────
-  // Creates a pie chart using conic-gradient.
-  // If showUndisclosed=true, includes a gray segment for hidden transactions.
-  // For chart_disclosed: pie shows proportions of disclosed transactions only.
-  // For chart_full: pie shows all transactions including undisclosed.
-  SurveyEngine.prototype.renderPieChart = function (trial, showUndisclosed) {
-    var hidden = trial.N - trial.k;
-
-    // Build data segments
-    var segments = [
-      { label: 'Normal',           count: trial.nNormal,  color: '#4CAF50' },
-      { label: 'Unusual',          count: trial.nUnusual, color: '#FF9800' },
-      { label: 'Highly Unusual',   count: trial.nHU,      color: '#ef4444' }
-    ];
-    if (showUndisclosed) {
-      segments.push({ label: 'Undisclosed', count: hidden, color: '#9CA3AF' });
-    }
-
-    // Total for percentage calculation
-    var total = 0;
-    for (var i = 0; i < segments.length; i++) {
-      total += segments[i].count;
-    }
-    if (total === 0) total = 1; // avoid division by zero
-
-    // Calculate degrees and percentages
-    var cumDeg = 0;
-    var gradientParts = [];
-    for (var s = 0; s < segments.length; s++) {
-      var seg = segments[s];
-      var pct = seg.count / total;
-      var deg = pct * 360;
-      seg.pct = pct;
-      seg.startDeg = cumDeg;
-      seg.endDeg = cumDeg + deg;
-
-      if (deg > 0) {
-        gradientParts.push(seg.color + ' ' + cumDeg.toFixed(2) + 'deg ' + seg.endDeg.toFixed(2) + 'deg');
-      }
-      cumDeg = seg.endDeg;
-    }
-
-    // Build conic-gradient string
-    var gradient = 'conic-gradient(' + gradientParts.join(', ') + ')';
-
-    // Handle the case where all segments are zero except one (or all zero)
-    if (gradientParts.length === 0) {
-      gradient = 'conic-gradient(#e5e7eb 0deg 360deg)';
-    }
-
-    var html = '';
-    html += '<div class="pie-chart-container">';
-
-    // Pie chart circle (220px, set via CSS class .pie-chart)
-    html += '<div class="pie-chart" style="background: ' + gradient + ';"></div>';
-
-    // Legend (vertically stacked to right of pie)
-    html += '<div class="pie-legend">';
-    for (var li = 0; li < segments.length; li++) {
-      var item = segments[li];
-      if (item.count === 0) continue; // skip zero-count segments in legend
-      var pctDisplay = Math.round(item.pct * 100);
-      html += '<div class="pie-legend-item">';
-      html += '<div class="pie-legend-swatch" style="background: ' + item.color + ';"></div>';
-      html += '<div class="pie-legend-text">';
-      html += '<span class="pie-legend-label">' + esc(item.label) + '</span>';
-      html += '<span class="pie-legend-value">' + item.count + ' (' + pctDisplay + '%)</span>';
-      html += '</div>';
-      html += '</div>';
-    }
-    html += '</div>';
-
-    html += '</div>'; // end .pie-chart-container
-
-    return html;
-  };
-
-  // Transition page
+  // ── Transition ─────────────────────────────────────────────────────────
   SurveyEngine.prototype.renderTransition = function (page) {
-    var html = '';
-    html += '<h1 class="page-title">' + (page.title || 'Next Part') + '</h1>';
-    var body = page.body || '';
-    var fmt = this.formatCondition;
-    body = body.replace(/<!--if:(\w+)-->([\s\S]*?)<!--endif:\1-->/g,
-      function (match, cond, inner) {
-        return cond === fmt ? inner : '';
-      }
-    );
-    html += '<div class="page-body">' + body + '</div>';
+    var html = '<h1 class="page-title">' + (page.title || 'Next Part') + '</h1>';
+    html += '<div class="page-body">' + (page.body || '') + '</div>';
     return html;
   };
 
-  // Attention Check
+  // ── Attention Check ────────────────────────────────────────────────────
   SurveyEngine.prototype.renderAttentionCheck = function (page) {
-    var html = '';
-    html += '<div class="question-block">';
+    var html = '<div class="question-block">';
     html += '<div class="question-prompt">' + (page.question || '') + '</div>';
     if (page.description) html += '<div class="question-description">' + page.description + '</div>';
-
     html += '<div class="option-list">';
     var name = 'attn_' + page.id;
     (page.options || []).forEach(function (opt) {
       var val = typeof opt === 'object' ? opt.value : opt;
       var label = typeof opt === 'object' ? opt.label : opt;
-      html += '<div class="option-card">';
-      html += '<input type="radio" name="' + name + '" value="' + esc(val) + '">';
-      html += '<span class="option-label">' + esc(label) + '</span>';
-      html += '</div>';
+      html += '<div class="option-card"><input type="radio" name="' + name + '" value="' + esc(val) + '"><span class="option-label">' + esc(label) + '</span></div>';
     });
     html += '</div>';
-
-    html += '<div class="field-error" id="error_' + name + '"></div>';
-    html += '</div>';
+    html += '<div class="field-error" id="error_' + name + '"></div></div>';
     return html;
   };
 
-  // ── Trial Attention Check (recall questions after selected trials) ─────
+  // ── Trial Attention Check ──────────────────────────────────────────────
   SurveyEngine.prototype.renderTrialAttention = function (page) {
     var trial = page.trial;
-    var html = '';
-
-    html += '<h1 class="page-title">Attention Check</h1>';
+    var sizeLabel = this.getFirmSizeLabel(trial.N);
+    var html = '<h1 class="page-title">Attention Check</h1>';
     html += '<p>Please answer these questions about the firm you just evaluated.</p>';
 
-    // Q1: How many total transactions did this firm have?
-    // Build plausible options around the true N
-    var nOptions = this.buildAttentionOptions(trial.N, [10, 100, 1000]);
+    // Q1: Firm size (total transactions)
+    var sizeOptions = [
+      { value: 10, label: 'Small (10 transactions)' },
+      { value: 20, label: 'Medium (20 transactions)' },
+      { value: 50, label: 'Large (50 transactions)' }
+    ];
     html += '<div class="question-block" data-required="true" data-field-name="attn_n" data-field-type="radio">';
-    html += '<div class="question-prompt">How many total transactions did this firm have?</div>';
+    html += '<div class="question-prompt">What size was this firm?</div>';
     html += '<div class="option-list">';
-    nOptions.forEach(function (n) {
-      html += '<div class="option-card">';
-      html += '<input type="radio" name="attn_n" value="' + n + '">';
-      html += '<span class="option-label">' + n + '</span>';
-      html += '</div>';
+    sizeOptions.forEach(function (opt) {
+      html += '<div class="option-card"><input type="radio" name="attn_n" value="' + opt.value + '"><span class="option-label">' + opt.label + '</span></div>';
     });
-    html += '</div>';
-    html += '<div class="field-error" id="error_attn_n"></div>';
-    html += '</div>';
+    html += '</div><div class="field-error" id="error_attn_n"></div></div>';
 
-    // Q2: How many transactions did the manager show you?
-    var kOptions = this.buildAttentionOptions(trial.k, [3, 30, 300]);
-    html += '<div class="question-block" data-required="true" data-field-name="attn_k" data-field-type="radio">';
+    // Q2: Disclosed transactions
+    var dOptions = this.buildAttentionOptions(trial.D, [2, 4, 6, 8]);
+    html += '<div class="question-block" data-required="true" data-field-name="attn_d" data-field-type="radio">';
     html += '<div class="question-prompt">How many transactions did the manager show you?</div>';
     html += '<div class="option-list">';
-    kOptions.forEach(function (k) {
-      html += '<div class="option-card">';
-      html += '<input type="radio" name="attn_k" value="' + k + '">';
-      html += '<span class="option-label">' + k + '</span>';
-      html += '</div>';
+    dOptions.forEach(function (d) {
+      html += '<div class="option-card"><input type="radio" name="attn_d" value="' + d + '"><span class="option-label">' + d + '</span></div>';
     });
-    html += '</div>';
-    html += '<div class="field-error" id="error_attn_k"></div>';
-    html += '</div>';
+    html += '</div><div class="field-error" id="error_attn_d"></div></div>';
 
-    // Q3: How many Highly Unusual transactions were in the disclosed set?
-    html += '<div class="question-block" data-required="true" data-field-name="attn_hu" data-field-type="number">';
-    html += '<div class="question-prompt">How many Highly Unusual transactions were in the disclosed set?</div>';
+    // Q3: Flagged count
+    html += '<div class="question-block" data-required="true" data-field-name="attn_flag" data-field-type="number">';
+    html += '<div class="question-prompt">How many Flagged transactions did the manager show you?</div>';
     html += '<div class="number-input-wrapper">';
-    html += '<input type="number" class="number-input" id="attn_hu" name="attn_hu" min="0" max="' + trial.k + '" step="1" placeholder="?">';
-    html += '</div>';
-    html += '<div class="field-error" id="error_attn_hu"></div>';
-    html += '</div>';
+    html += '<input type="number" class="number-input" id="attn_flag" name="attn_flag" min="0" max="' + trial.D + '" step="1" placeholder="?">';
+    html += '</div><div class="field-error" id="error_attn_flag"></div></div>';
 
     return html;
   };
 
-  // Build plausible distractor options for attention checks.
-  // Returns an array of 4 options containing the correct answer plus 3 distractors,
-  // shuffled deterministically.
   SurveyEngine.prototype.buildAttentionOptions = function (correctValue, allPossible) {
-    // Start with all possible values from the design
     var options = [correctValue];
     for (var i = 0; i < allPossible.length; i++) {
-      if (allPossible[i] !== correctValue && options.length < 4) {
-        options.push(allPossible[i]);
-      }
+      if (allPossible[i] !== correctValue && options.length < 4) options.push(allPossible[i]);
     }
-    // If we don't have 4 options, add nearby values
     var multipliers = [0.5, 2, 0.1, 10, 0.25, 5];
     for (var m = 0; m < multipliers.length && options.length < 4; m++) {
       var candidate = Math.round(correctValue * multipliers[m]);
-      if (candidate > 0 && options.indexOf(candidate) === -1) {
-        options.push(candidate);
-      }
+      if (candidate > 0 && options.indexOf(candidate) === -1) options.push(candidate);
     }
-    // Sort numerically
     options.sort(function (a, b) { return a - b; });
     return options;
   };
 
-  // Questionnaire (generic questions page)
+  // ── Questionnaire ──────────────────────────────────────────────────────
   SurveyEngine.prototype.renderQuestionnaire = function (page) {
     var html = '';
     if (page.title) html += '<h1 class="page-title">' + page.title + '</h1>';
     if (page.description) html += '<div class="page-body">' + page.description + '</div>';
-
     var self = this;
-    (page.questions || []).forEach(function (q) {
-      html += self.renderQuestion(q);
-    });
-
+    (page.questions || []).forEach(function (q) { html += self.renderQuestion(q); });
     return html;
   };
 
-  // Generic question renderer
   SurveyEngine.prototype.renderQuestion = function (q) {
-    var html = '<div class="question-block" data-required="' + (q.required !== false) + '" ';
-    html += 'data-field-name="' + q.id + '" data-field-type="' + q.type + '">';
+    var html = '<div class="question-block" data-required="' + (q.required !== false) + '" data-field-name="' + q.id + '" data-field-type="' + q.type + '">';
     html += '<div class="question-prompt">' + q.prompt;
     if (q.required !== false) html += '<span class="question-required">*</span>';
     html += '</div>';
@@ -1652,25 +1154,17 @@
         (q.options || []).forEach(function (opt) {
           var val = typeof opt === 'object' ? opt.value : opt;
           var label = typeof opt === 'object' ? opt.label : opt;
-          html += '<div class="option-card">';
-          html += '<input type="radio" name="' + q.id + '" value="' + esc(val) + '">';
-          html += '<span class="option-label">' + esc(label) + '</span>';
-          html += '</div>';
+          html += '<div class="option-card"><input type="radio" name="' + q.id + '" value="' + esc(val) + '"><span class="option-label">' + esc(label) + '</span></div>';
         });
         html += '</div>';
         break;
-
       case 'number':
-        html += '<div class="number-input-wrapper">';
-        html += '<input type="number" class="number-input" id="' + q.id + '" name="' + q.id + '"';
+        html += '<div class="number-input-wrapper"><input type="number" class="number-input" id="' + q.id + '" name="' + q.id + '"';
         if (q.min !== undefined) html += ' min="' + q.min + '"';
         if (q.max !== undefined) html += ' max="' + q.max + '"';
         if (q.step !== undefined) html += ' step="' + q.step + '"';
-        html += ' placeholder="?">';
-        html += '</div>';
-        if (q.hint) html += '<div class="number-input-hint">' + q.hint + '</div>';
+        html += ' placeholder="?"></div>';
         break;
-
       case 'text':
         if (q.paragraph) {
           html += '<textarea class="textarea-input" id="' + q.id + '" name="' + q.id + '"';
@@ -1682,24 +1176,16 @@
           html += '>';
         }
         break;
-
       case 'likert':
-        html += '<div class="likert-container">';
-        html += '<div class="likert-labels">';
+        html += '<div class="likert-container"><div class="likert-labels">';
         html += '<span class="likert-label-low">' + (q.minLabel || q.min || '') + '</span>';
         html += '<span class="likert-label-high">' + (q.maxLabel || q.max || '') + '</span>';
-        html += '</div>';
-        html += '<div class="likert-options">';
+        html += '</div><div class="likert-options">';
         for (var v = (q.min || 1); v <= (q.max || 7); v++) {
-          html += '<div class="likert-option">';
-          html += '<input type="radio" name="' + q.id + '" value="' + v + '" id="' + q.id + '_' + v + '">';
-          html += '<label for="' + q.id + '_' + v + '">' + v + '</label>';
-          html += '</div>';
+          html += '<div class="likert-option"><input type="radio" name="' + q.id + '" value="' + v + '" id="' + q.id + '_' + v + '"><label for="' + q.id + '_' + v + '">' + v + '</label></div>';
         }
-        html += '</div>';
-        html += '</div>';
+        html += '</div></div>';
         break;
-
       case 'dropdown':
         html += '<select class="dropdown-input" id="' + q.id + '" name="' + q.id + '">';
         html += '<option value="">-- Select --</option>';
@@ -1711,144 +1197,103 @@
         html += '</select>';
         break;
     }
-
-    html += '<div class="field-error" id="error_' + q.id + '"></div>';
-    html += '</div>';
+    html += '<div class="field-error" id="error_' + q.id + '"></div></div>';
     return html;
   };
 
-  // Slider Tutorial
+  // ── Slider Tutorial ────────────────────────────────────────────────────
   SurveyEngine.prototype.renderSliderTutorial = function (page) {
-    var html = '';
-    html += '<h1 class="page-title">' + (page.title || 'How to Answer') + '</h1>';
+    var html = '<h1 class="page-title">' + (page.title || 'How to Answer') + '</h1>';
     html += '<div class="page-body">' + (page.body || '') + '</div>';
-
     html += '<div class="tutorial-slider-section">';
-    html += '<p class="tutorial-prompt">Try it now! Move the slider to <strong>' +
-            (page.targetValue || '75') + '%</strong>:</p>';
+    html += '<p class="tutorial-prompt">Try it now! Move the slider to <strong>' + (page.targetValue || '75') + '%</strong>:</p>';
     html += '<div class="slider-value-display" id="tutorial_slider_value">50%</div>';
-    html += '<div class="slider-wrapper">';
-    html += '<span class="slider-label">0%</span>';
-    html += '<input type="range" class="slider-input" id="tutorial_slider" ' +
-            'min="0" max="100" step="1" value="50" data-touched="false" data-display="tutorial_slider_value">';
-    html += '<span class="slider-label">100%</span>';
-    html += '</div>';
-    html += '<div class="slider-hint">Drag the slider left or right</div>';
-    html += '</div>';
-
+    html += '<div class="slider-wrapper"><span class="slider-label">0%</span>';
+    html += '<input type="range" class="slider-input" id="tutorial_slider" min="0" max="100" step="1" value="50" data-touched="false" data-display="tutorial_slider_value">';
+    html += '<span class="slider-label">100%</span></div>';
+    html += '<div class="slider-hint">Drag the slider left or right</div></div>';
     return html;
   };
 
-  // Completion (Part 1 end -- pass)
+  // ── Completion (Part 1 pass) ───────────────────────────────────────────
   SurveyEngine.prototype.renderCompletion = function (page) {
     var self = this;
-    var html = '';
-    html += '<h1 class="page-title">' + (page.title || 'Complete!') + '</h1>';
+    var html = '<h1 class="page-title">' + (page.title || 'Complete!') + '</h1>';
     html += '<div class="page-body">' + (page.body || '') + '</div>';
 
-    var code = this.config.passCompletionCode || this.config.completionCode || 'XXXXXX';
-    var redirectUrl = this.config.passCompletionUrl || this.config.completionUrl || '';
+    var codes = this.config.prolific ? this.config.prolific.completionCodes : {};
+    var urls = this.config.prolific ? this.config.prolific.completionUrls : {};
+    var code = codes.pass1 || 'XXXXXX';
+    var redirectUrl = urls.pass1 || '';
+
     html += '<p style="margin-top:24px;">Your completion code:</p>';
     html += '<div class="completion-code">' + esc(code) + '</div>';
 
-    var part2Url = this.config.part2StudyUrl;
+    var part2Url = this.config.prolific ? this.config.prolific.part2StudyUrl : '';
     if (this.part === 1 && part2Url) {
-      html += '<p style="margin-top:24px;text-align:center;">';
-      html += '<a href="' + esc(part2Url) + '" class="btn btn-primary" ' +
-              'style="display:inline-block;font-size:18px;padding:14px 32px;text-decoration:none;">' +
-              'Continue to Part 2</a>';
-      html += '</p>';
-      html += '<p style="text-align:center;margin-top:8px;color:#6b7280;font-size:14px;">' +
-              'You will also need to submit your completion code above on Prolific.</p>';
+      html += '<p style="margin-top:24px;text-align:center;"><a href="' + esc(part2Url) + '" class="btn btn-primary" style="display:inline-block;font-size:18px;padding:14px 32px;text-decoration:none;">Continue to Part 2</a></p>';
+      html += '<p style="text-align:center;margin-top:8px;color:#6b7280;font-size:14px;">You will also need to submit your completion code above on Prolific.</p>';
     } else if (redirectUrl) {
-      html += '<p style="margin-top:16px;text-align:center;">';
-      html += '<a href="' + esc(redirectUrl) + '" class="btn btn-primary" ' +
-              'style="display:inline-block;margin-top:8px;text-decoration:none;">' +
-              'Return to Prolific</a>';
-      html += '</p>';
+      html += '<p style="margin-top:16px;text-align:center;"><a href="' + esc(redirectUrl) + '" class="btn btn-primary" style="display:inline-block;margin-top:8px;text-decoration:none;">Return to Prolific</a></p>';
     }
 
-    html += '<div id="submit_status" class="alert alert-info" style="margin-top:24px;">';
-    html += 'Submitting your responses... <span class="spinner"></span>';
-    html += '</div>';
+    html += '<div id="submit_status" class="alert alert-info" style="margin-top:24px;">Submitting your responses... <span class="spinner"></span></div>';
 
-    if (redirectUrl) this.config.completionUrl = redirectUrl;
-
-    setTimeout(function () {
-      self.submitted = false;
-      self.submitData();
-    }, 500);
-
+    this.config.completionUrl = redirectUrl;
+    setTimeout(function () { self.submitted = false; self.submitData(); }, 500);
     return html;
   };
 
-  // Part 1 Fail
+  // ── Part 1 Fail ────────────────────────────────────────────────────────
   SurveyEngine.prototype.renderPart1Fail = function () {
     var self = this;
-    var code = this.config.failCompletionCode || 'XXXXXX';
-    var failUrl = this.config.failCompletionUrl || '';
+    var codes = this.config.prolific ? this.config.prolific.completionCodes : {};
+    var urls = this.config.prolific ? this.config.prolific.completionUrls : {};
+    var code = codes.fail1 || 'XXXXXX';
+    var failUrl = urls.fail1 || '';
 
     var failLink = failUrl
-      ? '<p style="margin-top:16px;text-align:center;">' +
-        '<a href="' + esc(failUrl) + '" class="btn btn-primary" ' +
-        'style="display:inline-block;margin-top:8px;text-decoration:none;">' +
-        'Return to Prolific</a></p>'
+      ? '<p style="margin-top:16px;text-align:center;"><a href="' + esc(failUrl) + '" class="btn btn-primary" style="display:inline-block;margin-top:8px;text-decoration:none;">Return to Prolific</a></p>'
       : '';
 
     this.elContent.innerHTML =
       '<h1 class="page-title">Thank You</h1>' +
-      '<div class="page-body">' +
-      '<p>Unfortunately, you were unable to answer the comprehension questions correctly. ' +
-      'We are unable to include you in Part 2 of this study.</p>' +
-      '<p>You will still be paid for completing this part. Thank you for your time!</p>' +
-      '</div>' +
+      '<div class="page-body"><p>Unfortunately, you were unable to answer the comprehension questions correctly. We are unable to include you in Part 2 of this study.</p>' +
+      '<p>You will still be paid for completing this part. Thank you for your time!</p></div>' +
       '<p style="margin-top:24px;">Your completion code:</p>' +
       '<div class="completion-code">' + esc(code) + '</div>' +
       failLink +
-      '<div id="submit_status" class="alert alert-info" style="margin-top:24px;">' +
-      'Submitting your responses... <span class="spinner"></span></div>';
+      '<div id="submit_status" class="alert alert-info" style="margin-top:24px;">Submitting your responses... <span class="spinner"></span></div>';
     this.elNavButtons.style.display = 'none';
 
-    var origUrl = this.config.completionUrl;
-    if (failUrl) this.config.completionUrl = failUrl;
-
-    setTimeout(function () {
-      self.submitted = false;
-      self.submitData();
-      if (failUrl) self.config.completionUrl = origUrl;
-    }, 500);
+    this.config.completionUrl = failUrl;
+    setTimeout(function () { self.submitted = false; self.submitData(); }, 500);
   };
 
-  // Debrief
+  // ── Debrief ────────────────────────────────────────────────────────────
   SurveyEngine.prototype.renderDebrief = function (page) {
     var self = this;
-    var html = '';
-    html += '<h1 class="page-title">' + (page.title || 'Thank You!') + '</h1>';
+    var html = '<h1 class="page-title">' + (page.title || 'Thank You!') + '</h1>';
     html += '<div class="page-body">' + (page.body || '') + '</div>';
 
-    // Show bonus
     if (page.showBonus && this.bonusInfo && this.bonusInfo.enabled && this.bonusInfo.amount !== undefined) {
       html += '<div class="bonus-display">';
-      html += '<div class="bonus-amount">' + this.bonusInfo.currency + ' ' +
-              this.bonusInfo.amount.toFixed(2) + '</div>';
-      html += '<div class="bonus-detail">Your bonus based on Firm ' +
-              this.bonusInfo.selectedTrialId + '</div>';
-      html += '<div class="bonus-detail">Your estimate: ' + this.bonusInfo.fraudProb +
-              '% | Benchmark: ' + (this.bonusInfo.bayesPosterior * 100).toFixed(1) +
-              '% | Error: ' + this.bonusInfo.errorPp.toFixed(1) + ' pp</div>';
+      html += '<div class="bonus-amount">' + this.bonusInfo.currency + ' ' + this.bonusInfo.amount.toFixed(2) + '</div>';
+      html += '<div class="bonus-detail">Your bonus based on trial ' + this.bonusInfo.selectedTrialId + '</div>';
+      html += '<div class="bonus-detail">Your estimate: ' + this.bonusInfo.fraudProb + '% | Benchmark: ' + (this.bonusInfo.bayesPosterior * 100).toFixed(1) + '% | Error: ' + this.bonusInfo.errorPp.toFixed(1) + ' pp</div>';
       html += '</div>';
     }
 
-    var debriefCode = this.config.part2CompletionCode || this.config.completionCode || 'XXXXXX';
+    var codes = this.config.prolific ? this.config.prolific.completionCodes : {};
+    var urls = this.config.prolific ? this.config.prolific.completionUrls : {};
+    var debriefCode = codes.comp2 || page.completionCode || 'XXXXXX';
     html += '<p style="margin-top:24px;">Your completion code:</p>';
     html += '<div class="completion-code">' + esc(debriefCode) + '</div>';
 
-    html += '<div id="submit_status" class="alert alert-info" style="margin-top:24px;">';
-    html += 'Submitting your responses... <span class="spinner"></span>';
-    html += '</div>';
+    html += '<div id="submit_status" class="alert alert-info" style="margin-top:24px;">Submitting your responses... <span class="spinner"></span></div>';
 
+    this.config.completionUrl = urls.comp2 || '';
     setTimeout(function () { self.submitData(); }, 500);
-
     return html;
   };
 
@@ -1860,8 +1305,8 @@
     var data = this.getAllData();
     var statusEl = document.getElementById('submit_status');
     var completionUrl = this.config.completionUrl;
+    var endpoint = this.config.study ? this.config.study.dataEndpoint : '';
 
-    // Dev mode: skip actual submission
     if (this.devMode) {
       if (statusEl) {
         statusEl.className = 'alert alert-success';
@@ -1871,25 +1316,22 @@
       return;
     }
 
-    if (window.DataStorage && this.config.dataEndpoint) {
-      window.DataStorage.submit(data, this.config.dataEndpoint, function (success) {
+    if (window.DataStorage && endpoint) {
+      window.DataStorage.submit(data, endpoint, function (success) {
         if (success) {
           if (statusEl) {
             statusEl.className = 'alert alert-success';
             statusEl.innerHTML = 'Responses submitted successfully! Redirecting to Prolific...';
           }
           window.DataStorage.clearProgress();
-          if (completionUrl) {
-            setTimeout(function () { window.location.href = completionUrl; }, 2000);
-          }
+          if (completionUrl) { setTimeout(function () { window.location.href = completionUrl; }, 2000); }
         } else {
           if (statusEl) {
             statusEl.className = 'alert alert-warning';
             statusEl.innerHTML = '<p><strong>Submission encountered an issue.</strong></p>' +
               '<p>Your completion code is shown above. Please copy it and return to Prolific.</p>' +
               '<p>If possible, please also copy the data below and email it to the researcher:</p>' +
-              '<textarea class="textarea-input" style="font-size:11px;margin-top:8px;" readonly>' +
-              JSON.stringify(data) + '</textarea>';
+              '<textarea class="textarea-input" style="font-size:11px;margin-top:8px;" readonly>' + JSON.stringify(data) + '</textarea>';
           }
         }
       });
@@ -1905,7 +1347,6 @@
   // ── Expose globally ────────────────────────────────────────────────────
   window.SurveyEngine = SurveyEngine;
 
-  // ── Auto-init when config is available ─────────────────────────────────
   function autoInit() {
     if (window.SURVEY_CONFIG) {
       var engine = new SurveyEngine(window.SURVEY_CONFIG);
