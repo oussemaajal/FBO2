@@ -1,7 +1,8 @@
 /* ==========================================================================
-   FBO 2 (Selection Neglect) Survey Engine v3.1
+   FBO 2 (Selection Neglect) Survey Engine v3.2
    Config-driven, generic survey framework.
-   Design: Within-subject, 9 trials (3N x 1D x 3d_N), 2 signal types, D=4 fixed.
+   Design: Within-subject, 9 trials (3N x 1D x 3d_N), 2 transaction types, D=4 fixed.
+   Firm sizes: Small (10), Medium (20), Large (50).
    ========================================================================== */
 
 (function () {
@@ -580,13 +581,6 @@
         valid = false;
       }
 
-      if (page.askFlaggedEstimate) {
-        var flagSlider = document.getElementById('flagged_estimate');
-        if (flagSlider && flagSlider.getAttribute('data-touched') === 'false') {
-          this.showError('flagged_estimate', 'Please drag the slider to estimate the percentage of Flagged signals.');
-          valid = false;
-        }
-      }
     }
 
     // PID fallback
@@ -642,15 +636,14 @@
       var trial = page.trial;
       var fraudProb = document.getElementById('fraud_prob');
       var confChecked = document.querySelector('input[name="confidence"]:checked');
-      var flagEst = document.getElementById('flagged_estimate');
 
       this.trialResponses[page.id] = {
         trialId: trial.id,
         block: page.block || 1,
-        askFlaggedEstimate: page.askFlaggedEstimate || false,
+        askFlaggedEstimate: false,
         fraudProb: fraudProb ? parseFloat(fraudProb.value) : null,
         confidence: confChecked ? parseInt(confChecked.value) : null,
-        flaggedEstimate: flagEst ? parseFloat(flagEst.value) : null,
+        flaggedEstimate: null,
         N: trial.N,
         D: trial.D,
         dN: trial.dN,
@@ -937,16 +930,29 @@
   };
 
   // ── Trial Intro ────────────────────────────────────────────────────────
+  SurveyEngine.prototype.getFirmSizeLabel = function (N) {
+    if (N <= 10) return 'Small';
+    if (N <= 20) return 'Medium';
+    return 'Large';
+  };
+
+  SurveyEngine.prototype.getFirmSizeBadgeClass = function (N) {
+    if (N <= 10) return 'firm-size-badge-small';
+    if (N <= 20) return 'firm-size-badge-medium';
+    return 'firm-size-badge-large';
+  };
+
   SurveyEngine.prototype.renderTrialIntro = function (page) {
     var trial = page.trial;
     var firmLabel = 'Firm ' + (page.trialIndex + 1) + ' of ' + page.totalTrials;
+    var sizeLabel = this.getFirmSizeLabel(trial.N);
     var html = '<div class="trial-intro-splash">';
     html += '<div class="page-subtitle" style="margin-bottom:24px;">' + firmLabel + '</div>';
     html += '<div class="trial-intro-main">';
     html += '<div class="trial-intro-line" style="font-size:48px;font-weight:700;text-align:center;margin-bottom:24px;">Firm ' + (page.trialIndex + 1) + '</div>';
     html += '<div class="trial-intro-detail" style="font-size:22px;text-align:center;color:#4b5563;line-height:1.6;">';
-    html += 'This firm has <strong>' + trial.N + '</strong> signals in its pool.<br>';
-    html += 'The manager will show you <strong>' + trial.D + '</strong>.';
+    html += 'This is a <strong>' + sizeLabel + ' Firm</strong> with <strong>' + trial.N + '</strong> transactions.<br>';
+    html += 'The manager will show you <strong>' + trial.D + '</strong> transactions.';
     html += '</div></div></div>';
     return html;
   };
@@ -954,7 +960,8 @@
   // ── Fraud Trial Renderer ───────────────────────────────────────────────
   SurveyEngine.prototype.renderFraudTrial = function (page) {
     var trial = page.trial;
-    var hidden = trial.hidden;
+    var sizeLabel = this.getFirmSizeLabel(trial.N);
+    var badgeClass = this.getFirmSizeBadgeClass(trial.N);
     var html = '';
 
     // Two-column layout
@@ -962,7 +969,17 @@
 
     // LEFT: Reference Panel
     html += '<div class="reference-panel">';
-    html += '<div class="reference-title">Reference Distributions</div>';
+    html += '<div class="reference-title">Reference</div>';
+
+    // Firm Type distribution pie (blue/orange) -- ABOVE transaction pies
+    html += '<div class="ref-firm-type-section">';
+    html += '<div class="ref-firm-type-label">How Common Is Fraud?</div>';
+    html += '<div class="ref-firm-type-row">';
+    html += '<div class="ref-firm-type-pie" style="background:conic-gradient(#3b82f6 0deg 288deg, #f59e0b 288deg 360deg);"></div>';
+    html += '<div class="ref-firm-type-legend">';
+    html += '<div class="ref-firm-type-legend-item"><span class="ref-firm-type-swatch" style="background:#3b82f6;"></span><span><strong>80%</strong> Non-Fraud</span></div>';
+    html += '<div class="ref-firm-type-legend-item"><span class="ref-firm-type-swatch" style="background:#f59e0b;"></span><span><strong>20%</strong> Fraud</span></div>';
+    html += '</div></div></div>';
 
     // Non-fraud pie: 50% Normal, 50% Flagged
     html += '<div class="ref-pie-section">';
@@ -984,37 +1001,34 @@
     html += '<div class="ref-legend-item"><span class="ref-swatch" style="background:#ef4444;"></span><span>Flagged 60%</span></div>';
     html += '</div></div></div>';
 
-    html += '<div class="reference-prior">Each firm has a <strong>20%</strong> prior chance of being fraudulent</div>';
     html += '</div>';
 
     // RIGHT: Main trial content
     html += '<div class="trial-main-content">';
 
-    // Header Card
+    // Header Card -- firm size label
     html += '<div class="trial-header-card">';
     html += '<div class="trial-header-firm">Firm ' + (page.trialIndex + 1) + ' of ' + page.totalTrials + '</div>';
     html += '<div class="trial-header-stats">';
-    html += '<div class="trial-header-stat"><span class="trial-header-stat-label">Total signals in pool</span><span class="trial-header-stat-value">' + trial.N + '</span></div>';
-    html += '<div class="trial-header-stat"><span class="trial-header-stat-label">Manager disclosed</span><span class="trial-header-stat-value">' + trial.D + ' of ' + trial.N + '</span></div>';
+    html += '<div class="trial-header-stat"><span class="trial-header-stat-label">' + sizeLabel + ' Firm</span><span class="trial-header-stat-value">' + trial.N + ' transactions<span class="firm-size-badge ' + badgeClass + '">' + sizeLabel + '</span></span></div>';
     html += '</div></div>';
 
-    // Stimulus Display (list format)
+    // Stimulus Display (list format with document icons)
     html += '<div class="stimulus-display">';
-    html += '<div class="stimulus-title">Disclosed Signals</div>';
+    html += '<div class="stimulus-title">Disclosed Transactions</div>';
     html += '<div class="disclosed-list">';
-    html += '<div class="disclosed-list-item"><span class="type-dot" style="background:#4CAF50;"></span><span class="disclosed-list-label">Normal</span><span class="disclosed-list-count">' + trial.dN + '</span></div>';
-    html += '<div class="disclosed-list-item"><span class="type-dot" style="background:#ef4444;"></span><span class="disclosed-list-label">Flagged</span><span class="disclosed-list-count">' + trial.nFlagged + '</span></div>';
+    html += '<div class="disclosed-list-item"><span class="doc-icon doc-icon-normal">N</span><span class="disclosed-list-label">Normal</span><span class="disclosed-list-count">' + trial.dN + '</span></div>';
+    html += '<div class="disclosed-list-item"><span class="doc-icon doc-icon-flagged">F</span><span class="disclosed-list-label">Flagged</span><span class="disclosed-list-count">' + trial.nFlagged + '</span></div>';
     html += '</div>';
-    html += '<p class="stimulus-hidden-note">' + hidden + ' signals were not disclosed.</p>';
     html += '</div>';
 
-    // DV1: Fraud Probability Slider
+    // DV1: Fraud Probability Slider (default 20%)
     html += '<div class="dv-card">';
     html += '<div class="question-prompt">What is the probability that this firm is fraudulent?<span class="question-required">*</span></div>';
-    html += '<div class="slider-value-display" id="fraud_prob_display">50%</div>';
+    html += '<div class="slider-value-display" id="fraud_prob_display">20%</div>';
     html += '<div class="slider-wrapper">';
     html += '<span class="slider-label">0%</span>';
-    html += '<input type="range" class="slider-input" id="fraud_prob" name="fraud_prob" min="0" max="100" step="1" value="50" data-touched="false" data-display="fraud_prob_display">';
+    html += '<input type="range" class="slider-input" id="fraud_prob" name="fraud_prob" min="0" max="100" step="1" value="20" data-touched="false" data-display="fraud_prob_display">';
     html += '<span class="slider-label">100%</span>';
     html += '</div>';
     html += '<div class="slider-hint">Drag the slider to set your estimate</div>';
@@ -1032,21 +1046,6 @@
     html += '</div>';
     html += '<div class="field-error" id="error_confidence"></div>';
     html += '</div>';
-
-    // DV3: Flagged estimate for hidden signals (after fraud prob so it doesn't prime)
-    if (page.askFlaggedEstimate) {
-      html += '<div class="dv-card">';
-      html += '<div class="question-prompt">Of the <strong>' + hidden + '</strong> signals NOT shown to you, what percentage do you think are Flagged?<span class="question-required">*</span></div>';
-      html += '<div class="slider-value-display" id="flagged_estimate_display">50%</div>';
-      html += '<div class="slider-wrapper">';
-      html += '<span class="slider-label">0%</span>';
-      html += '<input type="range" class="slider-input" id="flagged_estimate" name="flagged_estimate" min="0" max="100" step="1" value="50" data-touched="false" data-display="flagged_estimate_display">';
-      html += '<span class="slider-label">100%</span>';
-      html += '</div>';
-      html += '<div class="slider-hint">Drag the slider to set your estimate</div>';
-      html += '<div class="field-error" id="error_flagged_estimate"></div>';
-      html += '</div>';
-    }
 
     html += '</div>'; // end .trial-main-content
     html += '</div>'; // end .trial-layout
@@ -1080,23 +1079,28 @@
   // ── Trial Attention Check ──────────────────────────────────────────────
   SurveyEngine.prototype.renderTrialAttention = function (page) {
     var trial = page.trial;
+    var sizeLabel = this.getFirmSizeLabel(trial.N);
     var html = '<h1 class="page-title">Attention Check</h1>';
     html += '<p>Please answer these questions about the firm you just evaluated.</p>';
 
-    // Q1: Total signals
-    var nOptions = this.buildAttentionOptions(trial.N, [10, 20, 50]);
+    // Q1: Firm size (total transactions)
+    var sizeOptions = [
+      { value: 10, label: 'Small (10 transactions)' },
+      { value: 20, label: 'Medium (20 transactions)' },
+      { value: 50, label: 'Large (50 transactions)' }
+    ];
     html += '<div class="question-block" data-required="true" data-field-name="attn_n" data-field-type="radio">';
-    html += '<div class="question-prompt">How many total signals did this firm have in its pool?</div>';
+    html += '<div class="question-prompt">What size was this firm?</div>';
     html += '<div class="option-list">';
-    nOptions.forEach(function (n) {
-      html += '<div class="option-card"><input type="radio" name="attn_n" value="' + n + '"><span class="option-label">' + n + '</span></div>';
+    sizeOptions.forEach(function (opt) {
+      html += '<div class="option-card"><input type="radio" name="attn_n" value="' + opt.value + '"><span class="option-label">' + opt.label + '</span></div>';
     });
     html += '</div><div class="field-error" id="error_attn_n"></div></div>';
 
-    // Q2: Disclosed signals
+    // Q2: Disclosed transactions
     var dOptions = this.buildAttentionOptions(trial.D, [2, 4, 6, 8]);
     html += '<div class="question-block" data-required="true" data-field-name="attn_d" data-field-type="radio">';
-    html += '<div class="question-prompt">How many signals did the manager show you?</div>';
+    html += '<div class="question-prompt">How many transactions did the manager show you?</div>';
     html += '<div class="option-list">';
     dOptions.forEach(function (d) {
       html += '<div class="option-card"><input type="radio" name="attn_d" value="' + d + '"><span class="option-label">' + d + '</span></div>';
@@ -1105,7 +1109,7 @@
 
     // Q3: Flagged count
     html += '<div class="question-block" data-required="true" data-field-name="attn_flag" data-field-type="number">';
-    html += '<div class="question-prompt">How many Flagged signals were in the disclosed set?</div>';
+    html += '<div class="question-prompt">How many Flagged transactions did the manager show you?</div>';
     html += '<div class="number-input-wrapper">';
     html += '<input type="number" class="number-input" id="attn_flag" name="attn_flag" min="0" max="' + trial.D + '" step="1" placeholder="?">';
     html += '</div><div class="field-error" id="error_attn_flag"></div></div>';

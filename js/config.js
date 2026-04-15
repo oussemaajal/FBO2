@@ -1,18 +1,18 @@
 /* ==========================================================================
-   FBO 2 (Selection Neglect) -- Experiment Configuration v3.1
+   FBO 2 (Selection Neglect) -- Experiment Configuration v3.2
 
    THIS IS THE ONLY FILE YOU NEED TO EDIT to configure your experiment.
    Everything else (engine, styling, bot detection, storage) is generic.
 
    Design: Purely within-subject. Every participant sees all 9 trials.
      9 trials = 3 (N) x 1 (D) x 3 (d_N condition)
-     N   = total signals in pool: {10, 20, 50}
-     D   = disclosed signals:     4 (fixed)
+     N   = total transactions: {10, 20, 50}  (Small, Medium, Large firm)
+     D   = disclosed transactions: 4 (fixed)
      d_N = Normal among disclosed: {0, D-1=3, D=4}
 
-   Signal types (2 only):
-     Normal  (green)  -- more common in non-fraudulent firms
-     Flagged (red)    -- more common in fraudulent firms
+   Transaction types (2 only):
+     Normal  (green doc)  -- more common in non-fraudulent firms
+     Flagged (red doc)    -- more common in fraudulent firms
 
    Type distributions:
      Non-Fraudulent: 50% Normal, 50% Flagged
@@ -23,7 +23,6 @@
    Per trial DVs:
      1. Fraud probability (0-100% slider)
      2. Confidence (1-7 Likert)
-     3. Flagged estimate for undisclosed (0-100% slider)
 
    Page types available:
    - welcome, consent, instructions, comprehension, completion
@@ -35,7 +34,7 @@ var SURVEY_CONFIG = {
   // -- Study Metadata -------------------------------------------------------
   study: {
     title: "Fraud Assessment Study",
-    version: "3.1.0",
+    version: "3.2.0",
     dataEndpoint: ""  // Google Sheets Apps Script URL -- fill before deploy
   },
 
@@ -77,14 +76,14 @@ var SURVEY_CONFIG = {
   // -- Stimuli: 9 trials (3 N x 1 D x 3 d_N) -----------------------------
   //
   // Each trial specifies:
-  //   N        = total signals in pool
+  //   N        = total transactions (10=Small, 20=Medium, 50=Large)
   //   D        = number disclosed by manager (always 4)
   //   dN       = number of Normal among disclosed
   //   nFlagged = D - dN (number of Flagged among disclosed)
-  //   hidden   = N - D (undisclosed signals)
+  //   hidden   = N - D (undisclosed transactions)
   //
   // Posteriors computed assuming strategic disclosure (manager shows
-  // best-looking signals first):
+  // best-looking transactions first):
   //   bayesPosterior = Bayesian (accounts for selection + undisclosed)
   //   snPosterior    = Selection Neglect (ignores undisclosed entirely)
   //   mrPosterior    = Mean-Reverting (imputes unconditional mean for undisclosed)
@@ -155,12 +154,14 @@ var SURVEY_CONFIG = {
       type: "instructions",
       title: "The Task",
       body:
-        "<p>You will evaluate firms for fraud. Each firm has a pool of signals " +
+        "<p>You will evaluate firms for fraud. Each firm has transactions " +
         "that are classified as either " +
+        "<span class='doc-icon doc-icon-normal' style='display:inline-flex; width:24px; height:28px; font-size:12px; vertical-align:middle;'>N</span> " +
         "<span style='color:#2d6a4f; font-weight:600;'>Normal</span> or " +
+        "<span class='doc-icon doc-icon-flagged' style='display:inline-flex; width:24px; height:28px; font-size:12px; vertical-align:middle;'>F</span> " +
         "<span style='color:#c92a2a; font-weight:600;'>Flagged</span>.</p>" +
 
-        "<p>The mix of signal types differs between firm types:</p>" +
+        "<p>The mix of transaction types differs between firm types:</p>" +
 
         "<div style='display:flex; gap:32px; justify-content:center; flex-wrap:wrap; margin:20px 0;'>" +
           "<div style='text-align:center;'>" +
@@ -168,8 +169,8 @@ var SURVEY_CONFIG = {
             "<div style='display:flex; align-items:center; gap:16px;'>" +
               "<div style='width:120px; height:120px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 180deg, #ef4444 180deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
               "<div style='display:flex; flex-direction:column; gap:6px; text-align:left; font-size:14px;'>" +
-                "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#4CAF50; border-radius:3px;'></span><strong>Normal 50%</strong></div>" +
-                "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#ef4444; border-radius:3px;'></span>Flagged 50%</div>" +
+                "<div style='display:flex; align-items:center; gap:8px;'><span class='doc-icon doc-icon-normal' style='width:20px; height:24px; font-size:11px;'>N</span><strong>Normal 50%</strong></div>" +
+                "<div style='display:flex; align-items:center; gap:8px;'><span class='doc-icon doc-icon-flagged' style='width:20px; height:24px; font-size:11px;'>F</span>Flagged 50%</div>" +
               "</div>" +
             "</div>" +
           "</div>" +
@@ -178,8 +179,8 @@ var SURVEY_CONFIG = {
             "<div style='display:flex; align-items:center; gap:16px;'>" +
               "<div style='width:120px; height:120px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 144deg, #ef4444 144deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
               "<div style='display:flex; flex-direction:column; gap:6px; text-align:left; font-size:14px;'>" +
-                "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#4CAF50; border-radius:3px;'></span>Normal 40%</div>" +
-                "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#ef4444; border-radius:3px;'></span><strong>Flagged 60%</strong></div>" +
+                "<div style='display:flex; align-items:center; gap:8px;'><span class='doc-icon doc-icon-normal' style='width:20px; height:24px; font-size:11px;'>N</span>Normal 40%</div>" +
+                "<div style='display:flex; align-items:center; gap:8px;'><span class='doc-icon doc-icon-flagged' style='width:20px; height:24px; font-size:11px;'>F</span><strong>Flagged 60%</strong></div>" +
               "</div>" +
             "</div>" +
           "</div>" +
@@ -193,26 +194,71 @@ var SURVEY_CONFIG = {
       type: "instructions",
       title: "The Manager",
       body:
-        "<p>A manager sees <strong>all</strong> of a firm's signals but shows you only some. " +
-        "The manager cannot fabricate signals -- only choose which ones to reveal.</p>" +
-        "<p>The manager earns more when you rate fraud <strong>lower</strong> -- " +
-        "so the manager wants to show you the best-looking signals.</p>",
-      minTimeSeconds: 10
+        "<div style='display:flex; align-items:center; gap:20px; padding:16px 20px; background:#f8f9fa; border-radius:10px; margin-bottom:18px;'>" +
+          "<div style='font-size:48px; flex-shrink:0;'>&#128188;</div>" +
+          "<div style='display:flex; align-items:center; gap:8px; font-size:28px;'>&#10132;</div>" +
+          "<div style='display:flex; gap:6px;'>" +
+            "<span class='doc-icon doc-icon-normal doc-icon-large'>N</span>" +
+            "<span class='doc-icon doc-icon-flagged doc-icon-large'>F</span>" +
+            "<span class='doc-icon doc-icon-normal doc-icon-large'>N</span>" +
+            "<span class='doc-icon doc-icon-normal doc-icon-large'>N</span>" +
+          "</div>" +
+          "<div style='display:flex; align-items:center; gap:8px; font-size:28px;'>&#10132;</div>" +
+          "<div style='font-size:48px; flex-shrink:0;'>&#128100;</div>" +
+        "</div>" +
+
+        "<p>A manager sees <strong>all</strong> of a firm's transactions but shows you only some. " +
+        "The manager cannot change or fabricate transactions -- only choose which ones you see.</p>" +
+
+        "<p>For example, if a firm has 10 transactions and the manager can show you 4, " +
+        "the manager picks which 4 to reveal.</p>" +
+
+        "<p>The manager does <strong>not want to be flagged as fraudulent</strong> because they might get fined. " +
+        "The lower the probability of fraud you assign, the better for the manager. " +
+        "The lower your rating, the more likely the manager earns a <strong>bonus</strong>.</p>" +
+
+        "<div class='incentive-cards'>" +
+          "<div class='incentive-card incentive-card-good'>" +
+            "<div class='incentive-card-icon'>&#9989;</div>" +
+            "<div><strong>Your fraud rating: LOW</strong></div>" +
+            "<div>Manager earns a bonus</div>" +
+          "</div>" +
+          "<div class='incentive-card incentive-card-bad'>" +
+            "<div class='incentive-card-icon'>&#10060;</div>" +
+            "<div><strong>Your fraud rating: HIGH</strong></div>" +
+            "<div>Manager gets fined</div>" +
+          "</div>" +
+        "</div>",
+      minTimeSeconds: 12
     },
 
-    // -- Page 5: What You Will See --
+    // -- Page 5: Firm Sizes --
     {
       id: "p1_inst_what",
       type: "instructions",
-      title: "What You Will See",
+      title: "Firm Sizes",
       body:
-        "<p>Each firm has a different number of signals in its pool " +
-        "(<strong>10</strong>, <strong>20</strong>, or <strong>50</strong>).</p>" +
-        "<p>The manager always discloses <strong>4 signals</strong> from the pool.</p>" +
-        "<p>The rest remain hidden from you.</p>" +
-        "<p>For example, a firm might have <strong>20 signals</strong> total, " +
-        "and the manager shows you <strong>4</strong>. " +
-        "That means <strong>16 signals are hidden</strong>.</p>",
+        "<p>Firms come in different sizes. A larger firm naturally has more transactions.</p>" +
+
+        "<div class='firm-size-row'>" +
+          "<div class='firm-size-card firm-size-card-small'>" +
+            "<div class='firm-size-icon'>&#127970;</div>" +
+            "<div class='firm-size-label'>Small Firm</div>" +
+            "<div class='firm-size-count'>10 transactions</div>" +
+          "</div>" +
+          "<div class='firm-size-card firm-size-card-medium'>" +
+            "<div class='firm-size-icon'>&#127971;</div>" +
+            "<div class='firm-size-label'>Medium Firm</div>" +
+            "<div class='firm-size-count'>20 transactions</div>" +
+          "</div>" +
+          "<div class='firm-size-card firm-size-card-large'>" +
+            "<div class='firm-size-icon'>&#127972;</div>" +
+            "<div class='firm-size-label'>Large Firm</div>" +
+            "<div class='firm-size-count'>50 transactions</div>" +
+          "</div>" +
+        "</div>" +
+
+        "<p>Regardless of firm size, the manager always reviews and shows you <strong>4 transactions</strong>.</p>",
       minTimeSeconds: 10
     },
 
@@ -226,53 +272,22 @@ var SURVEY_CONFIG = {
         "<ol>" +
         "<li>Rate how likely the firm is fraudulent (0-100%)</li>" +
         "<li>Rate your confidence in that assessment</li>" +
-        "<li>Estimate what percentage of the <em>hidden</em> signals are Flagged</li>" +
-        "</ol>",
+        "</ol>" +
+
+        "<p>Remember: <strong>80%</strong> of firms are non-fraudulent and only " +
+        "<strong>20%</strong> are fraudulent.</p>" +
+
+        "<div style='display:flex; align-items:center; gap:16px; justify-content:center; margin:18px 0;'>" +
+          "<div style='width:100px; height:100px; border-radius:50%; background:conic-gradient(#3b82f6 0deg 288deg, #f59e0b 288deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
+          "<div style='display:flex; flex-direction:column; gap:6px; text-align:left; font-size:14px;'>" +
+            "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#3b82f6; border-radius:3px;'></span><strong>Non-Fraudulent 80%</strong></div>" +
+            "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#f59e0b; border-radius:3px;'></span>Fraudulent 20%</div>" +
+          "</div>" +
+        "</div>",
       minTimeSeconds: 8
     },
 
-    // -- Page 7: Key Points --
-    {
-      id: "p1_inst_key",
-      type: "instructions",
-      title: "Key Points",
-      body:
-        "<p><strong>1.</strong> Fraudulent firms have <em>more Flagged</em> and <em>fewer Normal</em> signals " +
-        "than non-fraudulent firms.</p>" +
-
-        "<div style='display:flex; gap:24px; justify-content:center; flex-wrap:wrap; margin:16px 0;'>" +
-          "<div style='text-align:center;'>" +
-            "<div style='font-weight:600; font-size:13px; margin-bottom:8px; color:#1e293b;'>Non-Fraudulent</div>" +
-            "<div style='display:flex; align-items:center; gap:12px;'>" +
-              "<div style='width:90px; height:90px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 180deg, #ef4444 180deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
-              "<div style='display:flex; flex-direction:column; gap:4px; text-align:left; font-size:13px;'>" +
-                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#4CAF50; border-radius:2px;'></span><strong>Normal 50%</strong></div>" +
-                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#ef4444; border-radius:2px;'></span>Flagged 50%</div>" +
-              "</div>" +
-            "</div>" +
-          "</div>" +
-          "<div style='text-align:center;'>" +
-            "<div style='font-weight:600; font-size:13px; margin-bottom:8px; color:#1e293b;'>Fraudulent</div>" +
-            "<div style='display:flex; align-items:center; gap:12px;'>" +
-              "<div style='width:90px; height:90px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 144deg, #ef4444 144deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
-              "<div style='display:flex; flex-direction:column; gap:4px; text-align:left; font-size:13px;'>" +
-                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#4CAF50; border-radius:2px;'></span>Normal 40%</div>" +
-                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#ef4444; border-radius:2px;'></span><strong>Flagged 60%</strong></div>" +
-              "</div>" +
-            "</div>" +
-          "</div>" +
-        "</div>" +
-
-        "<p><strong>2.</strong> Each firm starts with a <strong>20% chance</strong> of being fraudulent " +
-        "(most firms are honest).</p>" +
-
-        "<p><strong>3.</strong> The manager <em>wants</em> to show you Normal signals and hide Flagged ones.</p>" +
-
-        "<p><strong>4.</strong> Pool sizes vary (10, 20, or 50 signals). The manager always discloses <strong>4</strong>.</p>",
-      minTimeSeconds: 10
-    },
-
-    // -- Page 8: Before the Quiz --
+    // -- Page 7: Before the Quiz --
     {
       id: "p1_inst_pre_quiz",
       type: "instructions",
@@ -282,7 +297,7 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 5
     },
 
-    // -- Page 9: Comprehension Quiz --
+    // -- Page 8: Comprehension Quiz --
     {
       id: "p1_comprehension",
       type: "comprehension",
@@ -290,14 +305,14 @@ var SURVEY_CONFIG = {
       description: "<p>Answer all questions correctly to proceed to Part 2.</p>",
       questions: [
         {
-          prompt: "Who picks which signals you see?",
+          prompt: "Who picks which transactions you see?",
           type: "radio",
           correct: "manager",
           options: [
             { value: "manager",  label: "The manager" },
             { value: "you",      label: "You" },
             { value: "random",   label: "A random process" },
-            { value: "nobody",   label: "Nobody -- you see all signals" }
+            { value: "nobody",   label: "Nobody -- you see all transactions" }
           ]
         },
         {
@@ -312,17 +327,6 @@ var SURVEY_CONFIG = {
           ]
         },
         {
-          prompt: "If a firm has 20 signals and the manager shows 4, how many are hidden?",
-          type: "radio",
-          correct: "16",
-          options: [
-            { value: "16", label: "16" },
-            { value: "4",  label: "4" },
-            { value: "20", label: "20" },
-            { value: "24", label: "24" }
-          ]
-        },
-        {
           prompt: "What is the prior probability that any given firm is fraudulent?",
           type: "radio",
           correct: "20",
@@ -334,12 +338,12 @@ var SURVEY_CONFIG = {
           ]
         },
         {
-          prompt: "Can a non-fraudulent firm have Flagged signals?",
+          prompt: "Can a non-fraudulent firm have Flagged transactions?",
           type: "radio",
           correct: "yes",
           options: [
-            { value: "yes",   label: "Yes -- 50% of their signals are Flagged" },
-            { value: "no",    label: "No -- only fraudulent firms have Flagged signals" },
+            { value: "yes",   label: "Yes -- 50% of their transactions are Flagged" },
+            { value: "no",    label: "No -- only fraudulent firms have Flagged transactions" },
             { value: "rare",  label: "Yes, but very rarely" }
           ]
         }
@@ -386,35 +390,45 @@ var SURVEY_CONFIG = {
       type: "instructions",
       title: "Quick Reminder",
       body:
-        "<p>Firms have signals classified as " +
+        "<p>Firms have transactions classified as " +
+        "<span class='doc-icon doc-icon-normal' style='display:inline-flex; width:20px; height:24px; font-size:11px; vertical-align:middle;'>N</span> " +
         "<span style='color:#2d6a4f; font-weight:600;'>Normal</span> or " +
+        "<span class='doc-icon doc-icon-flagged' style='display:inline-flex; width:20px; height:24px; font-size:11px; vertical-align:middle;'>F</span> " +
         "<span style='color:#c92a2a; font-weight:600;'>Flagged</span>. " +
         "A manager picks which ones to show you. The manager earns more when you rate fraud lower.</p>" +
 
-        "<div style='display:flex; gap:24px; justify-content:center; flex-wrap:wrap; margin:16px 0;'>" +
+        "<div style='display:flex; align-items:center; gap:16px; justify-content:center; margin:16px 0;'>" +
           "<div style='text-align:center;'>" +
-            "<div style='font-weight:600; font-size:13px; margin-bottom:8px; color:#1e293b;'>Non-Fraudulent</div>" +
-            "<div style='display:flex; align-items:center; gap:12px;'>" +
-              "<div style='width:90px; height:90px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 180deg, #ef4444 180deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
-              "<div style='display:flex; flex-direction:column; gap:4px; text-align:left; font-size:13px;'>" +
-                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#4CAF50; border-radius:2px;'></span><strong>Normal 50%</strong></div>" +
-                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#ef4444; border-radius:2px;'></span>Flagged 50%</div>" +
+            "<div style='font-weight:600; font-size:12px; margin-bottom:6px; color:#1e293b;'>How Common Is Fraud?</div>" +
+            "<div style='width:80px; height:80px; border-radius:50%; background:conic-gradient(#3b82f6 0deg 288deg, #f59e0b 288deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1); margin:0 auto;'></div>" +
+            "<div style='display:flex; flex-direction:column; gap:3px; text-align:left; font-size:12px; margin-top:6px;'>" +
+              "<div style='display:flex; align-items:center; gap:5px;'><span style='display:inline-block; width:10px; height:10px; background:#3b82f6; border-radius:2px;'></span><strong>80% Non-Fraud</strong></div>" +
+              "<div style='display:flex; align-items:center; gap:5px;'><span style='display:inline-block; width:10px; height:10px; background:#f59e0b; border-radius:2px;'></span>20% Fraud</div>" +
+            "</div>" +
+          "</div>" +
+          "<div style='text-align:center;'>" +
+            "<div style='font-weight:600; font-size:12px; margin-bottom:6px; color:#1e293b;'>Non-Fraudulent</div>" +
+            "<div style='display:flex; align-items:center; gap:10px;'>" +
+              "<div style='width:80px; height:80px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 180deg, #ef4444 180deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
+              "<div style='display:flex; flex-direction:column; gap:3px; text-align:left; font-size:12px;'>" +
+                "<div style='display:flex; align-items:center; gap:5px;'><span class='doc-icon doc-icon-normal' style='width:16px; height:18px; font-size:9px;'>N</span><strong>50%</strong></div>" +
+                "<div style='display:flex; align-items:center; gap:5px;'><span class='doc-icon doc-icon-flagged' style='width:16px; height:18px; font-size:9px;'>F</span>50%</div>" +
               "</div>" +
             "</div>" +
           "</div>" +
           "<div style='text-align:center;'>" +
-            "<div style='font-weight:600; font-size:13px; margin-bottom:8px; color:#1e293b;'>Fraudulent</div>" +
-            "<div style='display:flex; align-items:center; gap:12px;'>" +
-              "<div style='width:90px; height:90px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 144deg, #ef4444 144deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
-              "<div style='display:flex; flex-direction:column; gap:4px; text-align:left; font-size:13px;'>" +
-                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#4CAF50; border-radius:2px;'></span>Normal 40%</div>" +
-                "<div style='display:flex; align-items:center; gap:6px;'><span style='display:inline-block; width:12px; height:12px; background:#ef4444; border-radius:2px;'></span><strong>Flagged 60%</strong></div>" +
+            "<div style='font-weight:600; font-size:12px; margin-bottom:6px; color:#1e293b;'>Fraudulent</div>" +
+            "<div style='display:flex; align-items:center; gap:10px;'>" +
+              "<div style='width:80px; height:80px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 144deg, #ef4444 144deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
+              "<div style='display:flex; flex-direction:column; gap:3px; text-align:left; font-size:12px;'>" +
+                "<div style='display:flex; align-items:center; gap:5px;'><span class='doc-icon doc-icon-normal' style='width:16px; height:18px; font-size:9px;'>N</span>40%</div>" +
+                "<div style='display:flex; align-items:center; gap:5px;'><span class='doc-icon doc-icon-flagged' style='width:16px; height:18px; font-size:9px;'>F</span><strong>60%</strong></div>" +
               "</div>" +
             "</div>" +
           "</div>" +
         "</div>" +
 
-        "<p style='color:#64748b; font-size:14px;'>Prior: each firm starts at <strong>20%</strong> chance of fraud.</p>",
+        "<p style='color:#64748b; font-size:14px;'>Firm sizes: <strong>Small</strong> (10), <strong>Medium</strong> (20), <strong>Large</strong> (50) transactions. Manager always shows 4.</p>",
       minTimeSeconds: 8
     },
 
@@ -425,7 +439,7 @@ var SURVEY_CONFIG = {
       block: 1,
       randomize: true,
       trialCount: 9,
-      askFlaggedEstimate: true,
+      askFlaggedEstimate: false,
       minTimePerTrial: 10
     },
 
@@ -482,10 +496,10 @@ var SURVEY_CONFIG = {
       type: "debrief",
       title: "Thank You",
       body: "<p>This study examines how people assess fraud risk when a manager " +
-            "strategically selects which signals to disclose.</p>" +
-            "<p>We varied two things across trials: the total pool size (10, 20, or 50 signals) " +
-            "and the composition of the 4 disclosed signals.</p>" +
-            "<p>We are interested in how people account for the signals they <em>cannot</em> see, " +
+            "strategically selects which transactions to disclose.</p>" +
+            "<p>We varied two things across trials: firm size (Small, Medium, or Large) " +
+            "and the composition of the 4 disclosed transactions.</p>" +
+            "<p>We are interested in how people account for the transactions they <em>cannot</em> see, " +
             "and whether their reasoning matches different statistical models of inference.</p>" +
             "<p>Thank you for contributing to this research.</p>",
       showBonus: true,
@@ -538,8 +552,10 @@ var SURVEY_CONFIG = {
       type: "instructions",
       title: "The Task",
       body:
-        "<p>You will evaluate firms for fraud. Each firm has signals classified as " +
+        "<p>You will evaluate firms for fraud. Each firm has transactions classified as " +
+        "<span class='doc-icon doc-icon-normal' style='display:inline-flex; width:24px; height:28px; font-size:12px; vertical-align:middle;'>N</span> " +
         "<span style='color:#2d6a4f; font-weight:600;'>Normal</span> or " +
+        "<span class='doc-icon doc-icon-flagged' style='display:inline-flex; width:24px; height:28px; font-size:12px; vertical-align:middle;'>F</span> " +
         "<span style='color:#c92a2a; font-weight:600;'>Flagged</span>.</p>" +
 
         "<p>The mix differs between firm types:</p>" +
@@ -550,8 +566,8 @@ var SURVEY_CONFIG = {
             "<div style='display:flex; align-items:center; gap:16px;'>" +
               "<div style='width:120px; height:120px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 180deg, #ef4444 180deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
               "<div style='display:flex; flex-direction:column; gap:6px; text-align:left; font-size:14px;'>" +
-                "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#4CAF50; border-radius:3px;'></span><strong>Normal 50%</strong></div>" +
-                "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#ef4444; border-radius:3px;'></span>Flagged 50%</div>" +
+                "<div style='display:flex; align-items:center; gap:8px;'><span class='doc-icon doc-icon-normal' style='width:20px; height:24px; font-size:11px;'>N</span><strong>Normal 50%</strong></div>" +
+                "<div style='display:flex; align-items:center; gap:8px;'><span class='doc-icon doc-icon-flagged' style='width:20px; height:24px; font-size:11px;'>F</span>Flagged 50%</div>" +
               "</div>" +
             "</div>" +
           "</div>" +
@@ -560,8 +576,8 @@ var SURVEY_CONFIG = {
             "<div style='display:flex; align-items:center; gap:16px;'>" +
               "<div style='width:120px; height:120px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 144deg, #ef4444 144deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
               "<div style='display:flex; flex-direction:column; gap:6px; text-align:left; font-size:14px;'>" +
-                "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#4CAF50; border-radius:3px;'></span>Normal 40%</div>" +
-                "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#ef4444; border-radius:3px;'></span><strong>Flagged 60%</strong></div>" +
+                "<div style='display:flex; align-items:center; gap:8px;'><span class='doc-icon doc-icon-normal' style='width:20px; height:24px; font-size:11px;'>N</span>Normal 40%</div>" +
+                "<div style='display:flex; align-items:center; gap:8px;'><span class='doc-icon doc-icon-flagged' style='width:20px; height:24px; font-size:11px;'>F</span><strong>Flagged 60%</strong></div>" +
               "</div>" +
             "</div>" +
           "</div>" +
@@ -575,23 +591,71 @@ var SURVEY_CONFIG = {
       type: "instructions",
       title: "The Manager",
       body:
-        "<p>A manager sees <strong>all</strong> of a firm's signals but shows you only some. " +
-        "The manager cannot fabricate signals -- only choose which ones to reveal.</p>" +
-        "<p>The manager earns more when you rate fraud <strong>lower</strong> -- " +
-        "so the manager wants to show you the best-looking signals.</p>",
-      minTimeSeconds: 10
+        "<div style='display:flex; align-items:center; gap:20px; padding:16px 20px; background:#f8f9fa; border-radius:10px; margin-bottom:18px;'>" +
+          "<div style='font-size:48px; flex-shrink:0;'>&#128188;</div>" +
+          "<div style='display:flex; align-items:center; gap:8px; font-size:28px;'>&#10132;</div>" +
+          "<div style='display:flex; gap:6px;'>" +
+            "<span class='doc-icon doc-icon-normal doc-icon-large'>N</span>" +
+            "<span class='doc-icon doc-icon-flagged doc-icon-large'>F</span>" +
+            "<span class='doc-icon doc-icon-normal doc-icon-large'>N</span>" +
+            "<span class='doc-icon doc-icon-normal doc-icon-large'>N</span>" +
+          "</div>" +
+          "<div style='display:flex; align-items:center; gap:8px; font-size:28px;'>&#10132;</div>" +
+          "<div style='font-size:48px; flex-shrink:0;'>&#128100;</div>" +
+        "</div>" +
+
+        "<p>A manager sees <strong>all</strong> of a firm's transactions but shows you only some. " +
+        "The manager cannot change or fabricate transactions -- only choose which ones you see.</p>" +
+
+        "<p>For example, if a firm has 10 transactions and the manager can show you 4, " +
+        "the manager picks which 4 to reveal.</p>" +
+
+        "<p>The manager does <strong>not want to be flagged as fraudulent</strong> because they might get fined. " +
+        "The lower the probability of fraud you assign, the better for the manager. " +
+        "The lower your rating, the more likely the manager earns a <strong>bonus</strong>.</p>" +
+
+        "<div class='incentive-cards'>" +
+          "<div class='incentive-card incentive-card-good'>" +
+            "<div class='incentive-card-icon'>&#9989;</div>" +
+            "<div><strong>Your fraud rating: LOW</strong></div>" +
+            "<div>Manager earns a bonus</div>" +
+          "</div>" +
+          "<div class='incentive-card incentive-card-bad'>" +
+            "<div class='incentive-card-icon'>&#10060;</div>" +
+            "<div><strong>Your fraud rating: HIGH</strong></div>" +
+            "<div>Manager gets fined</div>" +
+          "</div>" +
+        "</div>",
+      minTimeSeconds: 12
     },
 
-    // -- Key Points --
+    // -- Firm Sizes --
     {
-      id: "inst_key",
+      id: "inst_sizes",
       type: "instructions",
-      title: "Key Points",
+      title: "Firm Sizes",
       body:
-        "<p><strong>1.</strong> Fraudulent firms have <em>more Flagged</em> and <em>fewer Normal</em> signals.</p>" +
-        "<p><strong>2.</strong> Each firm starts with a <strong>20% chance</strong> of being fraudulent.</p>" +
-        "<p><strong>3.</strong> The manager <em>wants</em> to show you Normal signals and hide Flagged ones.</p>" +
-        "<p><strong>4.</strong> Pool sizes vary across firms (10, 20, or 50 signals). The manager always discloses 4.</p>",
+        "<p>Firms come in different sizes. A larger firm naturally has more transactions.</p>" +
+
+        "<div class='firm-size-row'>" +
+          "<div class='firm-size-card firm-size-card-small'>" +
+            "<div class='firm-size-icon'>&#127970;</div>" +
+            "<div class='firm-size-label'>Small Firm</div>" +
+            "<div class='firm-size-count'>10 transactions</div>" +
+          "</div>" +
+          "<div class='firm-size-card firm-size-card-medium'>" +
+            "<div class='firm-size-icon'>&#127971;</div>" +
+            "<div class='firm-size-label'>Medium Firm</div>" +
+            "<div class='firm-size-count'>20 transactions</div>" +
+          "</div>" +
+          "<div class='firm-size-card firm-size-card-large'>" +
+            "<div class='firm-size-icon'>&#127972;</div>" +
+            "<div class='firm-size-label'>Large Firm</div>" +
+            "<div class='firm-size-count'>50 transactions</div>" +
+          "</div>" +
+        "</div>" +
+
+        "<p>Regardless of firm size, the manager always reviews and shows you <strong>4 transactions</strong>.</p>",
       minTimeSeconds: 10
     },
 
@@ -613,14 +677,14 @@ var SURVEY_CONFIG = {
       description: "<p>Answer all questions correctly to continue.</p>",
       questions: [
         {
-          prompt: "Who picks which signals you see?",
+          prompt: "Who picks which transactions you see?",
           type: "radio",
           correct: "manager",
           options: [
             { value: "manager",  label: "The manager" },
             { value: "you",      label: "You" },
             { value: "random",   label: "A random process" },
-            { value: "nobody",   label: "Nobody -- you see all signals" }
+            { value: "nobody",   label: "Nobody -- you see all transactions" }
           ]
         },
         {
@@ -635,17 +699,6 @@ var SURVEY_CONFIG = {
           ]
         },
         {
-          prompt: "If a firm has 20 signals and the manager shows 4, how many are hidden?",
-          type: "radio",
-          correct: "16",
-          options: [
-            { value: "16", label: "16" },
-            { value: "4",  label: "4" },
-            { value: "20", label: "20" },
-            { value: "24", label: "24" }
-          ]
-        },
-        {
           prompt: "What is the prior probability that any given firm is fraudulent?",
           type: "radio",
           correct: "20",
@@ -657,12 +710,12 @@ var SURVEY_CONFIG = {
           ]
         },
         {
-          prompt: "Can a non-fraudulent firm have Flagged signals?",
+          prompt: "Can a non-fraudulent firm have Flagged transactions?",
           type: "radio",
           correct: "yes",
           options: [
-            { value: "yes",   label: "Yes -- 50% of their signals are Flagged" },
-            { value: "no",    label: "No -- only fraudulent firms have Flagged signals" },
+            { value: "yes",   label: "Yes -- 50% of their transactions are Flagged" },
+            { value: "no",    label: "No -- only fraudulent firms have Flagged transactions" },
             { value: "rare",  label: "Yes, but very rarely" }
           ]
         }
@@ -679,7 +732,7 @@ var SURVEY_CONFIG = {
       block: 1,
       randomize: true,
       trialCount: 9,
-      askFlaggedEstimate: true,
+      askFlaggedEstimate: false,
       minTimePerTrial: 10
     },
 
@@ -736,8 +789,8 @@ var SURVEY_CONFIG = {
       type: "debrief",
       title: "Thank You",
       body: "<p>This study examines how people assess fraud risk when a manager " +
-            "strategically selects which signals to disclose.</p>" +
-            "<p>We varied pool size (10, 20, or 50 signals) and the composition of the 4 disclosed signals.</p>" +
+            "strategically selects which transactions to disclose.</p>" +
+            "<p>We varied firm size (Small, Medium, or Large) and the composition of the 4 disclosed transactions.</p>" +
             "<p>Thank you for contributing to this research.</p>",
       showBonus: true,
       completionCode: "COMP2SN"

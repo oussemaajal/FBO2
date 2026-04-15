@@ -61,7 +61,7 @@ body {
 /* ---------- Survey Wrapper ---------- */
 .survey-wrapper {
   width: 100%;
-  max-width: 700px;
+  max-width: 800px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -69,13 +69,13 @@ body {
 }
 
 .survey-wrapper.trial-active {
-  max-width: 960px;
+  max-width: 1100px;
 }
 
 /* ---------- Progress Bar ---------- */
 .progress-container {
   width: 100%;
-  max-width: 700px;
+  max-width: 800px;
   margin-bottom: 20px;
 }
 
@@ -145,7 +145,7 @@ body {
 
 /* ---------- Typography ---------- */
 .page-title {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 700;
   color: var(--color-text);
   margin-bottom: 8px;
@@ -159,7 +159,7 @@ body {
 }
 
 .page-body {
-  font-size: 17px;
+  font-size: 18px;
   line-height: 1.75;
   color: var(--color-text);
   margin-bottom: 24px;
@@ -532,7 +532,7 @@ body {
 }
 
 .trial-header-stat-value {
-  font-size: 26px;
+  font-size: 32px;
   font-weight: 800;
   color: #fff;
   line-height: 1.2;
@@ -591,7 +591,7 @@ body {
 }
 
 .disclosed-list-count {
-  font-size: 28px;
+  font-size: 36px;
   font-weight: 800;
   color: var(--color-text);
   font-variant-numeric: tabular-nums;
@@ -1356,7 +1356,7 @@ body {
   }
 
   .survey-wrapper.trial-active {
-    max-width: 700px;
+    max-width: 800px;
   }
 }
 
@@ -1371,7 +1371,7 @@ body {
 
 /* ---------- Reference Panel (sticky left sidebar) ---------- */
 .reference-panel {
-  width: 260px;
+  width: 300px;
   flex-shrink: 0;
   background: #f0f4f8;
   border: 1px solid #cbd5e1;
@@ -1413,8 +1413,8 @@ body {
 }
 
 .ref-pie {
-  width: 80px;
-  height: 80px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
   flex-shrink: 0;
   box-shadow: 0 1px 4px rgba(0,0,0,0.12);
@@ -1523,6 +1523,204 @@ body {
   color: #64748b;
   font-size: 14px;
   font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Document Icons for Normal / Flagged ---------- */
+.doc-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 44px;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 800;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  border: 2px solid;
+}
+
+.doc-icon-normal {
+  background: #e8f5e9;
+  border-color: #4CAF50;
+  color: #2e7d32;
+}
+
+.doc-icon-flagged {
+  background: #ffebee;
+  border-color: #ef4444;
+  color: #c62828;
+}
+
+.doc-icon-large {
+  width: 48px;
+  height: 58px;
+  font-size: 20px;
+  border-radius: 6px;
+}
+
+/* ---------- Firm Size Visual ---------- */
+.firm-size-row {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 20px 0;
+}
+
+.firm-size-card {
+  text-align: center;
+  padding: 18px 22px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--color-border);
+  background: var(--color-input-bg);
+  min-width: 140px;
+  transition: border-color var(--transition);
+}
+
+.firm-size-card-small {
+  border-color: #60a5fa;
+}
+
+.firm-size-card-medium {
+  border-color: #f59e0b;
+}
+
+.firm-size-card-large {
+  border-color: #8b5cf6;
+}
+
+.firm-size-icon {
+  font-size: 36px;
+  margin-bottom: 6px;
+}
+
+.firm-size-label {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 2px;
+}
+
+.firm-size-count {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+/* ---------- Firm Type Distribution (ref panel) ---------- */
+.ref-firm-type-section {
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+.ref-firm-type-label {
+  font-weight: 700;
+  font-size: 12px;
+  color: #1e293b;
+  margin-bottom: 8px;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ref-firm-type-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ref-firm-type-pie {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+}
+
+.ref-firm-type-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ref-firm-type-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #374151;
+  font-weight: 500;
+}
+
+.ref-firm-type-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* ---------- Manager Incentive Visual ---------- */
+.incentive-cards {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 18px 0;
+}
+
+.incentive-card {
+  flex: 1;
+  min-width: 180px;
+  max-width: 260px;
+  border-radius: var(--radius-md);
+  padding: 16px;
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.incentive-card-good {
+  background: #edf7ed;
+  border: 2px solid #4CAF50;
+}
+
+.incentive-card-bad {
+  background: #fdf0f0;
+  border: 2px solid #ef4444;
+}
+
+.incentive-card-icon {
+  font-size: 28px;
+  margin-bottom: 6px;
+}
+
+/* ---------- Firm Size Badge in Trial Header ---------- */
+.firm-size-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+.firm-size-badge-small {
+  background: rgba(96,165,250,0.25);
+  color: #93c5fd;
+}
+
+.firm-size-badge-medium {
+  background: rgba(245,158,11,0.25);
+  color: #fbbf24;
+}
+
+.firm-size-badge-large {
+  background: rgba(139,92,246,0.25);
+  color: #c4b5fd;
 }
 
 /* ==========================================================================
