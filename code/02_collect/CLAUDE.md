@@ -157,8 +157,9 @@ without testing -- it's historically been unreliable.
 
 All configured in `get_recommended_filters()` in `RUN_PROLIFIC_STUDY.py`.
 
-### Baseline (always on unless `--no-screeners`)
+### Baseline (always on unless `--loose` or `--no-screeners`)
 
+**Quality + language:**
 | Filter ID | Value | Why |
 |---|---|---|
 | `approval_rate` | 95-100% | Standard quality |
@@ -168,16 +169,21 @@ All configured in `get_recommended_filters()` in `RUN_PROLIFIC_STUDY.py`.
 | `current-country-of-residence` | UK, US, CA, AU, IE, NZ | English pool |
 | `age` | 18+ | Adult sample |
 
-### `--strict` adds
-
+**Background + ability:**
 | Filter ID | Value | Why |
 |---|---|---|
-| `education` | Bachelor's+ | Reasoning proxy |
-| `subject` | Accounting, Business admin, Economics, Finance, Math/Stats | Setting familiarity |
+| `education` | Bachelor's+ | Reasoning / literacy / numeracy proxy |
+| `subject` | Accounting, Business admin, Economics, Finance, Math/Stats | Setting familiarity; Oussema's explicit requirement |
 
-**Warning:** `--strict` collapses the eligible pool from ~300k to ~5-15k.
-Use for pilots only. For the full 250-participant run, baseline is safer
-unless quality is visibly bad.
+### `--loose` drops the background + ability filters
+
+Use if recruitment is too slow on full runs (250+ participants) or for a
+generalizability-focused sensitivity analysis. Only quality and language
+filters remain. **For pilots: always keep the default (stringent) set.**
+
+**Pool size:** baseline drops the eligible pool from ~300k to ~5-15k. That's
+plenty for a 30-person pilot. For the full 250-person run, plan for several
+days of recruitment (not hours).
 
 ### Filter ID stability
 

@@ -49,19 +49,25 @@ ENGLISH_NATIVE_COUNTRIES = ["United Kingdom", "United States", "Canada",
                             "Australia", "Ireland", "New Zealand"]
 
 
-def get_recommended_filters(strict: bool = False) -> list:
+def get_recommended_filters(loose: bool = False) -> list:
     """Return the recommended pre-screen filters for FBO 2.
 
-    Baseline (always on):
-      - Fluent English speaker
-      - Approval rate >= 95%
-      - Total prior approvals >= 100 (experience)
-      - Residence in English-native country
-      - Age 18+ (Prolific defaults but explicit here)
+    Baseline (always on, unless --loose):
+      Quality and language
+      - Approval rate 95%+
+      - 100+ prior approved submissions (experience)
+      - English first language AND fluent in English
+      - Residence in English-native country (UK/US/CA/AU/IE/NZ)
+      - Age 18+
 
-    Strict (also adds):
-      - Highest education = Bachelor's or above (reasoning proxy)
-      - Subject of study or industry = Business / Accounting / Finance / Economics
+      Background and ability (Oussema's requirements):
+      - Bachelor's degree or higher (reasoning / literacy proxy)
+      - Subject of study: Accounting / Business / Economics / Finance /
+        Mathematics or statistics (setting familiarity)
+
+    --loose drops the background+ability filters (keeps only quality and
+    language). Use if recruitment is too slow or for a much larger sample
+    where generalizability is a stronger concern.
 
     For bot / AI mitigation: handled inside the survey (honeypot, AI trap,
     BotDetector). The approval rate + 100-submission threshold already weeds
@@ -69,6 +75,7 @@ def get_recommended_filters(strict: bool = False) -> list:
     filter explicitly.
     """
     filters = [
+        # ── Quality and language (always on) ──
         # Approval rate 95-100%
         {"filter_id": "approval_rate", "selected_range": {"lower": 95, "upper": 100}},
 
@@ -88,8 +95,9 @@ def get_recommended_filters(strict: bool = False) -> list:
         {"filter_id": "age", "selected_range": {"lower": 18, "upper": 100}},
     ]
 
-    if strict:
-        # Bachelor's+ -- reasoning / literacy proxy
+    if not loose:
+        # ── Background and ability (default on, dropped by --loose) ──
+        # Bachelor's or above -- reasoning / literacy / numeracy proxy
         filters.append({
             "filter_id": "education",
             "selected_values": [
@@ -99,9 +107,10 @@ def get_recommended_filters(strict: bool = False) -> list:
             ],
         })
 
-        # Subject of study OR employment: finance / accounting adjacent
-        # We soft-OR this by using subject OR industry. Only study-of-subject
-        # applied here since Prolific evaluates each filter as AND. Use one.
+        # Subject of study -- finance/accounting/econ/math adjacent.
+        # Prolific evaluates filters as AND, so this is a HARD constraint.
+        # The pool drops to ~5-15k after stacking with country + approval.
+        # That's enough for a 30-person pilot; may slow a 250-person full run.
         filters.append({
             "filter_id": "subject",
             "selected_values": [
@@ -138,8 +147,8 @@ def cmd_create_two_part(args):
         screeners = []
         print("Screeners: OFF (--no-screeners)")
     else:
-        screeners = get_recommended_filters(strict=args.strict)
-        label = "STRICT (baseline + education + subject)" if args.strict else "baseline"
+        screeners = get_recommended_filters(loose=args.loose)
+        label = "LOOSE (quality + language only)" if args.loose else "baseline (quality + language + background)"
         print(f"Screeners: {label} ({len(screeners)} filters)")
         for f in screeners:
             fid = f.get('filter_id', '?')
@@ -409,9 +418,9 @@ def main():
     p.add_argument('--n', type=int, default=None,
                    help='Explicit total participant count (overrides pilot/full default)')
     p.add_argument('--no-screeners', action='store_true',
-                   help='Disable all pre-screen filters (open to all Prolific users)')
-    p.add_argument('--strict', action='store_true',
-                   help='Add Bachelor+-only + finance/econ/math subject filters to baseline')
+                   help='Disable ALL pre-screen filters (open to every Prolific user)')
+    p.add_argument('--loose', action='store_true',
+                   help='Drop background filters (education + subject); keep only quality + language')
     p.add_argument('--dry-run', action='store_true')
 
     # list
