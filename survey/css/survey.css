@@ -2103,43 +2103,79 @@ body {
   margin-top: 4px;
 }
 
-/* ---------- Size-constant note (Firm Sizes page bottom) ---------- */
-.size-constant-note {
+/* ---------- "You Always See 4" page ---------- */
+.always-four-row {
   display: flex;
-  align-items: center;
-  gap: 20px;
-  max-width: 580px;
-  margin: 24px auto 0;
-  padding: 18px 24px;
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  border: 2px solid #f59e0b;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
+  justify-content: center;
+  align-items: flex-end;
+  gap: 40px;
+  margin: 20px auto;
+  max-width: 720px;
+  flex-wrap: wrap;
 }
 
-.size-constant-badge {
-  flex-shrink: 0;
-  width: 64px;
-  height: 64px;
+.af-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.af-firm {
+  display: block;
+}
+
+.af-firm-small  { width: 60px;  height: 80px;  }
+.af-firm-medium { width: 80px;  height: 120px; }
+.af-firm-large  { width: 100px; height: 160px; }
+
+.af-size-label {
+  font-size: 13px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.af-size-num {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.af-arrow {
+  font-size: 28px;
+  color: #94a3b8;
+  line-height: 1;
+  margin: 4px 0;
+  font-weight: 900;
+}
+
+.af-four-badge {
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
-  background: #f59e0b;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
   color: #fff;
-  font-size: 36px;
+  font-size: 42px;
   font-weight: 900;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.35);
+  border: 4px solid #fff;
+  outline: 2px solid #1d4ed8;
 }
 
-.size-constant-text {
-  font-size: 17px;
-  color: #78350f;
-  line-height: 1.5;
-}
-
-.size-constant-text strong {
-  color: #78350f;
+@media (max-width: 600px) {
+  .always-four-row { gap: 20px; }
+  .af-four-badge { width: 56px; height: 56px; font-size: 32px; }
+  .af-firm-small  { width: 46px; height: 62px; }
+  .af-firm-medium { width: 60px; height: 90px; }
+  .af-firm-large  { width: 74px; height: 118px; }
 }
 
 /* ---------- Manager Visual (Page 10) ---------- */
