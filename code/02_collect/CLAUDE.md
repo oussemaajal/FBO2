@@ -52,21 +52,71 @@ Prolific UI → Settings → Go to API Token.
 
 ---
 
-## The Critical Rule: project_id Is Optional
+## The Critical Rule: workspace_id IS Required (auto-discovered)
 
-`create_study` and `create_participant_group` in `utils.py` **must not send
-`project_id` or `workspace_id`** if they aren't set. This was a subtle bug
-in the early version of the script. If the account doesn't use workspaces,
-sending `"project": null` or `"project": ""` makes Prolific reject the POST.
+Prolific participant groups (and studies, in some account structures) must
+be associated with a **project, workspace, or organisation**. Even though
+Oussema's Prolific UI shows no workspace dropdown, a default workspace
+exists under the hood.
 
-The fix is already in `utils.py`:
+`utils.py` auto-discovers it: `_discover_workspace_id()` calls
+`GET /api/v1/workspaces/` and uses the first workspace returned. The result
+is cached on the client instance.
 
-```python
-if self.project_id:
-    data['project'] = self.project_id
+**If you re-introduce an unconditional `'project': self.project_id` without
+the workspace fallback, participant-group creation breaks with:**
+```
+"A participant group can only be associated with one of project,
+ workspace or organisation."
 ```
 
-**Never** re-add an unconditional `'project': self.project_id` line.
+The current pattern: "prefer project_id if set, else use auto-discovered
+workspace_id". Don't change this without testing.
+
+## Filter ID Translation: Labels → Numeric ChoiceIDs
+
+Prolific's filter API expects **numeric string ChoiceIDs**, not human-readable
+labels. E.g., `fluent-languages: ["English"]` must be sent as
+`fluent-languages: ["19"]`.
+
+`utils.py::_translate_filters()` auto-translates by fetching
+`GET /api/v1/filters/` metadata and building a `label → id` reverse lookup
+for each filter. It caches the result and runs transparently inside
+`create_study()`.
+
+**If you add a new ChoiceID-based filter:** just use the human-readable
+label string in `get_recommended_filters()`. The translator will convert.
+If the label doesn't match Prolific's catalog, translator raises
+`ValueError` with a helpful list of available options.
+
+Labels are **exact match, case-sensitive**. Example gotchas discovered:
+- "Business and administrative studies" → not a label. Use "Business".
+- "Mathematics or statistics" → not a label. Use "Mathematics".
+- The filter ID for education is `highest-education-level-completed`, not
+  `education`.
+
+## Completion Codes: Required `actions` Field
+
+Newer Prolific API requires every completion code to have a non-empty
+`actions` array with a valid action type. Example:
+
+```python
+completion_codes=[
+    {"code": "PASS1SN", "code_type": "COMPLETED",
+     "actions": [{"action": "AUTOMATICALLY_APPROVE"}]},
+    {"code": "FAIL1SN", "code_type": "COMPLETED",
+     "actions": [{"action": "AUTOMATICALLY_APPROVE"}]},
+]
+```
+
+**Do NOT use:**
+- Omitting `actions` entirely (400: "This field is required.")
+- `"action": "APPROVE"` (400: "Unknown action type. Please provide a valid
+  known fixed screen out payment action type.")
+
+The valid action for normal completion is `AUTOMATICALLY_APPROVE` (string,
+all caps). Screen-out actions (like `NO_CONSENT`) use different action
+types — consult docs if you add them.
 
 ---
 
