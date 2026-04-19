@@ -627,7 +627,7 @@ var SURVEY_CONFIG = {
             "<div class='auditor-outcome-title'>Audited firm is Clean</div>" +
             "<div class='auditor-outcome-body'>" +
               "False alarm. " +
-              "<strong>You lose money.</strong>" +
+              "<strong>You get a pay cut.</strong>" +
             "</div>" +
           "</div>" +
         "</div>" +
