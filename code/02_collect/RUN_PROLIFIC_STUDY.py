@@ -122,6 +122,24 @@ def get_recommended_filters(loose: bool = False) -> list:
             ],
         })
 
+        # Reasoning ability -- Cognitive Reflection Test (CRT) score.
+        # CRT is the standard 3-question reasoning test on Prolific.
+        # Score 2-3 out of 3 filters for the top ~30% of participants
+        # who override their intuitive answer with reflection.
+        #
+        # NOTE: Prolific's exact filter_id for CRT varies by account
+        # vintage. If the API returns 400, try alternative IDs below
+        # (uncomment in sequence):
+        #   "cognitive-reflection-test"
+        #   "cognitive-reflection-test-score"
+        #   "crt-score"
+        #   "numeracy"
+        filters.append({
+            "filter_id": "cognitive-reflection-test",
+            # Score 2-3 of 3 = reflective reasoners
+            "selected_range": {"lower": 2, "upper": 3},
+        })
+
     return filters
 
 
