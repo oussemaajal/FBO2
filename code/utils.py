@@ -110,6 +110,7 @@ class ProlificClient:
         estimated_completion_time: int = 10,
         eligibility_requirements: list = None,
         participant_group_id: str = None,
+        filters: list = None,
     ) -> dict:
         """Create a new Prolific study. Returns study dict with 'id'.
 
@@ -118,9 +119,13 @@ class ProlificClient:
                 [{"code": "PASS1FBO", "code_type": "COMPLETED",
                   "actions": [{"action": "APPROVE"}]}]
             participant_group_id: Restrict to members of this group (allowlist).
+            filters: Additional new-style filter dicts merged with the group
+                allowlist (country, approval rate, etc.).
         """
         if DRY_RUN:
             print(f"[DRY-RUN] Would create Prolific study: {name}")
+            if filters:
+                print(f"    Filters: {len(filters)} screener(s)")
             return {'id': 'dry-run-study-id', 'name': name, 'status': 'UNPUBLISHED'}
 
         data = {
@@ -131,27 +136,33 @@ class ProlificClient:
             'total_available_places': total_available_places,
             'reward': reward,
             'estimated_completion_time': estimated_completion_time,
-            'project': self.project_id,
         }
+
+        # Only include project if your account uses workspaces/projects
+        if self.project_id:
+            data['project'] = self.project_id
 
         # Completion codes: multi-code (two-part) or single code
         if completion_codes:
             data['completion_codes'] = completion_codes
         else:
-            data['completion_code'] = completion_code or PROLIFIC_CONFIG['completion_code']
+            data['completion_code'] = completion_code or PROLIFIC_CONFIG.get('completion_code', 'XXXXXX')
             data['completion_option'] = 'code'
 
         if eligibility_requirements:
             data['eligibility_requirements'] = eligibility_requirements
 
-        # Filter to participant group (for Part 2 allowlist)
+        # Merge filters: participant group allowlist + any additional screeners
+        combined_filters = []
         if participant_group_id:
-            data['filters'] = [
-                {
-                    'filter_id': 'participant_group_allowlist',
-                    'selected_values': [participant_group_id],
-                }
-            ]
+            combined_filters.append({
+                'filter_id': 'participant_group_allowlist',
+                'selected_values': [participant_group_id],
+            })
+        if filters:
+            combined_filters.extend(filters)
+        if combined_filters:
+            data['filters'] = combined_filters
 
         return self._post('studies/', data)
 
@@ -180,7 +191,11 @@ class ProlificClient:
         if DRY_RUN:
             print(f"[DRY-RUN] Would create participant group: {name}")
             return {'id': 'dry-run-group-id', 'name': name}
-        data = {'name': name, 'project_id': self.project_id}
+        data = {'name': name}
+        if self.project_id:
+            data['project_id'] = self.project_id
+        if self.workspace_id:
+            data['workspace_id'] = self.workspace_id
         return self._post('participant-groups/', data)
 
     # ── Submissions ───────────────────────────────────────────────────

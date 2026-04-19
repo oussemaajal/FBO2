@@ -34,6 +34,88 @@ def ensure_dirs():
         PATHS[key].mkdir(parents=True, exist_ok=True)
 
 
+# =============================================================================
+# PROLIFIC SCREENERS
+# =============================================================================
+#
+# Prolific uses "filter_id" codes for pre-screens. Filter IDs are the stable
+# string keys used by Prolific's UI. See:
+#   https://docs.prolific.com/docs/api-docs/public/#tag/Studies/operation/CreateStudy
+# When a filter_id isn't recognized by Prolific the API throws 400 -- easy
+# to diagnose from the response body.
+
+# English-native countries (ISO codes that Prolific accepts as selected_values)
+ENGLISH_NATIVE_COUNTRIES = ["United Kingdom", "United States", "Canada",
+                            "Australia", "Ireland", "New Zealand"]
+
+
+def get_recommended_filters(strict: bool = False) -> list:
+    """Return the recommended pre-screen filters for FBO 2.
+
+    Baseline (always on):
+      - Fluent English speaker
+      - Approval rate >= 95%
+      - Total prior approvals >= 100 (experience)
+      - Residence in English-native country
+      - Age 18+ (Prolific defaults but explicit here)
+
+    Strict (also adds):
+      - Highest education = Bachelor's or above (reasoning proxy)
+      - Subject of study or industry = Business / Accounting / Finance / Economics
+
+    For bot / AI mitigation: handled inside the survey (honeypot, AI trap,
+    BotDetector). The approval rate + 100-submission threshold already weeds
+    out most automated accounts; Prolific does not expose an "is human"
+    filter explicitly.
+    """
+    filters = [
+        # Approval rate 95-100%
+        {"filter_id": "approval_rate", "selected_range": {"lower": 95, "upper": 100}},
+
+        # At least 100 prior approved submissions (experience)
+        {"filter_id": "approval_numbers", "selected_range": {"lower": 100, "upper": 100000}},
+
+        # First language: English
+        {"filter_id": "first-language", "selected_values": ["English"]},
+
+        # Fluent in English
+        {"filter_id": "fluent-languages", "selected_values": ["English"]},
+
+        # Current country of residence (English-native)
+        {"filter_id": "current-country-of-residence", "selected_values": ENGLISH_NATIVE_COUNTRIES},
+
+        # Age 18+ (Prolific's default minimum; explicit here for clarity)
+        {"filter_id": "age", "selected_range": {"lower": 18, "upper": 100}},
+    ]
+
+    if strict:
+        # Bachelor's+ -- reasoning / literacy proxy
+        filters.append({
+            "filter_id": "education",
+            "selected_values": [
+                "Undergraduate degree (BA/BSc/other)",
+                "Graduate degree (MA/MSc/MPhil/other)",
+                "Doctorate degree (PhD/other)",
+            ],
+        })
+
+        # Subject of study OR employment: finance / accounting adjacent
+        # We soft-OR this by using subject OR industry. Only study-of-subject
+        # applied here since Prolific evaluates each filter as AND. Use one.
+        filters.append({
+            "filter_id": "subject",
+            "selected_values": [
+                "Accounting",
+                "Business and administrative studies",
+                "Economics",
+                "Finance",
+                "Mathematics or statistics",
+            ],
+        })
+
+    return filters
+
+
 def cmd_create_two_part(args):
     """Create the two-part study: participant group, Part 1, Part 2."""
     ensure_dirs()
@@ -50,6 +132,24 @@ def cmd_create_two_part(args):
                  else EXPERIMENT_PARAMS.get('default_n_full', 250))
 
     survey_url = SURVEY_CONFIG.get('survey_url', 'https://oussemaajal.github.io/FBO2/')
+
+    # Build screener filter set
+    if args.no_screeners:
+        screeners = []
+        print("Screeners: OFF (--no-screeners)")
+    else:
+        screeners = get_recommended_filters(strict=args.strict)
+        label = "STRICT (baseline + education + subject)" if args.strict else "baseline"
+        print(f"Screeners: {label} ({len(screeners)} filters)")
+        for f in screeners:
+            fid = f.get('filter_id', '?')
+            if 'selected_range' in f:
+                rng = f['selected_range']
+                print(f"   - {fid}: {rng.get('lower')}..{rng.get('upper')}")
+            else:
+                vals = f.get('selected_values', [])
+                shown = ', '.join(vals[:3]) + (f', ... ({len(vals)} total)' if len(vals) > 3 else '')
+                print(f"   - {fid}: {shown}")
 
     client = ProlificClient()
 
@@ -90,6 +190,7 @@ def cmd_create_two_part(args):
             {"code": "FAIL1SN", "code_type": "COMPLETED",
              "actions": [{"action": "APPROVE"}]},
         ],
+        filters=screeners,
     )
     study1_id = study1.get('id', 'unknown')
     print(f"  Part 1 created: {study1_id}")
@@ -123,6 +224,7 @@ def cmd_create_two_part(args):
         reward=part2_reward,
         estimated_completion_time=part2_minutes,
         participant_group_id=group_id,
+        filters=screeners,
     )
     study2_id = study2.get('id', 'unknown')
     print(f"  Part 2 created: {study2_id}")
@@ -306,6 +408,10 @@ def main():
                    help='Use pilot default count (60) instead of full (250)')
     p.add_argument('--n', type=int, default=None,
                    help='Explicit total participant count (overrides pilot/full default)')
+    p.add_argument('--no-screeners', action='store_true',
+                   help='Disable all pre-screen filters (open to all Prolific users)')
+    p.add_argument('--strict', action='store_true',
+                   help='Add Bachelor+-only + finance/econ/math subject filters to baseline')
     p.add_argument('--dry-run', action='store_true')
 
     # list

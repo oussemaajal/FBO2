@@ -37,8 +37,24 @@ PROLIFIC_CONFIG = {
 }
 
 def load_api_key(env_var):
-    """Load API key from environment variable."""
-    return os.environ.get(env_var, '')
+    """Load API key from environment variable, falling back to project-root .env file."""
+    value = os.environ.get(env_var)
+    if value:
+        return value
+
+    env_path = PROJECT_ROOT / ".env"
+    try:
+        with open(env_path) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if line.startswith(env_var) and "=" in line:
+                    return line.split("=", 1)[1].strip().strip('"').strip("'")
+    except FileNotFoundError:
+        pass
+
+    return ''
 
 # =============================================================================
 # SURVEY CONFIG
