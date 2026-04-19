@@ -2225,46 +2225,72 @@ body {
   margin-bottom: 2px;
 }
 
-/* ---------- Manager Flow Diagram (Page 10 redo) ---------- */
-.manager-flow-diagram {
+/* ---------- Manager Flow (Page: The Manager) ---------- */
+.manager-flow {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 20px;
-  max-width: 680px;
+  gap: 16px;
+  max-width: 720px;
   margin: 0 auto 24px;
-  padding: 20px;
+  padding: 24px 20px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
+  flex-wrap: nowrap;
 }
 
-.mfd-col {
+.mf-side {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  flex: 1;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
-.mfd-col-label {
-  font-size: 13px;
+.mf-label {
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
   color: #64748b;
 }
 
-.mfd-col-sub {
-  font-size: 14px;
+.mf-sub {
+  font-size: 13px;
   color: #475569;
   font-weight: 500;
   margin-top: 4px;
 }
 
-.mfd-stack {
+.mf-doc {
+  width: 22px;
+  height: 28px;
+  background: #fff;
+  border: 2px dashed #94a3b8;
+  border-radius: 3px;
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mf-doc-selected {
+  width: 34px;
+  height: 44px;
+  font-size: 20px;
+  border: 3px solid #3b82f6;
+  color: #1d4ed8;
+  background: #eff6ff;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.25);
+}
+
+.mf-docs-10 {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, 22px);
   gap: 4px;
   padding: 10px;
   background: #fff;
@@ -2272,7 +2298,7 @@ body {
   border: 1px solid #e2e8f0;
 }
 
-.mfd-reveal {
+.mf-docs-4 {
   display: flex;
   gap: 6px;
   padding: 12px;
@@ -2282,25 +2308,46 @@ body {
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
 }
 
-.mfd-arrow {
+.mf-middle {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  gap: 4px;
   flex-shrink: 0;
-  width: 90px;
+  padding: 0 4px;
 }
 
-.mfd-arrow svg {
-  width: 70px;
-  height: 55px;
+.mf-manager-svg {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
 }
 
-.mfd-arrow-label {
-  font-size: 12px;
+.mf-arrow {
+  font-size: 28px;
   color: #475569;
-  font-weight: 600;
-  text-align: center;
-  margin-top: -2px;
+  line-height: 1;
+  font-weight: 900;
+}
+
+.mf-middle-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .manager-flow { gap: 10px; padding: 18px 12px; }
+  .mf-docs-10 { grid-template-columns: repeat(5, 18px); }
+  .mf-doc { width: 18px; height: 22px; font-size: 11px; }
+  .mf-doc-selected { width: 26px; height: 34px; font-size: 16px; }
+  .mf-manager-svg { width: 32px; height: 32px; }
+  .mf-arrow { font-size: 22px; }
+  .mf-middle-label { font-size: 10px; }
 }
 
 /* ---------- Manager Incentive Examples (Page 10b) ---------- */
@@ -2394,6 +2441,113 @@ body {
 
 .incentive-outcome-icon {
   font-size: 20px;
+}
+
+/* ---------- Hero callout for Manager Incentives ---------- */
+.manager-hero-callout {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: 680px;
+  margin: 28px auto 0;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  border-left: 6px solid #1d4ed8;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(29, 78, 216, 0.12);
+}
+
+.manager-hero-arrow {
+  font-size: 32px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.manager-hero-text {
+  font-size: 17px;
+  color: #1e293b;
+  line-height: 1.5;
+}
+
+.manager-hero-text strong {
+  color: #1d4ed8;
+}
+
+/* ---------- Your Bonus page (Auditor Incentive) ---------- */
+.auditor-outcomes {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.auditor-outcome {
+  flex: 1;
+  min-width: 260px;
+  max-width: 330px;
+  padding: 22px 20px;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+}
+
+.auditor-outcome-good {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  border: 2px solid #10b981;
+}
+
+.auditor-outcome-bad {
+  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  border: 2px solid #ef4444;
+}
+
+.auditor-outcome-badge {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 900;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.auditor-outcome-good .auditor-outcome-badge { background: #10b981; }
+.auditor-outcome-bad .auditor-outcome-badge { background: #ef4444; }
+
+.auditor-outcome-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.auditor-outcome-body {
+  font-size: 15px;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.auditor-outcome-body strong {
+  color: #1e293b;
+}
+
+.auditor-rule {
+  max-width: 720px;
+  margin: 24px auto 0;
+  padding: 16px 22px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #334155;
+  line-height: 1.55;
 }
 
 /* ---------- Example Grid (Pages 11-13) ---------- */
