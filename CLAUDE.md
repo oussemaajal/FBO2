@@ -56,6 +56,14 @@ FBO 2/
 - LaTeX safety: use raw strings, compile after edits, no Unicode
 - This project may eventually include experiments (Prolific/lab) -- keep that in mind for design
 
+## Prolific Setup
+
+**Before any Prolific-related work** (creating studies, publishing, approving
+submissions, paying bonuses, editing screeners, debugging API errors), read
+`code/02_collect/CLAUDE.md`. It documents credentials, two-part flow,
+screeners, completion codes, pay structure, the Apps Script group-add
+integration, and known failure modes.
+
 ## Session Workflow
 
 1. Read WORKLOG.md at start
