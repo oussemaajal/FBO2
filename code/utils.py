@@ -88,6 +88,10 @@ class ProlificClient:
     def _post(self, endpoint: str, data: dict = None) -> dict:
         url = f"{self.base_url}/{endpoint}"
         resp = requests.post(url, headers=self._headers(), json=data)
+        if resp.status_code >= 400:
+            print(f"\n[Prolific API error {resp.status_code}] POST {endpoint}")
+            print(f"  Request body: {data}")
+            print(f"  Response: {resp.text[:2000]}\n")
         resp.raise_for_status()
         return resp.json()
 
@@ -162,7 +166,8 @@ class ProlificClient:
         if filters:
             combined_filters.extend(filters)
         if combined_filters:
-            data['filters'] = combined_filters
+            # Translate label strings to Prolific's numeric ChoiceIDs
+            data['filters'] = self._translate_filters(combined_filters)
 
         return self._post('studies/', data)
 
@@ -186,16 +191,120 @@ class ProlificClient:
 
     # ── Participant Groups ─────────────────────────────────────────────
 
+    def _discover_workspace_id(self) -> str:
+        """Auto-discover the default workspace ID via /workspaces/ endpoint.
+        Caches the result on the instance."""
+        if getattr(self, '_cached_workspace_id', None):
+            return self._cached_workspace_id
+
+        try:
+            result = self._get('workspaces/')
+            workspaces = result.get('results', [])
+            if workspaces:
+                wid = workspaces[0].get('id')
+                self._cached_workspace_id = wid
+                print(f"  Auto-discovered workspace_id: {wid}")
+                return wid
+        except Exception as e:
+            print(f"  Could not auto-discover workspace: {e}")
+        return None
+
+    def _load_filter_metadata(self) -> dict:
+        """Fetch and cache the Prolific filter catalog. Returns a dict
+        {filter_id: {"label_to_id": {label: id}, "data_type": str}}."""
+        if getattr(self, '_cached_filter_meta', None):
+            return self._cached_filter_meta
+
+        meta = {}
+        try:
+            result = self._get('filters/')
+            for f in result.get('results', []):
+                fid = f.get('filter_id')
+                if not fid:
+                    continue
+                raw_choices = f.get('choices', {})
+                # choices is a dict {id: label}; build reverse lookup
+                if isinstance(raw_choices, dict):
+                    label_to_id = {label: cid for cid, label in raw_choices.items()}
+                else:
+                    label_to_id = {}
+                meta[fid] = {
+                    'data_type': f.get('data_type'),
+                    'label_to_id': label_to_id,
+                }
+            self._cached_filter_meta = meta
+        except Exception as e:
+            print(f"  Could not load filter metadata: {e}")
+            self._cached_filter_meta = {}
+        return self._cached_filter_meta
+
+    def _translate_filters(self, filters: list) -> list:
+        """Convert human-readable label strings in filter values to the
+        numeric ChoiceIDs Prolific expects. Range filters pass through
+        unchanged. Unknown labels raise with a helpful message."""
+        if not filters:
+            return filters
+
+        meta = self._load_filter_metadata()
+        translated = []
+
+        for f in filters:
+            fid = f.get('filter_id')
+            # Range filters -- no translation needed
+            if 'selected_range' in f:
+                translated.append(f)
+                continue
+
+            values = f.get('selected_values', [])
+            filter_info = meta.get(fid, {})
+
+            # Only translate if this filter is ChoiceID-based
+            if filter_info.get('data_type') == 'ChoiceID' and filter_info.get('label_to_id'):
+                label_to_id = filter_info['label_to_id']
+                new_values = []
+                for v in values:
+                    # If already a numeric string, pass through
+                    if str(v).isdigit():
+                        new_values.append(str(v))
+                    elif v in label_to_id:
+                        new_values.append(label_to_id[v])
+                    else:
+                        # Label not found -- show available options
+                        available = list(label_to_id.keys())
+                        sample = ', '.join(repr(x) for x in available[:10])
+                        raise ValueError(
+                            f"Filter '{fid}': value {v!r} not in Prolific's choice list. "
+                            f"Available (first 10 of {len(available)}): {sample}"
+                        )
+                translated.append({**f, 'selected_values': new_values})
+            else:
+                # Not a ChoiceID filter, or metadata missing -- pass through
+                translated.append(f)
+
+        return translated
+
     def create_participant_group(self, name: str) -> dict:
-        """Create a participant group. Returns dict with 'id'."""
+        """Create a participant group. Returns dict with 'id'.
+
+        Prolific requires a project, workspace, or organisation ID
+        associated with every participant group. We auto-discover the
+        workspace ID if not explicitly set in env vars.
+        """
         if DRY_RUN:
             print(f"[DRY-RUN] Would create participant group: {name}")
             return {'id': 'dry-run-group-id', 'name': name}
+
         data = {'name': name}
+
+        # Prefer explicit project_id if set
         if self.project_id:
             data['project_id'] = self.project_id
-        if self.workspace_id:
-            data['workspace_id'] = self.workspace_id
+        # Else use explicit or auto-discovered workspace_id
+        else:
+            wid = self.workspace_id or self._discover_workspace_id()
+            if wid:
+                data['workspace_id'] = wid
+
         return self._post('participant-groups/', data)
 
     # ── Submissions ───────────────────────────────────────────────────

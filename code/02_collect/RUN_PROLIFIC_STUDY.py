@@ -86,8 +86,8 @@ def get_recommended_filters(loose: bool = False) -> list:
         # fluency is sufficient, no need to require English as first language)
         {"filter_id": "fluent-languages", "selected_values": ["English"]},
 
-        # Current country of residence (English-native)
-        {"filter_id": "current-country-of-residence", "selected_values": ENGLISH_NATIVE_COUNTRIES},
+        # Country filter dropped per Oussema: fluency is sufficient,
+        # don't restrict residence. (Dropped "current-country-of-residence".)
 
         # Age 18+ (Prolific's default minimum; explicit here for clarity)
         {"filter_id": "age", "selected_range": {"lower": 18, "upper": 100}},
@@ -97,7 +97,7 @@ def get_recommended_filters(loose: bool = False) -> list:
         # ── Background and ability (default on, dropped by --loose) ──
         # Bachelor's or above -- reasoning / literacy / numeracy proxy
         filters.append({
-            "filter_id": "education",
+            "filter_id": "highest-education-level-completed",
             "selected_values": [
                 "Undergraduate degree (BA/BSc/other)",
                 "Graduate degree (MA/MSc/MPhil/other)",
@@ -106,36 +106,26 @@ def get_recommended_filters(loose: bool = False) -> list:
         })
 
         # Subject of study -- finance/accounting/econ/math adjacent.
-        # Prolific evaluates filters as AND, so this is a HARD constraint.
-        # The pool drops to ~5-15k after stacking with country + approval.
-        # That's enough for a 30-person pilot; may slow a 250-person full run.
+        # Labels must exactly match Prolific's. Auto-discovered list
+        # includes: Accounting, Business, Economics, Finance, Management,
+        # Marketing, Mathematics, etc.
         filters.append({
             "filter_id": "subject",
             "selected_values": [
                 "Accounting",
-                "Business and administrative studies",
+                "Business",
                 "Economics",
                 "Finance",
-                "Mathematics or statistics",
+                "Mathematics",
             ],
         })
 
-        # Reasoning ability -- Cognitive Reflection Test (CRT) score.
-        # CRT is the standard 3-question reasoning test on Prolific.
-        # Score 2-3 out of 3 filters for the top ~30% of participants
-        # who override their intuitive answer with reflection.
-        #
-        # NOTE: Prolific's exact filter_id for CRT varies by account
-        # vintage. If the API returns 400, try alternative IDs below
-        # (uncomment in sequence):
-        #   "cognitive-reflection-test"
-        #   "cognitive-reflection-test-score"
-        #   "crt-score"
-        #   "numeracy"
+        # Reasoning ability -- Prolific's "Reasoning Exam Score" pre-screen
+        # (range 0-100). Participants take a standardized reasoning test;
+        # 60+ filters for the top ~40% of reasoners.
         filters.append({
-            "filter_id": "cognitive-reflection-test",
-            # Score 2-3 of 3 = reflective reasoners
-            "selected_range": {"lower": 2, "upper": 3},
+            "filter_id": "reasoning-exam-score",
+            "selected_range": {"lower": 60, "upper": 100},
         })
 
     return filters
@@ -178,11 +168,15 @@ def cmd_create_two_part(args):
 
     client = ProlificClient()
 
-    # Step 1: Create participant group
-    print("Step 1: Creating participant group for Part 2 eligibility...")
-    group = client.create_participant_group(f"FBO2 {mode} - Part 1 Passed")
-    group_id = group.get('id', 'unknown')
-    print(f"  Group created: {group_id}")
+    # Step 1: Create (or reuse) participant group
+    if args.group_id:
+        group_id = args.group_id
+        print(f"Step 1: Reusing existing participant group: {group_id}")
+    else:
+        print("Step 1: Creating participant group for Part 2 eligibility...")
+        group = client.create_participant_group(f"FBO2 {mode} - Part 1 Passed")
+        group_id = group.get('id', 'unknown')
+        print(f"  Group created: {group_id}")
 
     # Step 2: Create Part 1 study
     part1_url = (survey_url + "?part=1"
@@ -211,9 +205,9 @@ def cmd_create_two_part(args):
         estimated_completion_time=part1_minutes,
         completion_codes=[
             {"code": "PASS1SN", "code_type": "COMPLETED",
-             "actions": [{"action": "APPROVE"}]},
+             "actions": [{"action": "AUTOMATICALLY_APPROVE"}]},
             {"code": "FAIL1SN", "code_type": "COMPLETED",
-             "actions": [{"action": "APPROVE"}]},
+             "actions": [{"action": "AUTOMATICALLY_APPROVE"}]},
         ],
         filters=screeners,
     )
@@ -437,6 +431,8 @@ def main():
                    help='Disable ALL pre-screen filters (open to every Prolific user)')
     p.add_argument('--loose', action='store_true',
                    help='Drop background filters (education + subject); keep only quality + language')
+    p.add_argument('--group-id', type=str, default=None,
+                   help='Reuse an existing participant group ID instead of creating a new one')
     p.add_argument('--dry-run', action='store_true')
 
     # list
