@@ -1,0 +1,31 @@
+# Secrets -- NEVER commit
+.env
+.env.*
+*.pem
+*.key
+
+# Data (large / private)
+data/
+
+# Python
+__pycache__/
+*.pyc
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.bbl
+*.blg
+
+# Claude local settings
+.claude/
+
+# OneDrive junk
+UsersousseOneDriveRESEARCH*
+
+# OS
+Thumbs.db
+.DS_Store
