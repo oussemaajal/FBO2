@@ -385,6 +385,28 @@ body {
   text-align: center;
 }
 
+/* Slider endpoint labels (above track) */
+.slider-endpoint-labels {
+  display: flex;
+  justify-content: space-between;
+  margin: 8px 4px 2px;
+  padding: 0 28px;
+}
+
+.slider-endpoint-label {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.slider-endpoint-label.clean {
+  color: #0f766e;
+}
+
+.slider-endpoint-label.fraud {
+  color: #7c3aed;
+}
+
 /* ---------- Text Input & Textarea ---------- */
 .text-input,
 .textarea-input {
@@ -2081,6 +2103,45 @@ body {
   margin-top: 4px;
 }
 
+/* ---------- Size-constant note (Firm Sizes page bottom) ---------- */
+.size-constant-note {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  max-width: 580px;
+  margin: 24px auto 0;
+  padding: 18px 24px;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 2px solid #f59e0b;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
+}
+
+.size-constant-badge {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 36px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+}
+
+.size-constant-text {
+  font-size: 17px;
+  color: #78350f;
+  line-height: 1.5;
+}
+
+.size-constant-text strong {
+  color: #78350f;
+}
+
 /* ---------- Manager Visual (Page 10) ---------- */
 .manager-visual {
   display: flex;
@@ -2126,6 +2187,177 @@ body {
 .incentive-cards-compact .incentive-card-icon {
   font-size: 22px;
   margin-bottom: 2px;
+}
+
+/* ---------- Manager Flow Diagram (Page 10 redo) ---------- */
+.manager-flow-diagram {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  max-width: 680px;
+  margin: 0 auto 24px;
+  padding: 20px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+}
+
+.mfd-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.mfd-col-label {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #64748b;
+}
+
+.mfd-col-sub {
+  font-size: 14px;
+  color: #475569;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+.mfd-stack {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  padding: 10px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.mfd-reveal {
+  display: flex;
+  gap: 6px;
+  padding: 12px;
+  background: #fff;
+  border-radius: 8px;
+  border: 2px solid #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
+.mfd-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 90px;
+}
+
+.mfd-arrow svg {
+  width: 70px;
+  height: 55px;
+}
+
+.mfd-arrow-label {
+  font-size: 12px;
+  color: #475569;
+  font-weight: 600;
+  text-align: center;
+  margin-top: -2px;
+}
+
+/* ---------- Manager Incentive Examples (Page 10b) ---------- */
+.incentive-examples {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 0 auto;
+  max-width: 720px;
+}
+
+.incentive-example {
+  flex: 1;
+  min-width: 260px;
+  max-width: 320px;
+  padding: 20px;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.incentive-good {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  border: 2px solid #10b981;
+}
+
+.incentive-bad {
+  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  border: 2px solid #ef4444;
+}
+
+.incentive-manager-avatar svg {
+  width: 72px;
+  height: 72px;
+}
+
+.incentive-rating-gauge {
+  width: 100%;
+  text-align: center;
+}
+
+.incentive-rating-label {
+  font-size: 12px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+.incentive-rating-value {
+  font-size: 32px;
+  font-weight: 900;
+  line-height: 1.1;
+  margin: 4px 0 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.incentive-rating-bar {
+  height: 10px;
+  background: #e5e7eb;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.incentive-rating-fill {
+  height: 100%;
+  border-radius: 5px;
+}
+
+.incentive-outcome {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.incentive-outcome-good {
+  background: #10b981;
+  color: #fff;
+}
+
+.incentive-outcome-bad {
+  background: #ef4444;
+  color: #fff;
+}
+
+.incentive-outcome-icon {
+  font-size: 20px;
 }
 
 /* ---------- Example Grid (Pages 11-13) ---------- */

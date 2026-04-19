@@ -183,7 +183,7 @@ var SURVEY_CONFIG = {
       title: "Try the Slider",
       body: "<p>Here is how you will report your fraud estimate. " +
             "Drag the slider to any value to continue.</p>",
-      hint: "Drag left to right. You can be anywhere from 0% (certainly clean) to 100% (certainly fraudulent).",
+      hint: "The slider moves in 10% increments.",
       minTimeSeconds: 4
     },
 
@@ -193,19 +193,9 @@ var SURVEY_CONFIG = {
       type: "instructions",
       title: "Firms: Clean or Fraudulent",
       body:
-        "<div class='firm-prior-visual'>" +
-          "<div class='firm-prior-pie'></div>" +
-          "<div class='firm-prior-legend'>" +
-            "<div class='firm-prior-legend-item'>" +
-              "<span class='firm-prior-swatch' style='background:#14b8a6;'></span>" +
-              "<span><strong>80%</strong> Clean</span>" +
-            "</div>" +
-            "<div class='firm-prior-legend-item'>" +
-              "<span class='firm-prior-swatch' style='background:#7c3aed;'></span>" +
-              "<span><strong>20%</strong> Fraudulent</span>" +
-            "</div>" +
-          "</div>" +
-        "</div>" +
+        "<p style='text-align:center; font-size:18px; margin-bottom:20px;'>" +
+          "Firms come in two types:" +
+        "</p>" +
         "<div class='firm-types-row'>" +
           "<div class='firm-type-icon firm-type-clean'>" +
             "<svg viewBox='0 0 80 90' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
@@ -232,6 +222,22 @@ var SURVEY_CONFIG = {
               "<rect x='32' y='65' width='16' height='20' fill='#5b21b6'/>" +
             "</svg>" +
             "<div class='firm-type-label'>Fraudulent Firm</div>" +
+          "</div>" +
+        "</div>" +
+        "<p style='text-align:center; font-size:17px; margin:24px 0 12px; color:#475569;'>" +
+          "How common is each type?" +
+        "</p>" +
+        "<div class='firm-prior-visual'>" +
+          "<div class='firm-prior-pie'></div>" +
+          "<div class='firm-prior-legend'>" +
+            "<div class='firm-prior-legend-item'>" +
+              "<span class='firm-prior-swatch' style='background:#14b8a6;'></span>" +
+              "<span><strong>80%</strong> Clean</span>" +
+            "</div>" +
+            "<div class='firm-prior-legend-item'>" +
+              "<span class='firm-prior-swatch' style='background:#7c3aed;'></span>" +
+              "<span><strong>20%</strong> Fraudulent</span>" +
+            "</div>" +
           "</div>" +
         "</div>" +
         "<p style='text-align:center; font-size:18px; margin-top:8px;'>" +
@@ -388,7 +394,14 @@ var SURVEY_CONFIG = {
         "</div>" +
         "<p style='text-align:center; font-size:17px; margin-top:8px;'>" +
           "Firms come in three sizes. Larger firms process more transactions." +
-        "</p>",
+        "</p>" +
+        "<div class='size-constant-note'>" +
+          "<div class='size-constant-badge'>4</div>" +
+          "<div class='size-constant-text'>" +
+            "<strong>Regardless of firm size</strong>, the manager " +
+            "discloses only <strong>4 transactions</strong> to you." +
+          "</div>" +
+        "</div>",
       minTimeSeconds: 8
     },
 
@@ -398,34 +411,104 @@ var SURVEY_CONFIG = {
       type: "instructions",
       title: "The Manager",
       body:
-        "<div class='manager-visual'>" +
-          "<div class='manager-figure'>&#128188;</div>" +
-          "<div class='manager-transactions'>" +
-            "<span class='transaction-doc small normal manager-show'>N</span>" +
-            "<span class='transaction-doc small flagged manager-hide'>F</span>" +
-            "<span class='transaction-doc small normal manager-show'>N</span>" +
-            "<span class='transaction-doc small flagged manager-hide'>F</span>" +
-            "<span class='transaction-doc small normal manager-show'>N</span>" +
-            "<span class='transaction-doc small flagged manager-hide'>F</span>" +
+        "<div class='manager-flow-diagram'>" +
+          "<div class='mfd-col'>" +
+            "<div class='mfd-col-label'>Firm has</div>" +
+            "<div class='mfd-stack'>" +
+              "<span class='transaction-doc small hidden'>?</span>" +
+              "<span class='transaction-doc small hidden'>?</span>" +
+              "<span class='transaction-doc small hidden'>?</span>" +
+              "<span class='transaction-doc small hidden'>?</span>" +
+              "<span class='transaction-doc small hidden'>?</span>" +
+              "<span class='transaction-doc small hidden'>?</span>" +
+              "<span class='transaction-doc small hidden'>?</span>" +
+              "<span class='transaction-doc small hidden'>?</span>" +
+              "<span class='transaction-doc small hidden'>?</span>" +
+              "<span class='transaction-doc small hidden'>?</span>" +
+            "</div>" +
+            "<div class='mfd-col-sub'>all transactions</div>" +
+          "</div>" +
+          "<div class='mfd-arrow'>" +
+            "<svg viewBox='0 0 100 80' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
+              "<circle cx='50' cy='28' r='12' fill='#475569'/>" +
+              "<path d='M30 62 Q50 44 70 62 L70 74 L30 74 Z' fill='#475569'/>" +
+              "<line x1='14' y1='42' x2='86' y2='42' stroke='#94a3b8' stroke-width='2' stroke-dasharray='4,3'/>" +
+            "</svg>" +
+            "<div class='mfd-arrow-label'>Manager picks</div>" +
+          "</div>" +
+          "<div class='mfd-col'>" +
+            "<div class='mfd-col-label'>You see</div>" +
+            "<div class='mfd-reveal'>" +
+              "<span class='transaction-doc small hidden'>?</span>" +
+              "<span class='transaction-doc small hidden'>?</span>" +
+              "<span class='transaction-doc small hidden'>?</span>" +
+              "<span class='transaction-doc small hidden'>?</span>" +
+            "</div>" +
+            "<div class='mfd-col-sub'>only 4</div>" +
           "</div>" +
         "</div>" +
-        "<p>The manager sees <em>all</em> of the firm's transactions but only shows you " +
-          "<strong>4</strong>. The manager cannot fabricate transactions -- only choose which to reveal.</p>" +
-        "<p>The manager prefers <strong>lower</strong> fraud ratings. A low rating from you means " +
-          "the manager is unlikely to be fined and more likely to earn a bonus.</p>" +
-        "<div class='incentive-cards incentive-cards-compact'>" +
-          "<div class='incentive-card incentive-card-good'>" +
-            "<div class='incentive-card-icon'>&#9989;</div>" +
-            "<div><strong>Your rating: LOW</strong></div>" +
-            "<div>Manager earns a bonus</div>" +
+        "<p style='text-align:center;'>The manager chooses which <strong>4 transactions</strong> " +
+          "to reveal. The manager cannot change or fabricate any transaction.</p>",
+      minTimeSeconds: 8
+    },
+
+    // -- Page 10b: Manager Incentives --
+    {
+      id: "p1_inst_incentives",
+      type: "instructions",
+      title: "Manager Incentives",
+      body:
+        "<p style='text-align:center; font-size:18px; margin-bottom:20px;'>" +
+          "How well the manager does depends on <strong>your rating</strong>:" +
+        "</p>" +
+        "<div class='incentive-examples'>" +
+          "<div class='incentive-example incentive-good'>" +
+            "<div class='incentive-manager-avatar incentive-manager-happy'>" +
+              "<svg viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
+                "<circle cx='30' cy='30' r='28' fill='#d1fae5' stroke='#059669' stroke-width='2'/>" +
+                "<circle cx='22' cy='26' r='2.5' fill='#059669'/>" +
+                "<circle cx='38' cy='26' r='2.5' fill='#059669'/>" +
+                "<path d='M20 38 Q30 46 40 38' stroke='#059669' stroke-width='2.5' fill='none' stroke-linecap='round'/>" +
+              "</svg>" +
+            "</div>" +
+            "<div class='incentive-rating-gauge'>" +
+              "<div class='incentive-rating-label'>Your rating</div>" +
+              "<div class='incentive-rating-value' style='color:#059669;'>15%</div>" +
+              "<div class='incentive-rating-bar'>" +
+                "<div class='incentive-rating-fill' style='width:15%; background:#10b981;'></div>" +
+              "</div>" +
+            "</div>" +
+            "<div class='incentive-outcome incentive-outcome-good'>" +
+              "<span class='incentive-outcome-icon'>&#128176;</span>" +
+              "<div><strong>Bonus earned</strong></div>" +
+            "</div>" +
           "</div>" +
-          "<div class='incentive-card incentive-card-bad'>" +
-            "<div class='incentive-card-icon'>&#10060;</div>" +
-            "<div><strong>Your rating: HIGH</strong></div>" +
-            "<div>Manager gets fined</div>" +
+          "<div class='incentive-example incentive-bad'>" +
+            "<div class='incentive-manager-avatar incentive-manager-sad'>" +
+              "<svg viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
+                "<circle cx='30' cy='30' r='28' fill='#fee2e2' stroke='#dc2626' stroke-width='2'/>" +
+                "<circle cx='22' cy='26' r='2.5' fill='#dc2626'/>" +
+                "<circle cx='38' cy='26' r='2.5' fill='#dc2626'/>" +
+                "<path d='M20 44 Q30 36 40 44' stroke='#dc2626' stroke-width='2.5' fill='none' stroke-linecap='round'/>" +
+              "</svg>" +
+            "</div>" +
+            "<div class='incentive-rating-gauge'>" +
+              "<div class='incentive-rating-label'>Your rating</div>" +
+              "<div class='incentive-rating-value' style='color:#dc2626;'>75%</div>" +
+              "<div class='incentive-rating-bar'>" +
+                "<div class='incentive-rating-fill' style='width:75%; background:#ef4444;'></div>" +
+              "</div>" +
+            "</div>" +
+            "<div class='incentive-outcome incentive-outcome-bad'>" +
+              "<span class='incentive-outcome-icon'>&#128178;</span>" +
+              "<div><strong>Fined</strong></div>" +
+            "</div>" +
           "</div>" +
-        "</div>",
-      minTimeSeconds: 10
+        "</div>" +
+        "<p style='text-align:center; font-size:16px; margin-top:20px; color:#475569;'>" +
+          "Managers prefer <strong>low</strong> fraud ratings from auditors." +
+        "</p>",
+      minTimeSeconds: 8
     },
 
     // -- Page 11: Example (1 of 3) --
@@ -480,7 +563,7 @@ var SURVEY_CONFIG = {
       type: "instructions",
       title: "Example (3 of 3)",
       body:
-        "<p class='example-subtitle'>In this example, all 6 hidden transactions were Flagged.</p>" +
+        "<p class='example-subtitle'>The firm's actual transactions were these.</p>" +
         "<div class='example-grid'>" +
           "<div class='transaction-doc small normal'>N</div>" +
           "<div class='transaction-doc small flagged'>F</div>" +
@@ -493,9 +576,10 @@ var SURVEY_CONFIG = {
           "<div class='transaction-doc small flagged reveal'>F</div>" +
           "<div class='transaction-doc small flagged reveal'>F</div>" +
         "</div>" +
-        "<p style='margin-top:8px;'><strong>Why it matters</strong>: The manager chose to hide transactions " +
-          "that looked bad. A firm that shows only 2 Flagged out of 4 may actually have many more hidden.</p>",
-      minTimeSeconds: 8
+        "<p style='text-align:center; margin-top:8px; color:#475569;'>" +
+          "You only saw 4 of them. The other 6 remained hidden." +
+        "</p>",
+      minTimeSeconds: 5
     },
 
     // -- Page 14: Quiz --
@@ -506,46 +590,47 @@ var SURVEY_CONFIG = {
       description: "<p>Answer all questions correctly to proceed to Part 2.</p>",
       questions: [
         {
-          prompt: "Who picks which transactions you see?",
+          prompt: "For each firm, who decides which transactions you will see?",
           type: "radio",
           correct: "manager",
           options: [
-            { value: "manager",  label: "The manager" },
-            { value: "you",      label: "You" },
-            { value: "random",   label: "A random process" },
-            { value: "nobody",   label: "Nobody -- you see all transactions" }
+            { value: "manager",  label: "The firm's manager" },
+            { value: "you",      label: "You, the auditor" },
+            { value: "random",   label: "A random selection" },
+            { value: "nobody",   label: "No one -- you see every transaction" }
           ]
         },
         {
-          prompt: "Does the manager earn more when you rate fraud high or low?",
+          prompt: "The manager is more likely to earn a bonus when the auditor assigns a:",
           type: "radio",
           correct: "low",
           options: [
-            { value: "low",        label: "Low" },
-            { value: "high",       label: "High" },
-            { value: "no_effect",  label: "It doesn't matter" },
-            { value: "depends",    label: "Depends on the firm" }
+            { value: "low",        label: "Low fraud probability" },
+            { value: "high",       label: "High fraud probability" },
+            { value: "mid",        label: "A fraud probability close to 50%" },
+            { value: "no_effect",  label: "The rating does not affect the manager" }
           ]
         },
         {
-          prompt: "What is the prior probability that any given firm is fraudulent?",
+          prompt: "Out of every 100 firms you audit, about how many are fraudulent?",
           type: "radio",
           correct: "20",
           options: [
-            { value: "50", label: "50%" },
-            { value: "20", label: "20%" },
-            { value: "40", label: "40%" },
-            { value: "80", label: "80%" }
+            { value: "20", label: "About 20 out of 100 (20%)" },
+            { value: "40", label: "About 40 out of 100 (40%)" },
+            { value: "50", label: "About 50 out of 100 (50%)" },
+            { value: "80", label: "About 80 out of 100 (80%)" }
           ]
         },
         {
-          prompt: "Can a clean firm have Flagged transactions?",
+          prompt: "A clean firm has exactly 50% Normal and 50% Flagged transactions. A fraudulent firm has 40% Normal and 60% Flagged. Which of the following is true?",
           type: "radio",
-          correct: "yes",
+          correct: "both",
           options: [
-            { value: "yes",   label: "Yes -- 50% of their transactions are Flagged" },
-            { value: "no",    label: "No -- only fraudulent firms have Flagged transactions" },
-            { value: "rare",  label: "Yes, but very rarely" }
+            { value: "both",  label: "Both types of firm can have Flagged transactions" },
+            { value: "only_fraud",  label: "Only fraudulent firms have Flagged transactions" },
+            { value: "only_clean",  label: "Only clean firms have Normal transactions" },
+            { value: "neither",  label: "Neither type has Flagged transactions" }
           ]
         }
       ],
@@ -782,7 +867,7 @@ var SURVEY_CONFIG = {
       title: "Try the Slider",
       body: "<p>Here is how you will report your fraud estimate. " +
             "Drag the slider to any value to continue.</p>",
-      hint: "Drag left to right. You can be anywhere from 0% (certainly clean) to 100% (certainly fraudulent).",
+      hint: "The slider moves in 10% increments.",
       minTimeSeconds: 4
     },
 
@@ -998,46 +1083,47 @@ var SURVEY_CONFIG = {
       description: "<p>Answer all questions correctly to continue.</p>",
       questions: [
         {
-          prompt: "Who picks which transactions you see?",
+          prompt: "For each firm, who decides which transactions you will see?",
           type: "radio",
           correct: "manager",
           options: [
-            { value: "manager",  label: "The manager" },
-            { value: "you",      label: "You" },
-            { value: "random",   label: "A random process" },
-            { value: "nobody",   label: "Nobody -- you see all transactions" }
+            { value: "manager",  label: "The firm's manager" },
+            { value: "you",      label: "You, the auditor" },
+            { value: "random",   label: "A random selection" },
+            { value: "nobody",   label: "No one -- you see every transaction" }
           ]
         },
         {
-          prompt: "Does the manager earn more when you rate fraud high or low?",
+          prompt: "The manager is more likely to earn a bonus when the auditor assigns a:",
           type: "radio",
           correct: "low",
           options: [
-            { value: "low",        label: "Low" },
-            { value: "high",       label: "High" },
-            { value: "no_effect",  label: "It doesn't matter" },
-            { value: "depends",    label: "Depends on the firm" }
+            { value: "low",        label: "Low fraud probability" },
+            { value: "high",       label: "High fraud probability" },
+            { value: "mid",        label: "A fraud probability close to 50%" },
+            { value: "no_effect",  label: "The rating does not affect the manager" }
           ]
         },
         {
-          prompt: "What is the prior probability that any given firm is fraudulent?",
+          prompt: "Out of every 100 firms you audit, about how many are fraudulent?",
           type: "radio",
           correct: "20",
           options: [
-            { value: "50", label: "50%" },
-            { value: "20", label: "20%" },
-            { value: "40", label: "40%" },
-            { value: "80", label: "80%" }
+            { value: "20", label: "About 20 out of 100 (20%)" },
+            { value: "40", label: "About 40 out of 100 (40%)" },
+            { value: "50", label: "About 50 out of 100 (50%)" },
+            { value: "80", label: "About 80 out of 100 (80%)" }
           ]
         },
         {
-          prompt: "Can a clean firm have Flagged transactions?",
+          prompt: "A clean firm has exactly 50% Normal and 50% Flagged transactions. A fraudulent firm has 40% Normal and 60% Flagged. Which of the following is true?",
           type: "radio",
-          correct: "yes",
+          correct: "both",
           options: [
-            { value: "yes",   label: "Yes -- 50% of their transactions are Flagged" },
-            { value: "no",    label: "No -- only fraudulent firms have Flagged transactions" },
-            { value: "rare",  label: "Yes, but very rarely" }
+            { value: "both",  label: "Both types of firm can have Flagged transactions" },
+            { value: "only_fraud",  label: "Only fraudulent firms have Flagged transactions" },
+            { value: "only_clean",  label: "Only clean firms have Normal transactions" },
+            { value: "neither",  label: "Neither type has Flagged transactions" }
           ]
         }
       ],
