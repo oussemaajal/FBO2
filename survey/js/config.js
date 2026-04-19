@@ -610,7 +610,7 @@ var SURVEY_CONFIG = {
           "<strong>Your pay depends on how accurate your fraud probabilities are.</strong>" +
         "</p>" +
         "<p style='text-align:center; font-size:15px; color:#475569; margin-bottom:24px; max-width:640px; margin-left:auto; margin-right:auto;'>" +
-          "Each firm you rate enters a lottery. The higher the fraud probability you assigned, " +
+          "Each firm you review enters a lottery. The higher the fraud probability you assigned, " +
           "the more likely that firm will actually be audited." +
         "</p>" +
         "<div class='auditor-outcomes'>" +
@@ -753,7 +753,7 @@ var SURVEY_CONFIG = {
             { value: "low",        label: "Low fraud probability" },
             { value: "high",       label: "High fraud probability" },
             { value: "mid",        label: "A fraud probability close to 50%" },
-            { value: "no_effect",  label: "The rating does not affect the manager" }
+            { value: "no_effect",  label: "The probability does not affect the manager" }
           ]
         },
         {
@@ -798,7 +798,7 @@ var SURVEY_CONFIG = {
 
 
   // ====================================================================
-  //  PART 2 PAGES -- 27 trials + Demographics + Debrief
+  //  PART 2 PAGES -- 9 trials + Demographics + Debrief
   // ====================================================================
 
   part2Pages: [
@@ -807,11 +807,13 @@ var SURVEY_CONFIG = {
     {
       id: "p2_welcome",
       type: "welcome",
-      title: "Welcome Back",
+      title: "Welcome Back, Auditor",
       subtitle: "",
       body: "<p>This part takes about <strong>10 minutes</strong>. " +
-            "You will evaluate <strong>9 firms</strong> for fraud.</p>" +
-            "<p>Pay: <strong>&pound;1.50</strong> base + up to <strong>&pound;1.00</strong> accuracy bonus.</p>",
+            "As a government auditor, you will review <strong>9 firms</strong> " +
+            "and assign each a probability of fraud.</p>" +
+            "<p>Pay: <strong>&pound;1.50</strong> base + up to <strong>&pound;1.00</strong> " +
+            "based on how <strong>accurate</strong> your probabilities are.</p>",
       buttonText: "Continue"
     },
 
@@ -821,24 +823,25 @@ var SURVEY_CONFIG = {
       type: "instructions",
       title: "Quick Reminder",
       body:
-        "<p>Firms have transactions classified as " +
-        "<span class='doc-icon doc-icon-normal' style='display:inline-flex; width:20px; height:24px; font-size:11px; vertical-align:middle;'>N</span> " +
-        "<span style='color:#15803d; font-weight:600;'>Normal</span> or " +
-        "<span class='doc-icon doc-icon-flagged' style='display:inline-flex; width:20px; height:24px; font-size:11px; vertical-align:middle;'>F</span> " +
-        "<span style='color:#b91c1c; font-weight:600;'>Flagged</span>. " +
-        "A manager picks which ones to show you. The manager earns more when you rate fraud lower.</p>" +
+        "<p style='text-align:center; font-size:16px; margin-bottom:18px;'>" +
+          "You are a <strong>government auditor</strong>. For each firm, you review " +
+          "<strong>4 transactions</strong> chosen by its manager and assign a " +
+          "<strong>probability of fraud</strong>." +
+        "</p>" +
 
-        "<div style='display:flex; align-items:center; gap:16px; justify-content:center; margin:16px 0;'>" +
+        "<div style='display:flex; align-items:flex-start; gap:20px; justify-content:center; margin:20px 0; flex-wrap:wrap;'>" +
+          // Firm-type prior
           "<div style='text-align:center;'>" +
-            "<div style='font-weight:600; font-size:12px; margin-bottom:6px; color:#1e293b;'>How Common Is Fraud?</div>" +
+            "<div style='font-weight:700; font-size:12px; margin-bottom:8px; color:#1e293b; text-transform:uppercase; letter-spacing:0.5px;'>How Common Is Fraud?</div>" +
             "<div style='width:80px; height:80px; border-radius:50%; background:conic-gradient(#14b8a6 0deg 288deg, #7c3aed 288deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1); margin:0 auto;'></div>" +
-            "<div style='display:flex; flex-direction:column; gap:3px; text-align:left; font-size:12px; margin-top:6px;'>" +
+            "<div style='display:flex; flex-direction:column; gap:3px; text-align:left; font-size:12px; margin-top:8px;'>" +
               "<div style='display:flex; align-items:center; gap:5px;'><span style='display:inline-block; width:10px; height:10px; background:#14b8a6; border-radius:2px;'></span><strong>80% Clean</strong></div>" +
               "<div style='display:flex; align-items:center; gap:5px;'><span style='display:inline-block; width:10px; height:10px; background:#7c3aed; border-radius:2px;'></span>20% Fraudulent</div>" +
             "</div>" +
           "</div>" +
+          // Clean firm transaction mix
           "<div style='text-align:center;'>" +
-            "<div style='font-weight:600; font-size:12px; margin-bottom:6px; color:#14b8a6; border:2px solid #14b8a6; padding:2px 8px; border-radius:6px; display:inline-block;'>Clean Firm</div>" +
+            "<div style='font-weight:700; font-size:12px; margin-bottom:8px; color:#14b8a6; border:2px solid #14b8a6; padding:2px 10px; border-radius:6px; display:inline-block;'>Clean Firm</div>" +
             "<div style='display:flex; align-items:center; gap:10px;'>" +
               "<div style='width:80px; height:80px; border-radius:50%; background:conic-gradient(#22c55e 0deg 180deg, #ef4444 180deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
               "<div style='display:flex; flex-direction:column; gap:3px; text-align:left; font-size:12px;'>" +
@@ -847,8 +850,9 @@ var SURVEY_CONFIG = {
               "</div>" +
             "</div>" +
           "</div>" +
+          // Fraudulent firm transaction mix
           "<div style='text-align:center;'>" +
-            "<div style='font-weight:600; font-size:12px; margin-bottom:6px; color:#7c3aed; border:2px solid #7c3aed; padding:2px 8px; border-radius:6px; display:inline-block;'>Fraudulent Firm</div>" +
+            "<div style='font-weight:700; font-size:12px; margin-bottom:8px; color:#7c3aed; border:2px solid #7c3aed; padding:2px 10px; border-radius:6px; display:inline-block;'>Fraudulent Firm</div>" +
             "<div style='display:flex; align-items:center; gap:10px;'>" +
               "<div style='width:80px; height:80px; border-radius:50%; background:conic-gradient(#22c55e 0deg 144deg, #ef4444 144deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
               "<div style='display:flex; flex-direction:column; gap:3px; text-align:left; font-size:12px;'>" +
@@ -859,7 +863,33 @@ var SURVEY_CONFIG = {
           "</div>" +
         "</div>" +
 
-        "<p style='color:#64748b; font-size:14px;'>Firm sizes: <strong>Small</strong> (10), <strong>Medium</strong> (20), <strong>Large</strong> (50) transactions. Manager always shows 4.</p>",
+        "<p style='text-align:center; color:#64748b; font-size:13px; margin-bottom:20px;'>" +
+          "Firm sizes: <strong>Small</strong> (10), <strong>Medium</strong> (20), " +
+          "<strong>Large</strong> (50) transactions. Manager always discloses 4." +
+        "</p>" +
+
+        // Manager hero callout (same style as Part 1)
+        "<div class='manager-hero-callout' style='margin:20px auto;'>" +
+          "<div class='manager-hero-arrow'>&#128073;</div>" +
+          "<div class='manager-hero-text'>" +
+            "The manager <strong>wants you to assign a LOW fraud probability</strong>, " +
+            "whether the firm is actually fraudulent or not." +
+          "</div>" +
+        "</div>" +
+
+        // Your Bonus compact reminder (same style as Part 1)
+        "<div class='auditor-outcomes' style='margin-top:16px;'>" +
+          "<div class='auditor-outcome auditor-outcome-good' style='padding:14px 16px;'>" +
+            "<div class='auditor-outcome-badge' style='width:40px; height:40px; font-size:22px;'>&#10004;</div>" +
+            "<div class='auditor-outcome-title' style='font-size:14px;'>High probability on a Fraudulent firm</div>" +
+            "<div class='auditor-outcome-body' style='font-size:13px;'><strong>Bonus</strong></div>" +
+          "</div>" +
+          "<div class='auditor-outcome auditor-outcome-bad' style='padding:14px 16px;'>" +
+            "<div class='auditor-outcome-badge' style='width:40px; height:40px; font-size:22px;'>&#10060;</div>" +
+            "<div class='auditor-outcome-title' style='font-size:14px;'>High probability on a Clean firm</div>" +
+            "<div class='auditor-outcome-body' style='font-size:13px;'><strong>Pay cut</strong></div>" +
+          "</div>" +
+        "</div>",
       minTimeSeconds: 8
     },
 
@@ -925,10 +955,10 @@ var SURVEY_CONFIG = {
     {
       id: "debrief",
       type: "debrief",
-      title: "Thank You",
-      body: "<p>This study examines how people assess fraud risk when a manager " +
-            "strategically selects which transactions to disclose.</p>" +
-            "<p>We varied two things across trials: firm size (Small, Medium, or Large) " +
+      title: "Thank You, Auditor",
+      body: "<p>This study examines how people in an auditor's role assess fraud " +
+            "when a firm's manager strategically selects which transactions to disclose.</p>" +
+            "<p>Across trials we varied two things: firm size (Small, Medium, or Large) " +
             "and the composition of the 4 disclosed transactions.</p>" +
             "<p>We are interested in how people account for the transactions they <em>cannot</em> see, " +
             "and whether their reasoning matches different statistical models of inference.</p>" +
@@ -1148,17 +1178,17 @@ var SURVEY_CONFIG = {
         "</div>" +
         "<p>The manager sees <em>all</em> of the firm's transactions but only shows you " +
           "<strong>4</strong>. The manager cannot fabricate transactions -- only choose which to reveal.</p>" +
-        "<p>The manager prefers <strong>lower</strong> fraud ratings. A low rating from you means " +
-          "the manager is unlikely to be fined and more likely to earn a bonus.</p>" +
+        "<p>The manager prefers a <strong>lower</strong> fraud probability from you. A low fraud " +
+          "probability means the manager is unlikely to be fined and more likely to earn a bonus.</p>" +
         "<div class='incentive-cards incentive-cards-compact'>" +
           "<div class='incentive-card incentive-card-good'>" +
             "<div class='incentive-card-icon'>&#9989;</div>" +
-            "<div><strong>Your rating: LOW</strong></div>" +
+            "<div><strong>Fraud probability: LOW</strong></div>" +
             "<div>Manager earns a bonus</div>" +
           "</div>" +
           "<div class='incentive-card incentive-card-bad'>" +
             "<div class='incentive-card-icon'>&#10060;</div>" +
-            "<div><strong>Your rating: HIGH</strong></div>" +
+            "<div><strong>Fraud probability: HIGH</strong></div>" +
             "<div>Manager gets fined</div>" +
           "</div>" +
         "</div>",
@@ -1246,7 +1276,7 @@ var SURVEY_CONFIG = {
             { value: "low",        label: "Low fraud probability" },
             { value: "high",       label: "High fraud probability" },
             { value: "mid",        label: "A fraud probability close to 50%" },
-            { value: "no_effect",  label: "The rating does not affect the manager" }
+            { value: "no_effect",  label: "The probability does not affect the manager" }
           ]
         },
         {
