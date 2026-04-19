@@ -390,14 +390,17 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 8
     },
 
-    // -- Page 10: You Always See 4 --
+    // -- Page 10: What the Firm Discloses --
     {
       id: "p1_inst_always_four",
       type: "instructions",
-      title: "You Always See 4",
+      title: "What the Firm Discloses",
       body:
-        "<p style='text-align:center; font-size:20px; margin-bottom:28px; color:#1e293b;'>" +
-          "Whatever the firm size, <strong>you only see 4 transactions</strong>." +
+        "<p style='text-align:center; font-size:19px; margin-bottom:10px; color:#1e293b;'>" +
+          "For every audit, a firm is required to submit <strong>4 transactions</strong> to the government." +
+        "</p>" +
+        "<p style='text-align:center; font-size:16px; color:#475569; margin-bottom:24px;'>" +
+          "This is true regardless of how many transactions the firm has." +
         "</p>" +
         "<div class='always-four-row'>" +
           // Small firm
@@ -414,7 +417,13 @@ var SURVEY_CONFIG = {
             "<div class='af-size-label'>Small firm</div>" +
             "<div class='af-size-num'>10</div>" +
             "<div class='af-arrow'>&#8595;</div>" +
-            "<div class='af-four-badge'>4</div>" +
+            "<div class='af-four-docs'>" +
+              "<span class='af-doc'>?</span>" +
+              "<span class='af-doc'>?</span>" +
+              "<span class='af-doc'>?</span>" +
+              "<span class='af-doc'>?</span>" +
+            "</div>" +
+            "<div class='af-four-sub'>disclosed</div>" +
           "</div>" +
           // Medium firm
           "<div class='af-col'>" +
@@ -430,7 +439,13 @@ var SURVEY_CONFIG = {
             "<div class='af-size-label'>Medium firm</div>" +
             "<div class='af-size-num'>20</div>" +
             "<div class='af-arrow'>&#8595;</div>" +
-            "<div class='af-four-badge'>4</div>" +
+            "<div class='af-four-docs'>" +
+              "<span class='af-doc'>?</span>" +
+              "<span class='af-doc'>?</span>" +
+              "<span class='af-doc'>?</span>" +
+              "<span class='af-doc'>?</span>" +
+            "</div>" +
+            "<div class='af-four-sub'>disclosed</div>" +
           "</div>" +
           // Large firm
           "<div class='af-col'>" +
@@ -451,12 +466,27 @@ var SURVEY_CONFIG = {
             "<div class='af-size-label'>Large firm</div>" +
             "<div class='af-size-num'>50</div>" +
             "<div class='af-arrow'>&#8595;</div>" +
-            "<div class='af-four-badge'>4</div>" +
+            "<div class='af-four-docs'>" +
+              "<span class='af-doc'>?</span>" +
+              "<span class='af-doc'>?</span>" +
+              "<span class='af-doc'>?</span>" +
+              "<span class='af-doc'>?</span>" +
+            "</div>" +
+            "<div class='af-four-sub'>disclosed</div>" +
           "</div>" +
         "</div>" +
-        "<p style='text-align:center; font-size:16px; margin-top:24px; color:#475569;'>" +
-          "A large firm has 50 transactions but you still only see 4." +
-        "</p>",
+        "<div class='af-picker-note'>" +
+          "<div class='af-picker-icon'>" +
+            "<svg viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
+              "<circle cx='20' cy='14' r='7' fill='#475569'/>" +
+              "<path d='M6 38 Q20 24 34 38 L34 40 L6 40 Z' fill='#475569'/>" +
+            "</svg>" +
+          "</div>" +
+          "<div class='af-picker-text'>" +
+            "The firm's <strong>manager</strong> gets to choose " +
+            "<em>which</em> 4 transactions to disclose." +
+          "</div>" +
+        "</div>",
       minTimeSeconds: 6
     },
 
