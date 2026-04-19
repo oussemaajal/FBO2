@@ -758,7 +758,7 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 6
     },
 
-    // -- Quiz Q1 --
+    // -- Quiz Q1 (correct at B) --
     {
       id: "p1_quiz_q1",
       type: "quiz_question",
@@ -767,14 +767,14 @@ var SURVEY_CONFIG = {
       prompt: "For each firm, who decides which transactions you will see?",
       correct: "manager",
       options: [
-        { value: "manager", label: "The firm's manager" },
         { value: "you",     label: "You, the auditor" },
+        { value: "manager", label: "The firm's manager" },
         { value: "random",  label: "A random selection" },
         { value: "nobody",  label: "No one -- you see every transaction" }
       ]
     },
 
-    // -- Quiz Q2 --
+    // -- Quiz Q2 (correct at C) --
     {
       id: "p1_quiz_q2",
       type: "quiz_question",
@@ -783,14 +783,14 @@ var SURVEY_CONFIG = {
       prompt: "The manager is more likely to earn a bonus when the auditor assigns a:",
       correct: "low",
       options: [
-        { value: "low",       label: "Low fraud probability" },
         { value: "high",      label: "High fraud probability" },
         { value: "mid",       label: "A fraud probability close to 50%" },
+        { value: "low",       label: "Low fraud probability" },
         { value: "no_effect", label: "The probability does not affect the manager" }
       ]
     },
 
-    // -- Quiz Q3 --
+    // -- Quiz Q3 (correct at B) --
     {
       id: "p1_quiz_q3",
       type: "quiz_question",
@@ -799,14 +799,14 @@ var SURVEY_CONFIG = {
       prompt: "Out of every 100 firms you audit, about how many are fraudulent?",
       correct: "20",
       options: [
-        { value: "20", label: "About 20 out of 100 (20%)" },
-        { value: "40", label: "About 40 out of 100 (40%)" },
         { value: "50", label: "About 50 out of 100 (50%)" },
-        { value: "80", label: "About 80 out of 100 (80%)" }
+        { value: "20", label: "About 20 out of 100 (20%)" },
+        { value: "80", label: "About 80 out of 100 (80%)" },
+        { value: "40", label: "About 40 out of 100 (40%)" }
       ]
     },
 
-    // -- Quiz Q4 --
+    // -- Quiz Q4 (correct at D) --
     {
       id: "p1_quiz_q4",
       type: "quiz_question",
@@ -815,14 +815,14 @@ var SURVEY_CONFIG = {
       prompt: "A clean firm has exactly 50% Normal and 50% Flagged transactions. A fraudulent firm has 40% Normal and 60% Flagged. Which of the following is true?",
       correct: "both",
       options: [
-        { value: "both",       label: "Both types of firm can have Flagged transactions" },
         { value: "only_fraud", label: "Only fraudulent firms have Flagged transactions" },
         { value: "only_clean", label: "Only clean firms have Normal transactions" },
-        { value: "neither",    label: "Neither type has Flagged transactions" }
+        { value: "neither",    label: "Neither type has Flagged transactions" },
+        { value: "both",       label: "Both types of firm can have Flagged transactions" }
       ]
     },
 
-    // -- Quiz Q5 --
+    // -- Quiz Q5 (correct at D) --
     {
       id: "p1_quiz_q5",
       type: "quiz_question",
@@ -831,30 +831,31 @@ var SURVEY_CONFIG = {
       prompt: "How many total transactions does a Small firm have?",
       correct: "10",
       options: [
-        { value: "10", label: "10" },
+        { value: "50", label: "50" },
         { value: "20", label: "20" },
         { value: "30", label: "30" },
-        { value: "50", label: "50" }
+        { value: "10", label: "10" }
       ]
     },
 
-    // -- Quiz Q6 --
+    // -- Quiz Q6 (correct at C; prompt no longer gives away the answer,
+    //     and "Depends on firm size" is a concrete distractor) --
     {
       id: "p1_quiz_q6",
       type: "quiz_question",
       questionIndex: 6,
       totalQuestions: 12,
-      prompt: "Regardless of firm size (Small, Medium, or Large), how many transactions does the manager disclose to you?",
+      prompt: "How many transactions does the manager disclose to you?",
       correct: "4",
       options: [
-        { value: "2",          label: "2" },
-        { value: "4",          label: "4" },
-        { value: "proportion", label: "A proportion of the firm size" },
-        { value: "all",        label: "All of them" }
+        { value: "2",       label: "2" },
+        { value: "depends", label: "It depends on the firm size" },
+        { value: "4",       label: "4" },
+        { value: "all",     label: "All of the firm's transactions" }
       ]
     },
 
-    // -- Quiz Q7 --
+    // -- Quiz Q7 (correct at C) --
     {
       id: "p1_quiz_q7",
       type: "quiz_question",
@@ -864,13 +865,13 @@ var SURVEY_CONFIG = {
       correct: "50",
       options: [
         { value: "40", label: "40%" },
-        { value: "50", label: "50%" },
         { value: "60", label: "60%" },
+        { value: "50", label: "50%" },
         { value: "10", label: "10%" }
       ]
     },
 
-    // -- Quiz Q8 --
+    // -- Quiz Q8 (correct at D) --
     {
       id: "p1_quiz_q8",
       type: "quiz_question",
@@ -879,14 +880,14 @@ var SURVEY_CONFIG = {
       prompt: "In a fraudulent firm, what percentage of its transactions are Flagged?",
       correct: "60",
       options: [
-        { value: "40",  label: "40%" },
         { value: "50",  label: "50%" },
-        { value: "60",  label: "60%" },
-        { value: "100", label: "100%" }
+        { value: "100", label: "100%" },
+        { value: "40",  label: "40%" },
+        { value: "60",  label: "60%" }
       ]
     },
 
-    // -- Quiz Q9 --
+    // -- Quiz Q9 (correct at B) --
     {
       id: "p1_quiz_q9",
       type: "quiz_question",
@@ -895,14 +896,14 @@ var SURVEY_CONFIG = {
       prompt: "You assigned a high fraud probability to a firm. Later, that firm is audited and turns out to be fraudulent. What happens to your pay?",
       correct: "bonus",
       options: [
-        { value: "bonus",        label: "You earn a bonus" },
         { value: "paycut",       label: "You get a pay cut" },
+        { value: "bonus",        label: "You earn a bonus" },
         { value: "nothing",      label: "Nothing changes" },
         { value: "disqualified", label: "You are disqualified" }
       ]
     },
 
-    // -- Quiz Q10 --
+    // -- Quiz Q10 (correct at C) --
     {
       id: "p1_quiz_q10",
       type: "quiz_question",
@@ -911,14 +912,14 @@ var SURVEY_CONFIG = {
       prompt: "You assigned a high fraud probability to a firm. Later, that firm is audited and turns out to be clean. What happens to your pay?",
       correct: "paycut",
       options: [
+        { value: "nothing",      label: "Nothing changes" },
         { value: "bonus",        label: "You earn a bonus" },
         { value: "paycut",       label: "You get a pay cut" },
-        { value: "nothing",      label: "Nothing changes" },
         { value: "disqualified", label: "You are disqualified" }
       ]
     },
 
-    // -- Quiz Q11 (incentive alignment -- biggest bonus) --
+    // -- Quiz Q11 (incentive alignment -- biggest bonus; correct at D) --
     {
       id: "p1_quiz_q11",
       type: "quiz_question",
@@ -927,14 +928,14 @@ var SURVEY_CONFIG = {
       prompt: "Suppose a firm's actual probability of fraud is 10%. Which fraud probability should you assign to earn the biggest bonus?",
       correct: "10",
       options: [
-        { value: "10", label: "10%" },
         { value: "30", label: "30%" },
         { value: "50", label: "50%" },
-        { value: "70", label: "70%" }
+        { value: "70", label: "70%" },
+        { value: "10", label: "10%" }
       ]
     },
 
-    // -- Quiz Q12 (incentive alignment -- biggest pay cut) --
+    // -- Quiz Q12 (incentive alignment -- biggest pay cut; correct at A) --
     {
       id: "p1_quiz_q12",
       type: "quiz_question",
@@ -943,10 +944,10 @@ var SURVEY_CONFIG = {
       prompt: "Suppose a firm's actual probability of fraud is 10%. Which fraud probability would result in the biggest pay cut?",
       correct: "70",
       options: [
-        { value: "10", label: "10%" },
+        { value: "70", label: "70%" },
         { value: "30", label: "30%" },
         { value: "50", label: "50%" },
-        { value: "70", label: "70%" }
+        { value: "10", label: "10%" }
       ]
     },
 
