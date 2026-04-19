@@ -176,18 +176,7 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 6
     },
 
-    // -- Page 4: Try the Slider (interactive) --
-    {
-      id: "p1_slider_demo",
-      type: "slider_demo",
-      title: "Try the Slider",
-      body: "<p>Here is how you will report your fraud estimate. " +
-            "Drag the slider to any value to continue.</p>",
-      hint: "The slider moves in 10% increments.",
-      minTimeSeconds: 4
-    },
-
-    // -- Page 5: Firms -- Clean or Fraudulent --
+    // -- Page 4: Firms -- Clean or Fraudulent --
     {
       id: "p1_inst_firms",
       type: "instructions",
@@ -246,12 +235,15 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 6
     },
 
-    // -- Page 6: Every Firm Has Transactions --
+    // -- Page 5: Every Firm Has Transactions --
     {
       id: "p1_inst_has_transactions",
       type: "instructions",
-      title: "Every Firm Has Transactions",
+      title: "How Do You Tell Them Apart?",
       body:
+        "<p style='text-align:center; font-size:18px; margin-bottom:18px; color:#1e293b;'>" +
+          "As an auditor, you examine each firm's <strong>transactions</strong>." +
+        "</p>" +
         "<div class='firm-fanout-visual'>" +
           "<svg viewBox='0 0 260 180' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
             "<rect x='110' y='60' width='40' height='100' rx='2' fill='#e5e7eb' stroke='#475569' stroke-width='2'/>" +
@@ -280,9 +272,9 @@ var SURVEY_CONFIG = {
             "</g>" +
           "</svg>" +
         "</div>" +
-        "<p style='text-align:center; font-size:18px; max-width:560px; margin:0 auto;'>" +
-          "Each firm processes many <strong>transactions</strong>. As an auditor, you examine " +
-          "these to judge whether the firm is clean or fraudulent." +
+        "<p style='text-align:center; font-size:17px; max-width:560px; margin:0 auto; color:#475569;'>" +
+          "Each firm processes many transactions. These are your evidence for judging " +
+          "whether the firm is clean or fraudulent." +
         "</p>",
       minTimeSeconds: 6
     },
@@ -511,7 +503,24 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 8
     },
 
-    // -- Page 11: Example (1 of 3) --
+    // -- Page 11: Your Job + Try the Slider --
+    {
+      id: "p1_slider_demo",
+      type: "slider_demo",
+      title: "Your Job",
+      body:
+        "<p style='text-align:center; font-size:18px; margin-bottom:8px;'>" +
+          "For each firm, you will see <strong>4 transactions</strong> " +
+          "and assign a <strong>probability</strong> that the firm is fraudulent." +
+        "</p>" +
+        "<p style='text-align:center; font-size:16px; color:#475569; margin-bottom:4px;'>" +
+          "Try the slider below to continue." +
+        "</p>",
+      hint: "The slider moves in 10% increments.",
+      minTimeSeconds: 4
+    },
+
+    // -- Page 12: Example (1 of 3) --
     {
       id: "p1_example_1",
       type: "instructions",
