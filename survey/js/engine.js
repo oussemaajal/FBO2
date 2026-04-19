@@ -777,36 +777,157 @@
   };
 
   SurveyEngine.prototype.getAllData = function () {
+    // Build a FLAT, human-readable payload so the Google Sheet is legible
+    // at a glance. The raw nested structure is preserved in `raw_json`
+    // at the end for forensics / late-bound reanalysis.
     var botMetrics = window.BotDetector ? window.BotDetector.getMetrics() : {};
-    return {
-      surveyVersion: this.config.study ? this.config.study.version : '3.0',
-      timestamp: new Date().toISOString(),
-      userAgent: navigator.userAgent,
-      screenWidth: window.screen.width,
-      screenHeight: window.screen.height,
-      viewportWidth: window.innerWidth,
-      viewportHeight: window.innerHeight,
-      prolificPID: this.prolificPID,
-      studyID: this.studyID,
-      sessionID: this.sessionID,
-      part: this.part,
+    var stealthCheck = this.collectStealthAnswers();
+    var flat = {};
+    var pad2 = function (n) { n = String(n); return n.length < 2 ? '0' + n : n; };
+
+    // ── Identity & metadata ───────────────────────────────
+    flat.submission_time_utc = new Date().toISOString();
+    flat.survey_version      = this.config.study ? this.config.study.version : '3.0';
+    flat.part                = this.part;
+    flat.prolific_pid        = this.prolificPID || '';
+    flat.study_id            = this.studyID || '';
+    flat.session_id          = this.sessionID || '';
+
+    // Apps Script backwards-compat: gating logic keys off these exact names
+    flat.prolificPID         = this.prolificPID || '';
+    flat.comprehensionFailed = !!this.comprehensionFailed;
+
+    // ── Consent (Part 1) ──────────────────────────────────
+    if (this.responses && this.responses.p1_welcome) {
+      flat.consent_agreed = !!this.responses.p1_welcome.consent_agree;
+    }
+
+    // ── Quiz (Part 1) ─────────────────────────────────────
+    if (this.quizResponses && this.quizResponses.length) {
+      var numCorrect = this.quizResponses.filter(function (r) { return r && r.correct; }).length;
+      flat.quiz_num_correct  = numCorrect;
+      flat.quiz_total        = this.quizResponses.length;
+      flat.quiz_passed       = numCorrect >= 11;
+      flat.quiz_retake_count = this.quizRetakeCount || 0;
+      for (var qi = 0; qi < this.quizResponses.length; qi++) {
+        var q = this.quizResponses[qi];
+        var qn = pad2(qi + 1);
+        flat['quiz_q' + qn + '_answer']  = q ? q.selected : '';
+        flat['quiz_q' + qn + '_correct'] = q ? !!q.correct : '';
+      }
+    }
+
+    // ── Slider demo (final value if moved off 50) ─────────
+    for (var pid in this.responses) {
+      if (this.responses[pid] && typeof this.responses[pid].demo_slider !== 'undefined') {
+        flat.slider_demo_value = parseFloat(this.responses[pid].demo_slider);
+        break;
+      }
+    }
+
+    // ── Non-trial attention checks ────────────────────────
+    if (this.attentionResults && this.attentionResults.length) {
+      for (var ai = 0; ai < this.attentionResults.length; ai++) {
+        var ar = this.attentionResults[ai] || {};
+        var an = (ai + 1);
+        flat['attn_' + an + '_id']     = ar.trialId || ar.id || '';
+        flat['attn_' + an + '_passed'] = !!ar.passed;
+      }
+      flat.attn_passed_total = this.attentionResults.filter(function (r) { return r.passed; }).length;
+      flat.attn_failed_total = this.attentionResults.filter(function (r) { return !r.passed; }).length;
+    }
+
+    // ── Trial responses (Part 2) ──────────────────────────
+    var trialIds = Object.keys(this.trialResponses || {}).sort();
+    for (var ti = 0; ti < trialIds.length; ti++) {
+      var key = trialIds[ti];
+      var tr  = this.trialResponses[key] || {};
+      var tn  = pad2(ti + 1);
+      flat['trial_' + tn + '_id']               = tr.trialId;
+      flat['trial_' + tn + '_block']            = tr.block;
+      flat['trial_' + tn + '_N']                = tr.N;
+      flat['trial_' + tn + '_D']                = tr.D;
+      flat['trial_' + tn + '_dN']               = tr.dN;
+      flat['trial_' + tn + '_n_flagged']        = tr.nFlagged;
+      flat['trial_' + tn + '_hidden']           = tr.hidden;
+      flat['trial_' + tn + '_bayes_post']       = tr.bayesPosterior;
+      flat['trial_' + tn + '_sn_post']          = tr.snPosterior;
+      flat['trial_' + tn + '_mr_post']          = tr.mrPosterior;
+      flat['trial_' + tn + '_fraud_prob']       = tr.fraudProb;
+      flat['trial_' + tn + '_confidence']       = tr.confidence;
+      flat['trial_' + tn + '_flagged_estimate'] = tr.flaggedEstimate;
+      if (this.timing && this.timing[key] && this.timing[key].durationMs) {
+        flat['trial_' + tn + '_duration_sec'] = Math.round(this.timing[key].durationMs / 1000);
+      }
+    }
+
+    // ── Per-trial attention checks ────────────────────────
+    if (this.trialAttentionResults && this.trialAttentionResults.length) {
+      for (var xi = 0; xi < this.trialAttentionResults.length; xi++) {
+        var tar = this.trialAttentionResults[xi] || {};
+        var xn  = pad2(xi + 1);
+        flat['trial_attn_' + xn + '_trial']        = tar.trialId;
+        flat['trial_attn_' + xn + '_n_correct']    = !!tar.nCorrect;
+        flat['trial_attn_' + xn + '_d_correct']    = !!tar.dCorrect;
+        flat['trial_attn_' + xn + '_flag_correct'] = !!tar.flagCorrect;
+        flat['trial_attn_' + xn + '_all_correct']  = !!tar.allCorrect;
+      }
+      flat.trial_attn_all_correct_count = this.trialAttentionResults.filter(function (r) { return r.allCorrect; }).length;
+    }
+
+    // ── Comprehension summary ─────────────────────────────
+    flat.comprehension_attempts = this.comprehensionAttempts || 0;
+
+    // ── Bonus (Part 2) ────────────────────────────────────
+    if (this.bonusInfo) {
+      flat.bonus_amount_usd     = this.bonusInfo.amountUsd     != null ? this.bonusInfo.amountUsd     : '';
+      flat.bonus_amount_cents   = this.bonusInfo.amountCents   != null ? this.bonusInfo.amountCents   : '';
+      flat.bonus_mean_abs_error = this.bonusInfo.meanAbsError  != null ? this.bonusInfo.meanAbsError  : '';
+      flat.bonus_trials_counted = this.bonusInfo.trialsCounted != null ? this.bonusInfo.trialsCounted : '';
+    }
+
+    // ── Total duration across all pages ──────────────────
+    var totalMs = 0;
+    for (var pid2 in this.timing) {
+      if (this.timing[pid2] && this.timing[pid2].durationMs) totalMs += this.timing[pid2].durationMs;
+    }
+    flat.total_duration_sec = Math.round(totalMs / 1000);
+
+    // ── Bot / stealth flags ──────────────────────────────
+    if (botMetrics) {
+      flat.bot_is_suspected = !!botMetrics.isSuspected;
+      flat.bot_score        = botMetrics.score || 0;
+      flat.bot_reasons      = Array.isArray(botMetrics.reasons) ? botMetrics.reasons.join('; ') : '';
+    }
+    if (stealthCheck && typeof stealthCheck === 'object') {
+      var flagged = [];
+      for (var sk in stealthCheck) {
+        if (stealthCheck[sk]) flagged.push(sk);
+      }
+      flat.stealth_flags = flagged.join('; ');
+    }
+
+    // ── Browser ───────────────────────────────────────────
+    flat.user_agent      = navigator.userAgent;
+    flat.screen_width    = window.screen.width;
+    flat.screen_height   = window.screen.height;
+    flat.viewport_width  = window.innerWidth;
+    flat.viewport_height = window.innerHeight;
+
+    // ── Raw nested blob (forensics / reanalysis) ─────────
+    flat.raw_json = JSON.stringify({
       responses: this.responses,
       trialResponses: this.trialResponses,
       timing: this.timing,
-      comprehensionAttempts: this.comprehensionAttempts,
-      comprehensionFailed: this.comprehensionFailed,
-      attentionResults: this.attentionResults,
-      attentionPassed: this.attentionResults.filter(function (r) { return r.passed; }).length,
-      attentionFailed: this.attentionResults.filter(function (r) { return !r.passed; }).length,
-      trialAttentionResults: this.trialAttentionResults,
-      trialAttentionAllCorrect: this.trialAttentionResults.filter(function (r) { return r.allCorrect; }).length,
       quizResponses: this.quizResponses,
-      quizNumCorrect: this.quizResponses.filter(function (r) { return r && r.correct; }).length,
-      quizRetakeCount: this.quizRetakeCount,
+      attentionResults: this.attentionResults,
+      trialAttentionResults: this.trialAttentionResults,
       bonus: this.bonusInfo,
       botMetrics: botMetrics,
-      stealthCheck: this.collectStealthAnswers()
-    };
+      stealthCheck: stealthCheck
+    });
+
+    return flat;
   };
 
   // ── Save Progress ──────────────────────────────────────────────────────
