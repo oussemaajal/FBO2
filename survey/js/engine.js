@@ -351,7 +351,7 @@
         if (display) {
           slider.addEventListener('input', function () {
             var val = parseFloat(slider.value);
-            if (parseFloat(slider.max) === 100 && parseFloat(slider.step) === 1) {
+            if (parseFloat(slider.max) === 100) {
               display.textContent = Math.round(val) + '%';
             } else {
               display.textContent = val.toFixed(1);
@@ -1032,16 +1032,20 @@
     html += '</div>';
     html += '</div>';
 
-    // DV1: Fraud Probability Slider (default 20%)
+    // DV1: Fraud Probability Slider (default 20%, 10% increments)
     html += '<div class="dv-card">';
     html += '<div class="question-prompt">What is the probability that this firm is fraudulent?<span class="question-required">*</span></div>';
     html += '<div class="slider-value-display" id="fraud_prob_display">20%</div>';
+    html += '<div class="slider-endpoint-labels">';
+    html += '<span class="slider-endpoint-label clean">Certainly clean</span>';
+    html += '<span class="slider-endpoint-label fraud">Certainly fraudulent</span>';
+    html += '</div>';
     html += '<div class="slider-wrapper">';
     html += '<span class="slider-label">0%</span>';
-    html += '<input type="range" class="slider-input" id="fraud_prob" name="fraud_prob" min="0" max="100" step="1" value="20" data-touched="false" data-display="fraud_prob_display">';
+    html += '<input type="range" class="slider-input" id="fraud_prob" name="fraud_prob" min="0" max="100" step="10" value="20" data-touched="false" data-display="fraud_prob_display">';
     html += '<span class="slider-label">100%</span>';
     html += '</div>';
-    html += '<div class="slider-hint">Drag the slider to set your estimate</div>';
+    html += '<div class="slider-hint">Drag the slider to set your estimate (10% increments)</div>';
     html += '<div class="field-error" id="error_fraud_prob"></div>';
     html += '</div>';
 
@@ -1217,14 +1221,18 @@
     html += '<div class="page-body">' + (page.body || '') + '</div>';
     html += '<div class="dv-card" style="max-width:620px; margin:0 auto;">';
     html += '<div class="slider-value-display" id="demo_slider_display">50%</div>';
+    html += '<div class="slider-endpoint-labels">';
+    html += '<span class="slider-endpoint-label clean">Certainly clean</span>';
+    html += '<span class="slider-endpoint-label fraud">Certainly fraudulent</span>';
+    html += '</div>';
     html += '<div class="slider-wrapper">';
     html += '<span class="slider-label">0%</span>';
     html += '<input type="range" class="slider-input" id="demo_slider" name="demo_slider" ' +
-            'min="0" max="100" step="1" value="50" data-touched="false" data-display="demo_slider_display">';
+            'min="0" max="100" step="10" value="50" data-touched="false" data-display="demo_slider_display">';
     html += '<span class="slider-label">100%</span>';
     html += '</div>';
     html += '<div class="slider-hint">' +
-      (page.hint || 'Drag left to right. You can be anywhere from 0% to 100%.') +
+      (page.hint || 'Drag the slider. It moves in 10% increments.') +
       '</div>';
     html += '<div class="field-error" id="error_demo_slider"></div>';
     html += '</div>';
@@ -1239,7 +1247,7 @@
     html += '<p class="tutorial-prompt">Try it now! Move the slider to <strong>' + (page.targetValue || '75') + '%</strong>:</p>';
     html += '<div class="slider-value-display" id="tutorial_slider_value">50%</div>';
     html += '<div class="slider-wrapper"><span class="slider-label">0%</span>';
-    html += '<input type="range" class="slider-input" id="tutorial_slider" min="0" max="100" step="1" value="50" data-touched="false" data-display="tutorial_slider_value">';
+    html += '<input type="range" class="slider-input" id="tutorial_slider" min="0" max="100" step="10" value="50" data-touched="false" data-display="tutorial_slider_value">';
     html += '<span class="slider-label">100%</span></div>';
     html += '<div class="slider-hint">Drag the slider left or right</div></div>';
     return html;
