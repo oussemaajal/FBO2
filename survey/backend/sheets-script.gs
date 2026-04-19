@@ -158,12 +158,103 @@ function addToParticipantGroup(prolificPID) {
 }
 
 /**
- * Required for CORS preflight (GET requests from browser).
- * Returns a simple success message.
+ * GET endpoint: returns survey data as JSON.
+ *
+ * Access control:
+ *   - Requires ?token=<SHARED_SECRET> matching Script Property READ_TOKEN.
+ *   - Without a valid token, returns a generic "active" ping.
+ *
+ * Query params:
+ *   ?token=<SHARED_SECRET>   (required for data access)
+ *   &format=json|csv         (default: json)
+ *   &sheet=<sheetName>       (default: active sheet)
+ *   &limit=<N>               (default: unlimited; most recent N rows)
+ *
+ * SETUP:
+ *   In Project Settings > Script Properties, add:
+ *     READ_TOKEN = <some long random string you choose>
+ *   Then share that token with anyone who needs read access.
  */
 function doGet(e) {
-  return ContentService.createTextOutput(JSON.stringify({
-    status: "ok",
-    message: "FBO Survey data endpoint is active."
-  })).setMimeType(ContentService.MimeType.JSON);
+  var params = (e && e.parameter) ? e.parameter : {};
+  var props  = PropertiesService.getScriptProperties();
+  var expectedToken = props.getProperty("READ_TOKEN");
+
+  // No token provided, or no token configured: return a health-check ping.
+  if (!expectedToken || !params.token || params.token !== expectedToken) {
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "ok",
+      message: "FBO Survey data endpoint is active."
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = params.sheet ? ss.getSheetByName(params.sheet) : ss.getActiveSheet();
+    if (!sheet) {
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "error",
+        message: "Sheet not found: " + params.sheet
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    var lastRow = sheet.getLastRow();
+    var lastCol = sheet.getLastColumn();
+    if (lastRow < 1 || lastCol < 1) {
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "ok", rows: [], headers: []
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    var values  = sheet.getRange(1, 1, lastRow, lastCol).getValues();
+    var headers = values[0];
+    var dataRows = values.slice(1);
+
+    var limit = parseInt(params.limit, 10);
+    if (!isNaN(limit) && limit > 0 && dataRows.length > limit) {
+      dataRows = dataRows.slice(dataRows.length - limit);
+    }
+
+    var format = (params.format || "json").toLowerCase();
+
+    if (format === "csv") {
+      var escCsv = function (v) {
+        if (v === null || v === undefined) return "";
+        var s = String(v);
+        if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1 || s.indexOf('\n') !== -1) {
+          return '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+      };
+      var lines = [headers.map(escCsv).join(",")];
+      for (var i = 0; i < dataRows.length; i++) {
+        lines.push(dataRows[i].map(escCsv).join(","));
+      }
+      return ContentService.createTextOutput(lines.join("\n"))
+        .setMimeType(ContentService.MimeType.CSV);
+    }
+
+    // Default: JSON
+    var rows = dataRows.map(function (row) {
+      var obj = {};
+      for (var j = 0; j < headers.length; j++) {
+        obj[headers[j]] = row[j];
+      }
+      return obj;
+    });
+
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "ok",
+      sheet: sheet.getName(),
+      n_rows: rows.length,
+      headers: headers,
+      rows: rows
+    })).setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "error",
+      message: err.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
 }

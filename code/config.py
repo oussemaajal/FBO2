@@ -62,8 +62,11 @@ def load_api_key(env_var):
 
 SURVEY_CONFIG = {
     'survey_url': 'https://oussemaajal.github.io/FBO2/',
-    'data_endpoint': '',  # Google Sheets Apps Script URL (set after deployment)
-    'google_sheet_id': '',  # Google Sheet ID (set after deployment)
+    # Google Apps Script web-app URL (same endpoint for POST writes & GET reads).
+    # GET requires ?token=<READ_TOKEN> matching the Script Property of the same name.
+    'data_endpoint': 'https://script.google.com/macros/s/AKfycbzRoZbHXjC_M_bvjMVcqMl8jdSdE3_80qV4srsAFB-JPLrAvBUuBN8SXr-9Fn6TBPYSEg/exec',
+    'google_sheet_id': '1VjaydQxm48KMjbsPUUA4t_qAY-88a-sieqpv6XqPS5U',
+    'sheet_read_token_env': 'FBO2_SHEET_READ_TOKEN',  # local env var holding the READ_TOKEN shared secret
 }
 
 # =============================================================================
