@@ -552,7 +552,8 @@
       this.responses[page.id].quizResponses = this.quizResponses.slice();
       this.responses[page.id].quizNumCorrect = numCorrect;
       this.responses[page.id].quizRetakeCount = this.quizRetakeCount;
-      if (numCorrect >= 9) {
+      // Passing threshold: 90% or above (11 of 12 = 91.7%)
+      if (numCorrect >= 11) {
         this.goToPageId('p1_comprehension_result');
       } else {
         this.goToPageId('p1_quiz_fail');
@@ -653,12 +654,18 @@
       }
     }
 
-    // Slider demo: require slider to be dragged
+    // Slider demo: require slider to actually MOVE to a different value
+    // (not just be clicked). Default value is 50, so anything !== 50 means
+    // the participant moved it.
     if (page.type === 'slider_demo') {
       var demoSlider = document.getElementById('demo_slider');
-      if (demoSlider && demoSlider.getAttribute('data-touched') !== 'true') {
-        this.showError('demo_slider', 'Please drag the slider to continue.');
-        valid = false;
+      if (demoSlider) {
+        var demoVal = parseInt(demoSlider.value);
+        var touched = demoSlider.getAttribute('data-touched') === 'true';
+        if (!touched || demoVal === 50) {
+          this.showError('demo_slider', 'Please move the slider to a value other than 50% to continue.');
+          valid = false;
+        }
       }
     }
 
@@ -958,7 +965,7 @@
       bayesPosterior: truth,
       errorPp: Math.round(error * 10000) / 100,
       amount: amount,
-      currency: bonusCfg.currency || 'GBP'
+      currency: bonusCfg.currency || 'USD'
     };
   };
 
@@ -1063,7 +1070,7 @@
     var total = this.quizResponses.length || 10;
     var html = '<h1 class="page-title">' + (page.title || 'Almost There') + '</h1>';
     html += '<div class="quiz-fail-score">' + numCorrect + '<span class="quiz-fail-score-denom"> / ' + total + '</span></div>';
-    html += '<p style="text-align:center; font-size:16px;">You got <strong>' + numCorrect + ' out of ' + total + '</strong> correct. The passing grade is <strong>9 of 10</strong>.</p>';
+    html += '<p style="text-align:center; font-size:16px;">You got <strong>' + numCorrect + ' out of ' + total + '</strong> correct. The passing grade is <strong>11 of 12</strong>.</p>';
     html += '<p style="text-align:center; color:#475569;">No worries -- the instructions are detailed. Take another pass through and try again.</p>';
     html += '<div class="quiz-fail-buttons">';
     html += '<button type="button" class="btn btn-primary" id="quiz_retake">' + esc(page.retakeText || 'Retake instructions') + '</button>';

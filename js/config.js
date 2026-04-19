@@ -33,7 +33,7 @@ var SURVEY_CONFIG = {
 
   // -- Study Metadata -------------------------------------------------------
   study: {
-    title: "Fraud Assessment Study",
+    title: "Decision Making Study",
     version: "3.2.0",
     dataEndpoint: "https://script.google.com/macros/s/AKfycbzRoZbHXjC_M_bvjMVcqMl8jdSdE3_80qV4srsAFB-JPLrAvBUuBN8SXr-9Fn6TBPYSEg/exec"
   },
@@ -50,7 +50,7 @@ var SURVEY_CONFIG = {
       fail1:  "https://app.prolific.com/submissions/complete?cc=FAIL1SN",
       comp2:  "https://app.prolific.com/submissions/complete?cc=COMP2SN"
     },
-    part2StudyUrl: "https://app.prolific.com/studies/69e545dca499d8f4d59f70dd/start"
+    part2StudyUrl: "https://app.prolific.com/studies/69e54b9da22addc2568923d6/start"
   },
 
   // -- Type Distributions ---------------------------------------------------
@@ -66,7 +66,7 @@ var SURVEY_CONFIG = {
   // -- Bonus Parameters -----------------------------------------------------
   bonus: {
     enabled: true,
-    currency: "GBP",
+    currency: "USD",
     baseAmount: 1.50,
     penaltyMultiplier: 3.00,
     floor: 0.00,
@@ -112,7 +112,7 @@ var SURVEY_CONFIG = {
 
 
   // ====================================================================
-  //  PART 1 PAGES -- Instructions + Comprehension (~5 min, GBP 1.00)
+  //  PART 1 PAGES -- Instructions + Comprehension (~5 min, USD 1.00)
   // ====================================================================
 
   part1Pages: [
@@ -123,9 +123,9 @@ var SURVEY_CONFIG = {
       type: "welcome",
       title: "Welcome",
       subtitle: "",
-      body: "<p>Help us study how people detect fraudulent firms.</p>" +
-            "<p>Part 1 takes ~<strong>5 minutes</strong> for <strong>&pound;1.00</strong>. " +
-            "Pass the quiz to unlock Part 2 (~10 min, <strong>&pound;1.50</strong> + up to <strong>&pound;1.00</strong> bonus).</p>",
+      body: "<p>Help us study decision-making under uncertainty.</p>" +
+            "<p>Part 1 takes ~<strong>5 minutes</strong> for <strong>$1.00</strong>. " +
+            "Pass the quiz to unlock Part 2 (~10 min, <strong>$1.50</strong> + up to <strong>$1.00</strong> bonus).</p>",
       buttonText: "Start"
     },
 
@@ -135,10 +135,10 @@ var SURVEY_CONFIG = {
       type: "consent",
       title: "Consent",
       body: "<p>You are being invited to participate in a research study about decision-making.</p>" +
-            "<p><strong>What you will do:</strong> Learn a fraud assessment task and answer a short quiz.</p>" +
+            "<p><strong>What you will do:</strong> Learn the decision-making task and answer a short quiz.</p>" +
             "<p><strong>Time:</strong> ~5 minutes.</p>" +
-            "<p><strong>Pay:</strong> &pound;1.00 for this part. Pass the quiz and you will be invited " +
-            "to Part 2 (~10 min, &pound;1.50 base + up to &pound;1.00 accuracy bonus).</p>" +
+            "<p><strong>Pay:</strong> $1.00 for this part. Pass the quiz and you will be invited " +
+            "to Part 2 (~10 min, $1.50 base + up to $1.00 accuracy bonus).</p>" +
             "<p><strong>Risks:</strong> None beyond everyday life.</p>" +
             "<p><strong>Confidentiality:</strong> Anonymous. We collect your Prolific ID only for payment.</p>" +
             "<p><strong>Voluntary:</strong> You may withdraw at any time by closing this window.</p>",
@@ -650,9 +650,9 @@ var SURVEY_CONFIG = {
           "and assign a <strong>probability</strong> that the firm is fraudulent." +
         "</p>" +
         "<p style='text-align:center; font-size:16px; color:#475569; margin-bottom:4px;'>" +
-          "Try the slider below to continue." +
+          "<strong>Try the slider:</strong> move it to any value <em>other than 50%</em> to continue." +
         "</p>",
-      hint: "The slider moves in 10% increments.",
+      hint: "The slider moves in 10% increments. You must move it away from 50% to continue.",
       minTimeSeconds: 4
     },
 
@@ -734,12 +734,12 @@ var SURVEY_CONFIG = {
       title: "Before the Quiz",
       body:
         "<p style='text-align:center; font-size:18px;'>" +
-          "There is a <strong>10-question quiz</strong> ahead." +
+          "There is a <strong>12-question quiz</strong> ahead." +
         "</p>" +
         "<div class='quiz-gate-stats'>" +
           "<div class='quiz-gate-stat'>" +
             "<div class='quiz-gate-stat-label'>Questions</div>" +
-            "<div class='quiz-gate-stat-value'>10</div>" +
+            "<div class='quiz-gate-stat-value'>12</div>" +
           "</div>" +
           "<div class='quiz-gate-stat'>" +
             "<div class='quiz-gate-stat-label'>Format</div>" +
@@ -747,7 +747,7 @@ var SURVEY_CONFIG = {
           "</div>" +
           "<div class='quiz-gate-stat'>" +
             "<div class='quiz-gate-stat-label'>Passing grade</div>" +
-            "<div class='quiz-gate-stat-value'>9 of 10</div>" +
+            "<div class='quiz-gate-stat-value'>11 of 12</div>" +
           "</div>" +
         "</div>" +
         "<div class='quiz-gate-warning'>" +
@@ -763,7 +763,7 @@ var SURVEY_CONFIG = {
       id: "p1_quiz_q1",
       type: "quiz_question",
       questionIndex: 1,
-      totalQuestions: 10,
+      totalQuestions: 12,
       prompt: "For each firm, who decides which transactions you will see?",
       correct: "manager",
       options: [
@@ -779,7 +779,7 @@ var SURVEY_CONFIG = {
       id: "p1_quiz_q2",
       type: "quiz_question",
       questionIndex: 2,
-      totalQuestions: 10,
+      totalQuestions: 12,
       prompt: "The manager is more likely to earn a bonus when the auditor assigns a:",
       correct: "low",
       options: [
@@ -795,7 +795,7 @@ var SURVEY_CONFIG = {
       id: "p1_quiz_q3",
       type: "quiz_question",
       questionIndex: 3,
-      totalQuestions: 10,
+      totalQuestions: 12,
       prompt: "Out of every 100 firms you audit, about how many are fraudulent?",
       correct: "20",
       options: [
@@ -811,7 +811,7 @@ var SURVEY_CONFIG = {
       id: "p1_quiz_q4",
       type: "quiz_question",
       questionIndex: 4,
-      totalQuestions: 10,
+      totalQuestions: 12,
       prompt: "A clean firm has exactly 50% Normal and 50% Flagged transactions. A fraudulent firm has 40% Normal and 60% Flagged. Which of the following is true?",
       correct: "both",
       options: [
@@ -827,7 +827,7 @@ var SURVEY_CONFIG = {
       id: "p1_quiz_q5",
       type: "quiz_question",
       questionIndex: 5,
-      totalQuestions: 10,
+      totalQuestions: 12,
       prompt: "How many total transactions does a Small firm have?",
       correct: "10",
       options: [
@@ -843,7 +843,7 @@ var SURVEY_CONFIG = {
       id: "p1_quiz_q6",
       type: "quiz_question",
       questionIndex: 6,
-      totalQuestions: 10,
+      totalQuestions: 12,
       prompt: "Regardless of firm size (Small, Medium, or Large), how many transactions does the manager disclose to you?",
       correct: "4",
       options: [
@@ -859,7 +859,7 @@ var SURVEY_CONFIG = {
       id: "p1_quiz_q7",
       type: "quiz_question",
       questionIndex: 7,
-      totalQuestions: 10,
+      totalQuestions: 12,
       prompt: "In a clean firm, what percentage of its transactions are Flagged?",
       correct: "50",
       options: [
@@ -875,7 +875,7 @@ var SURVEY_CONFIG = {
       id: "p1_quiz_q8",
       type: "quiz_question",
       questionIndex: 8,
-      totalQuestions: 10,
+      totalQuestions: 12,
       prompt: "In a fraudulent firm, what percentage of its transactions are Flagged?",
       correct: "60",
       options: [
@@ -891,7 +891,7 @@ var SURVEY_CONFIG = {
       id: "p1_quiz_q9",
       type: "quiz_question",
       questionIndex: 9,
-      totalQuestions: 10,
+      totalQuestions: 12,
       prompt: "You assigned a high fraud probability to a firm. Later, that firm is audited and turns out to be fraudulent. What happens to your pay?",
       correct: "bonus",
       options: [
@@ -907,7 +907,7 @@ var SURVEY_CONFIG = {
       id: "p1_quiz_q10",
       type: "quiz_question",
       questionIndex: 10,
-      totalQuestions: 10,
+      totalQuestions: 12,
       prompt: "You assigned a high fraud probability to a firm. Later, that firm is audited and turns out to be clean. What happens to your pay?",
       correct: "paycut",
       options: [
@@ -918,6 +918,38 @@ var SURVEY_CONFIG = {
       ]
     },
 
+    // -- Quiz Q11 (incentive alignment -- biggest bonus) --
+    {
+      id: "p1_quiz_q11",
+      type: "quiz_question",
+      questionIndex: 11,
+      totalQuestions: 12,
+      prompt: "Suppose a firm's actual probability of fraud is 10%. Which fraud probability should you assign to earn the biggest bonus?",
+      correct: "10",
+      options: [
+        { value: "10", label: "10%" },
+        { value: "30", label: "30%" },
+        { value: "50", label: "50%" },
+        { value: "70", label: "70%" }
+      ]
+    },
+
+    // -- Quiz Q12 (incentive alignment -- biggest pay cut) --
+    {
+      id: "p1_quiz_q12",
+      type: "quiz_question",
+      questionIndex: 12,
+      totalQuestions: 12,
+      prompt: "Suppose a firm's actual probability of fraud is 10%. Which fraud probability would result in the biggest pay cut?",
+      correct: "70",
+      options: [
+        { value: "10", label: "10%" },
+        { value: "30", label: "30%" },
+        { value: "50", label: "50%" },
+        { value: "70", label: "70%" }
+      ]
+    },
+
     // -- Quiz pass: Completion --
     {
       id: "p1_comprehension_result",
@@ -925,7 +957,7 @@ var SURVEY_CONFIG = {
       title: "You Passed!",
       body: "<p>You understand the task.</p>" +
             "<p><strong>Part 2</strong> is a separate Prolific study (~10 min, " +
-            "&pound;1.50 base + up to &pound;1.00 accuracy bonus).</p>"
+            "$1.50 base + up to $1.00 accuracy bonus).</p>"
     },
 
     // -- Quiz fail: offer retake or exit --
@@ -961,7 +993,7 @@ var SURVEY_CONFIG = {
       body: "<p>This part takes about <strong>10 minutes</strong>. " +
             "As a government auditor, you will review <strong>9 firms</strong> " +
             "and assign each a probability of fraud.</p>" +
-            "<p>Pay: <strong>&pound;1.50</strong> base + up to <strong>&pound;1.00</strong> " +
+            "<p>Pay: <strong>$1.50</strong> base + up to <strong>$1.00</strong> " +
             "based on how <strong>accurate</strong> your probabilities are.</p>",
       buttonText: "Continue"
     },
@@ -1129,10 +1161,10 @@ var SURVEY_CONFIG = {
       id: "welcome",
       type: "welcome",
       title: "Welcome",
-      subtitle: "Fraud Assessment Study",
-      body: "<p>Help us study how people detect fraudulent firms. " +
+      subtitle: "Decision Making Study",
+      body: "<p>Help us study decision-making under uncertainty. " +
             "This takes about <strong>15 minutes</strong>.</p>" +
-            "<p>Pay: <strong>&pound;2.50</strong> base + up to <strong>&pound;1.00</strong> accuracy bonus.</p>" +
+            "<p>Pay: <strong>$2.50</strong> base + up to <strong>$1.00</strong> accuracy bonus.</p>" +
             "<p>Please use a <strong>desktop or laptop</strong> for the best experience.</p>",
       buttonText: "Begin"
     },
@@ -1143,10 +1175,10 @@ var SURVEY_CONFIG = {
       type: "consent",
       title: "Consent",
       body: "<p>You are being invited to participate in a research study about decision-making.</p>" +
-            "<p><strong>What you will do:</strong> Learn a fraud assessment task, pass a quiz, " +
+            "<p><strong>What you will do:</strong> Learn the decision-making task, pass a quiz, " +
             "then evaluate 9 firms.</p>" +
             "<p><strong>Time:</strong> ~15 minutes.</p>" +
-            "<p><strong>Pay:</strong> &pound;2.50 base + up to &pound;1.00 accuracy bonus.</p>" +
+            "<p><strong>Pay:</strong> $2.50 base + up to $1.00 accuracy bonus.</p>" +
             "<p><strong>Risks:</strong> None beyond everyday life.</p>" +
             "<p><strong>Confidentiality:</strong> Anonymous. Prolific ID collected only for payment.</p>" +
             "<p><strong>Voluntary:</strong> Withdraw at any time by closing this window.</p>",
