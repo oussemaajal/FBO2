@@ -34,7 +34,7 @@ var SURVEY_CONFIG = {
   // -- Study Metadata -------------------------------------------------------
   study: {
     title: "Decision Making Study",
-    version: "3.2.0",
+    version: "4.2.0",
     dataEndpoint: "https://script.google.com/macros/s/AKfycbzRoZbHXjC_M_bvjMVcqMl8jdSdE3_80qV4srsAFB-JPLrAvBUuBN8SXr-9Fn6TBPYSEg/exec"
   },
 

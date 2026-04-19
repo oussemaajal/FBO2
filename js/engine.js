@@ -798,8 +798,17 @@
     flat.comprehensionFailed = !!this.comprehensionFailed;
 
     // ── Consent (Part 1) ──────────────────────────────────
-    if (this.responses && this.responses.p1_welcome) {
-      flat.consent_agreed = !!this.responses.p1_welcome.consent_agree;
+    //   Scan for any page that captured a consent_agree field, since the
+    //   consent page id may evolve over survey versions.
+    if (this.responses) {
+      for (var cpid in this.responses) {
+        var cpr = this.responses[cpid];
+        if (cpr && typeof cpr.consent_agree !== 'undefined') {
+          flat.consent_agreed = !!cpr.consent_agree;
+          flat.consent_page_id = cpid;
+          break;
+        }
+      }
     }
 
     // ── Quiz (Part 1) ─────────────────────────────────────

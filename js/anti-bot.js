@@ -196,10 +196,9 @@
       flags.push('excessive_tab_switching');
     }
 
-    // Flag: no keyboard events on any text/number inputs
-    if (metrics.keyboardEvents === 0 && durationMin > 2) {
-      flags.push('no_keyboard_events');
-    }
+    // (removed) "no keyboard events" — legitimate Part-1 participants
+    // using only mouse for radio buttons + sliders never type, so this
+    // was a pure false positive.
 
     metrics.suspiciousFlags = flags;
     metrics.trackingDurationMs = Date.now() - metrics.trackingStartTime;
