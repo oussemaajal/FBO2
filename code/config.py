@@ -103,7 +103,7 @@ EXPERIMENT_PARAMS = {
 
     # Default participant counts (within-subject design; no between-subject cells)
     # These are used by RUN_PROLIFIC_STUDY.py when --n is not supplied.
-    'default_n_pilot': 60,
+    'default_n_pilot': 30,
     'default_n_full': 250,
 
     # Completion codes

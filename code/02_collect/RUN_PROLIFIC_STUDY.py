@@ -405,7 +405,7 @@ def main():
     # create-two-part
     p = subparsers.add_parser('create-two-part', help='Create two-part study')
     p.add_argument('--pilot', action='store_true',
-                   help='Use pilot default count (60) instead of full (250)')
+                   help='Use pilot default count (30) instead of full (250)')
     p.add_argument('--n', type=int, default=None,
                    help='Explicit total participant count (overrides pilot/full default)')
     p.add_argument('--no-screeners', action='store_true',
