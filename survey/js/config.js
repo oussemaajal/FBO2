@@ -11,12 +11,12 @@
      d_N = Normal among disclosed: {0, D-1=3, D=4}
 
    Transaction types (2 only):
-     Normal  (green doc)  -- more common in non-fraudulent firms
+     Normal  (green doc)  -- more common in clean firms
      Flagged (red doc)    -- more common in fraudulent firms
 
    Type distributions:
-     Non-Fraudulent: 50% Normal, 50% Flagged
-     Fraudulent:     40% Normal, 60% Flagged
+     Clean:      50% Normal, 50% Flagged
+     Fraudulent: 40% Normal, 60% Flagged
 
    Prior: P(fraud) = 20%
 
@@ -55,8 +55,8 @@ var SURVEY_CONFIG = {
 
   // -- Type Distributions ---------------------------------------------------
   typeDistributions: {
-    nonFraudulent: { normal: 0.50, flagged: 0.50 },
-    fraudulent:    { normal: 0.40, flagged: 0.60 },
+    clean:      { normal: 0.50, flagged: 0.50 },
+    fraudulent: { normal: 0.40, flagged: 0.60 },
     prior: 0.20
   },
 
@@ -123,9 +123,9 @@ var SURVEY_CONFIG = {
       type: "welcome",
       title: "Welcome",
       subtitle: "",
-      body: "<p>Help us study how people evaluate firms for fraud.</p>" +
-            "<p>This part takes about <strong>5 minutes</strong>. " +
-            "You will be paid <strong>&pound;1.00</strong>.</p>",
+      body: "<p>Help us study how people detect fraudulent firms.</p>" +
+            "<p>Part 1 takes ~<strong>5 minutes</strong> for <strong>&pound;1.00</strong>. " +
+            "Pass the quiz to unlock Part 2 (~10 min, <strong>&pound;1.50</strong> + up to <strong>&pound;1.00</strong> bonus).</p>",
       buttonText: "Start"
     },
 
@@ -134,12 +134,11 @@ var SURVEY_CONFIG = {
       id: "p1_consent",
       type: "consent",
       title: "Consent",
-      body: "<p>You are being invited to participate in a research study about " +
-            "decision-making under uncertainty.</p>" +
+      body: "<p>You are being invited to participate in a research study about decision-making.</p>" +
             "<p><strong>What you will do:</strong> Learn a fraud assessment task and answer a short quiz.</p>" +
             "<p><strong>Time:</strong> ~5 minutes.</p>" +
             "<p><strong>Pay:</strong> &pound;1.00 for this part. Pass the quiz and you will be invited " +
-            "to Part 2 (~15 min, &pound;2.50 + up to &pound;1.50 bonus).</p>" +
+            "to Part 2 (~10 min, &pound;1.50 base + up to &pound;1.00 accuracy bonus).</p>" +
             "<p><strong>Risks:</strong> None beyond everyday life.</p>" +
             "<p><strong>Confidentiality:</strong> Anonymous. We collect your Prolific ID only for payment.</p>" +
             "<p><strong>Voluntary:</strong> You may withdraw at any time by closing this window.</p>",
@@ -148,156 +147,358 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 15
     },
 
-    // -- Page 3: The Task --
+    // -- Page 3: Your Mission --
     {
-      id: "p1_inst_task",
+      id: "p1_inst_mission",
       type: "instructions",
-      title: "The Task",
+      title: "Your Mission",
       body:
-        "<p>You will evaluate firms for fraud. Each firm has transactions " +
-        "that are classified as either " +
-        "<span class='doc-icon doc-icon-normal' style='display:inline-flex; width:24px; height:28px; font-size:12px; vertical-align:middle;'>N</span> " +
-        "<span style='color:#2d6a4f; font-weight:600;'>Normal</span> or " +
-        "<span class='doc-icon doc-icon-flagged' style='display:inline-flex; width:24px; height:28px; font-size:12px; vertical-align:middle;'>F</span> " +
-        "<span style='color:#c92a2a; font-weight:600;'>Flagged</span>.</p>" +
-
-        "<p>The mix of transaction types differs between firm types:</p>" +
-
-        "<div style='display:flex; gap:32px; justify-content:center; flex-wrap:wrap; margin:20px 0;'>" +
-          "<div style='text-align:center;'>" +
-            "<div style='font-weight:600; font-size:15px; margin-bottom:10px; color:#1e293b;'>Non-Fraudulent Firm</div>" +
-            "<div style='display:flex; align-items:center; gap:16px;'>" +
-              "<div style='width:120px; height:120px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 180deg, #ef4444 180deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
-              "<div style='display:flex; flex-direction:column; gap:6px; text-align:left; font-size:14px;'>" +
-                "<div style='display:flex; align-items:center; gap:8px;'><span class='doc-icon doc-icon-normal' style='width:20px; height:24px; font-size:11px;'>N</span><strong>Normal 50%</strong></div>" +
-                "<div style='display:flex; align-items:center; gap:8px;'><span class='doc-icon doc-icon-flagged' style='width:20px; height:24px; font-size:11px;'>F</span>Flagged 50%</div>" +
-              "</div>" +
-            "</div>" +
-          "</div>" +
-          "<div style='text-align:center;'>" +
-            "<div style='font-weight:600; font-size:15px; margin-bottom:10px; color:#1e293b;'>Fraudulent Firm</div>" +
-            "<div style='display:flex; align-items:center; gap:16px;'>" +
-              "<div style='width:120px; height:120px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 144deg, #ef4444 144deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
-              "<div style='display:flex; flex-direction:column; gap:6px; text-align:left; font-size:14px;'>" +
-                "<div style='display:flex; align-items:center; gap:8px;'><span class='doc-icon doc-icon-normal' style='width:20px; height:24px; font-size:11px;'>N</span>Normal 40%</div>" +
-                "<div style='display:flex; align-items:center; gap:8px;'><span class='doc-icon doc-icon-flagged' style='width:20px; height:24px; font-size:11px;'>F</span><strong>Flagged 60%</strong></div>" +
-              "</div>" +
-            "</div>" +
-          "</div>" +
-        "</div>",
-      minTimeSeconds: 12
+        "<div class='mission-badge'>" +
+          "<svg viewBox='0 0 100 120' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
+            "<defs>" +
+              "<linearGradient id='shieldGrad' x1='0%' y1='0%' x2='0%' y2='100%'>" +
+                "<stop offset='0%' stop-color='#0ea5a0'/>" +
+                "<stop offset='100%' stop-color='#0f766e'/>" +
+              "</linearGradient>" +
+            "</defs>" +
+            "<path d='M50 5 L90 20 V55 C90 82 72 105 50 115 C28 105 10 82 10 55 V20 Z' " +
+                  "fill='url(#shieldGrad)' stroke='#0f766e' stroke-width='2'/>" +
+            "<path d='M32 58 L45 72 L70 42' stroke='#ffffff' stroke-width='7' " +
+                  "stroke-linecap='round' stroke-linejoin='round' fill='none'/>" +
+          "</svg>" +
+          "<div class='mission-badge-label'>AUDITOR</div>" +
+        "</div>" +
+        "<p style='text-align:center; font-size:19px; max-width:560px; margin:0 auto;'>" +
+          "You are a <strong>government auditor</strong>. Your job is to detect " +
+          "<strong>fraudulent firms</strong>. For each firm you investigate, you will estimate " +
+          "the probability that it is fraudulent." +
+        "</p>",
+      minTimeSeconds: 6
     },
 
-    // -- Page 4: The Manager --
+    // -- Page 4: Try the Slider (interactive) --
+    {
+      id: "p1_slider_demo",
+      type: "slider_demo",
+      title: "Try the Slider",
+      body: "<p>Here is how you will report your fraud estimate. " +
+            "Drag the slider to any value to continue.</p>",
+      hint: "Drag left to right. You can be anywhere from 0% (certainly clean) to 100% (certainly fraudulent).",
+      minTimeSeconds: 4
+    },
+
+    // -- Page 5: Firms -- Clean or Fraudulent --
+    {
+      id: "p1_inst_firms",
+      type: "instructions",
+      title: "Firms: Clean or Fraudulent",
+      body:
+        "<div class='firm-prior-visual'>" +
+          "<div class='firm-prior-pie'></div>" +
+          "<div class='firm-prior-legend'>" +
+            "<div class='firm-prior-legend-item'>" +
+              "<span class='firm-prior-swatch' style='background:#14b8a6;'></span>" +
+              "<span><strong>80%</strong> Clean</span>" +
+            "</div>" +
+            "<div class='firm-prior-legend-item'>" +
+              "<span class='firm-prior-swatch' style='background:#7c3aed;'></span>" +
+              "<span><strong>20%</strong> Fraudulent</span>" +
+            "</div>" +
+          "</div>" +
+        "</div>" +
+        "<div class='firm-types-row'>" +
+          "<div class='firm-type-icon firm-type-clean'>" +
+            "<svg viewBox='0 0 80 90' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
+              "<rect x='10' y='25' width='60' height='60' rx='3' fill='#ccfbf1' stroke='#14b8a6' stroke-width='3'/>" +
+              "<rect x='20' y='35' width='10' height='10' fill='#14b8a6'/>" +
+              "<rect x='35' y='35' width='10' height='10' fill='#14b8a6'/>" +
+              "<rect x='50' y='35' width='10' height='10' fill='#14b8a6'/>" +
+              "<rect x='20' y='50' width='10' height='10' fill='#14b8a6'/>" +
+              "<rect x='35' y='50' width='10' height='10' fill='#14b8a6'/>" +
+              "<rect x='50' y='50' width='10' height='10' fill='#14b8a6'/>" +
+              "<rect x='32' y='65' width='16' height='20' fill='#0f766e'/>" +
+            "</svg>" +
+            "<div class='firm-type-label'>Clean Firm</div>" +
+          "</div>" +
+          "<div class='firm-type-icon firm-type-fraud'>" +
+            "<svg viewBox='0 0 80 90' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
+              "<rect x='10' y='25' width='60' height='60' rx='3' fill='#ede9fe' stroke='#7c3aed' stroke-width='3'/>" +
+              "<rect x='20' y='35' width='10' height='10' fill='#7c3aed'/>" +
+              "<rect x='35' y='35' width='10' height='10' fill='#7c3aed'/>" +
+              "<rect x='50' y='35' width='10' height='10' fill='#7c3aed'/>" +
+              "<rect x='20' y='50' width='10' height='10' fill='#7c3aed'/>" +
+              "<rect x='35' y='50' width='10' height='10' fill='#7c3aed'/>" +
+              "<rect x='50' y='50' width='10' height='10' fill='#7c3aed'/>" +
+              "<rect x='32' y='65' width='16' height='20' fill='#5b21b6'/>" +
+            "</svg>" +
+            "<div class='firm-type-label'>Fraudulent Firm</div>" +
+          "</div>" +
+        "</div>" +
+        "<p style='text-align:center; font-size:18px; margin-top:8px;'>" +
+          "Most firms are <strong>clean</strong>. About <strong>1 in 5</strong> is fraudulent." +
+        "</p>",
+      minTimeSeconds: 6
+    },
+
+    // -- Page 6: Every Firm Has Transactions --
+    {
+      id: "p1_inst_has_transactions",
+      type: "instructions",
+      title: "Every Firm Has Transactions",
+      body:
+        "<div class='firm-fanout-visual'>" +
+          "<svg viewBox='0 0 260 180' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
+            "<rect x='110' y='60' width='40' height='100' rx='2' fill='#e5e7eb' stroke='#475569' stroke-width='2'/>" +
+            "<rect x='118' y='70' width='8' height='8' fill='#94a3b8'/>" +
+            "<rect x='132' y='70' width='8' height='8' fill='#94a3b8'/>" +
+            "<rect x='118' y='84' width='8' height='8' fill='#94a3b8'/>" +
+            "<rect x='132' y='84' width='8' height='8' fill='#94a3b8'/>" +
+            "<rect x='118' y='98' width='8' height='8' fill='#94a3b8'/>" +
+            "<rect x='132' y='98' width='8' height='8' fill='#94a3b8'/>" +
+            "<rect x='123' y='130' width='14' height='30' fill='#475569'/>" +
+            "<g fill='#ffffff' stroke='#64748b' stroke-width='2'>" +
+              "<rect x='10'  y='30'  width='36' height='46' rx='3' transform='rotate(-18 28 53)'/>" +
+              "<rect x='40'  y='10'  width='36' height='46' rx='3' transform='rotate(-10 58 33)'/>" +
+              "<rect x='180' y='10'  width='36' height='46' rx='3' transform='rotate(10 198 33)'/>" +
+              "<rect x='210' y='30'  width='36' height='46' rx='3' transform='rotate(18 228 53)'/>" +
+              "<rect x='25'  y='115' width='36' height='46' rx='3' transform='rotate(-14 43 138)'/>" +
+              "<rect x='200' y='115' width='36' height='46' rx='3' transform='rotate(14 218 138)'/>" +
+            "</g>" +
+            "<g stroke='#cbd5e1' stroke-width='1' stroke-dasharray='3,3'>" +
+              "<line x1='110' y1='90' x2='45'  y2='55'/>" +
+              "<line x1='110' y1='85' x2='75'  y2='35'/>" +
+              "<line x1='150' y1='85' x2='185' y2='35'/>" +
+              "<line x1='150' y1='90' x2='215' y2='55'/>" +
+              "<line x1='110' y1='120' x2='60' y2='140'/>" +
+              "<line x1='150' y1='120' x2='200' y2='140'/>" +
+            "</g>" +
+          "</svg>" +
+        "</div>" +
+        "<p style='text-align:center; font-size:18px; max-width:560px; margin:0 auto;'>" +
+          "Each firm processes many <strong>transactions</strong>. As an auditor, you examine " +
+          "these to judge whether the firm is clean or fraudulent." +
+        "</p>",
+      minTimeSeconds: 6
+    },
+
+    // -- Page 7: Two Types of Transactions --
+    {
+      id: "p1_inst_two_types",
+      type: "instructions",
+      title: "Two Types of Transactions",
+      body:
+        "<div class='two-types-row'>" +
+          "<div class='transaction-doc-wrap'>" +
+            "<div class='transaction-doc large normal'>N</div>" +
+            "<div class='transaction-doc-caption' style='color:#15803d;'>Normal</div>" +
+          "</div>" +
+          "<div class='transaction-doc-wrap'>" +
+            "<div class='transaction-doc large flagged'>F</div>" +
+            "<div class='transaction-doc-caption' style='color:#b91c1c;'>Flagged</div>" +
+          "</div>" +
+        "</div>" +
+        "<p style='text-align:center; font-size:18px; margin-top:8px;'>" +
+          "Every transaction is classified as either <strong>Normal</strong> or <strong>Flagged</strong>." +
+        "</p>",
+      minTimeSeconds: 6
+    },
+
+    // -- Page 8: Firms Look Different --
+    {
+      id: "p1_inst_mix_differs",
+      type: "instructions",
+      title: "Firms Look Different",
+      body:
+        "<div class='type-pie-row'>" +
+          "<div class='type-pie-card type-pie-clean'>" +
+            "<div class='type-pie-label'>Clean Firm</div>" +
+            "<div class='type-pie' style='background:conic-gradient(#22c55e 0deg 180deg, #ef4444 180deg 360deg);'></div>" +
+            "<div class='type-pie-legend'>" +
+              "<div class='type-pie-legend-item'><span class='doc-icon doc-icon-normal' style='width:18px; height:22px; font-size:10px;'>N</span><strong>50%</strong></div>" +
+              "<div class='type-pie-legend-item'><span class='doc-icon doc-icon-flagged' style='width:18px; height:22px; font-size:10px;'>F</span>50%</div>" +
+            "</div>" +
+          "</div>" +
+          "<div class='type-pie-card type-pie-fraud'>" +
+            "<div class='type-pie-label'>Fraudulent Firm</div>" +
+            "<div class='type-pie' style='background:conic-gradient(#22c55e 0deg 144deg, #ef4444 144deg 360deg);'></div>" +
+            "<div class='type-pie-legend'>" +
+              "<div class='type-pie-legend-item'><span class='doc-icon doc-icon-normal' style='width:18px; height:22px; font-size:10px;'>N</span>40%</div>" +
+              "<div class='type-pie-legend-item'><span class='doc-icon doc-icon-flagged' style='width:18px; height:22px; font-size:10px;'>F</span><strong>60%</strong></div>" +
+            "</div>" +
+          "</div>" +
+        "</div>" +
+        "<p style='text-align:center; font-size:17px; margin-top:8px;'>" +
+          "<strong>Clean</strong> firms have about half Normal and half Flagged. " +
+          "<strong>Fraudulent</strong> firms tilt toward <strong>Flagged</strong> -- about 60%." +
+        "</p>",
+      minTimeSeconds: 8
+    },
+
+    // -- Page 9: Firm Sizes --
+    {
+      id: "p1_inst_sizes",
+      type: "instructions",
+      title: "Firm Sizes",
+      body:
+        "<div class='firm-size-row size-diff'>" +
+          "<div class='firm-size-card firm-size-card-small size-diff-small'>" +
+            "<svg class='firm-icon-small' viewBox='0 0 60 80' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
+              "<rect x='10' y='40' width='40' height='40' fill='#cbd5e1' stroke='#475569' stroke-width='2'/>" +
+              "<rect x='18' y='48' width='6' height='6' fill='#64748b'/>" +
+              "<rect x='28' y='48' width='6' height='6' fill='#64748b'/>" +
+              "<rect x='38' y='48' width='6' height='6' fill='#64748b'/>" +
+              "<rect x='18' y='60' width='6' height='6' fill='#64748b'/>" +
+              "<rect x='28' y='60' width='6' height='6' fill='#64748b'/>" +
+              "<rect x='38' y='60' width='6' height='6' fill='#64748b'/>" +
+            "</svg>" +
+            "<div class='firm-size-number'>10</div>" +
+            "<div class='firm-size-subtext'>transactions</div>" +
+          "</div>" +
+          "<div class='firm-size-card firm-size-card-medium size-diff-medium'>" +
+            "<svg class='firm-icon-medium' viewBox='0 0 80 120' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
+              "<rect x='10' y='30' width='60' height='90' fill='#cbd5e1' stroke='#475569' stroke-width='2'/>" +
+              "<g fill='#64748b'>" +
+                "<rect x='20' y='40' width='7' height='7'/><rect x='33' y='40' width='7' height='7'/><rect x='46' y='40' width='7' height='7'/><rect x='59' y='40' width='7' height='7'/>" +
+                "<rect x='20' y='54' width='7' height='7'/><rect x='33' y='54' width='7' height='7'/><rect x='46' y='54' width='7' height='7'/><rect x='59' y='54' width='7' height='7'/>" +
+                "<rect x='20' y='68' width='7' height='7'/><rect x='33' y='68' width='7' height='7'/><rect x='46' y='68' width='7' height='7'/><rect x='59' y='68' width='7' height='7'/>" +
+                "<rect x='20' y='82' width='7' height='7'/><rect x='33' y='82' width='7' height='7'/><rect x='46' y='82' width='7' height='7'/><rect x='59' y='82' width='7' height='7'/>" +
+              "</g>" +
+            "</svg>" +
+            "<div class='firm-size-number'>20</div>" +
+            "<div class='firm-size-subtext'>transactions</div>" +
+          "</div>" +
+          "<div class='firm-size-card firm-size-card-large size-diff-large'>" +
+            "<svg class='firm-icon-large' viewBox='0 0 110 180' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
+              "<rect x='10' y='10' width='90' height='170' fill='#cbd5e1' stroke='#475569' stroke-width='2'/>" +
+              "<g fill='#64748b'>" +
+                "<rect x='20' y='20' width='8' height='8'/><rect x='34' y='20' width='8' height='8'/><rect x='48' y='20' width='8' height='8'/><rect x='62' y='20' width='8' height='8'/><rect x='76' y='20' width='8' height='8'/>" +
+                "<rect x='20' y='34' width='8' height='8'/><rect x='34' y='34' width='8' height='8'/><rect x='48' y='34' width='8' height='8'/><rect x='62' y='34' width='8' height='8'/><rect x='76' y='34' width='8' height='8'/>" +
+                "<rect x='20' y='48' width='8' height='8'/><rect x='34' y='48' width='8' height='8'/><rect x='48' y='48' width='8' height='8'/><rect x='62' y='48' width='8' height='8'/><rect x='76' y='48' width='8' height='8'/>" +
+                "<rect x='20' y='62' width='8' height='8'/><rect x='34' y='62' width='8' height='8'/><rect x='48' y='62' width='8' height='8'/><rect x='62' y='62' width='8' height='8'/><rect x='76' y='62' width='8' height='8'/>" +
+                "<rect x='20' y='76' width='8' height='8'/><rect x='34' y='76' width='8' height='8'/><rect x='48' y='76' width='8' height='8'/><rect x='62' y='76' width='8' height='8'/><rect x='76' y='76' width='8' height='8'/>" +
+                "<rect x='20' y='90' width='8' height='8'/><rect x='34' y='90' width='8' height='8'/><rect x='48' y='90' width='8' height='8'/><rect x='62' y='90' width='8' height='8'/><rect x='76' y='90' width='8' height='8'/>" +
+                "<rect x='20' y='104' width='8' height='8'/><rect x='34' y='104' width='8' height='8'/><rect x='48' y='104' width='8' height='8'/><rect x='62' y='104' width='8' height='8'/><rect x='76' y='104' width='8' height='8'/>" +
+                "<rect x='20' y='118' width='8' height='8'/><rect x='34' y='118' width='8' height='8'/><rect x='48' y='118' width='8' height='8'/><rect x='62' y='118' width='8' height='8'/><rect x='76' y='118' width='8' height='8'/>" +
+                "<rect x='20' y='132' width='8' height='8'/><rect x='34' y='132' width='8' height='8'/><rect x='48' y='132' width='8' height='8'/><rect x='62' y='132' width='8' height='8'/><rect x='76' y='132' width='8' height='8'/>" +
+              "</g>" +
+            "</svg>" +
+            "<div class='firm-size-number'>50</div>" +
+            "<div class='firm-size-subtext'>transactions</div>" +
+          "</div>" +
+        "</div>" +
+        "<p style='text-align:center; font-size:17px; margin-top:8px;'>" +
+          "Firms come in three sizes. Larger firms process more transactions." +
+        "</p>",
+      minTimeSeconds: 8
+    },
+
+    // -- Page 10: The Manager --
     {
       id: "p1_inst_manager",
       type: "instructions",
       title: "The Manager",
       body:
-        "<div style='display:flex; align-items:center; gap:20px; padding:16px 20px; background:#f8f9fa; border-radius:10px; margin-bottom:18px;'>" +
-          "<div style='font-size:48px; flex-shrink:0;'>&#128188;</div>" +
-          "<div style='display:flex; align-items:center; gap:8px; font-size:28px;'>&#10132;</div>" +
-          "<div style='display:flex; gap:6px;'>" +
-            "<span class='doc-icon doc-icon-normal doc-icon-large'>N</span>" +
-            "<span class='doc-icon doc-icon-flagged doc-icon-large'>F</span>" +
-            "<span class='doc-icon doc-icon-normal doc-icon-large'>N</span>" +
-            "<span class='doc-icon doc-icon-normal doc-icon-large'>N</span>" +
+        "<div class='manager-visual'>" +
+          "<div class='manager-figure'>&#128188;</div>" +
+          "<div class='manager-transactions'>" +
+            "<span class='transaction-doc small normal manager-show'>N</span>" +
+            "<span class='transaction-doc small flagged manager-hide'>F</span>" +
+            "<span class='transaction-doc small normal manager-show'>N</span>" +
+            "<span class='transaction-doc small flagged manager-hide'>F</span>" +
+            "<span class='transaction-doc small normal manager-show'>N</span>" +
+            "<span class='transaction-doc small flagged manager-hide'>F</span>" +
           "</div>" +
-          "<div style='display:flex; align-items:center; gap:8px; font-size:28px;'>&#10132;</div>" +
-          "<div style='font-size:48px; flex-shrink:0;'>&#128100;</div>" +
         "</div>" +
-
-        "<p>A manager sees <strong>all</strong> of a firm's transactions but shows you only some. " +
-        "The manager cannot change or fabricate transactions -- only choose which ones you see.</p>" +
-
-        "<p>For example, if a firm has 10 transactions and the manager can show you 4, " +
-        "the manager picks which 4 to reveal.</p>" +
-
-        "<p>The manager does <strong>not want to be flagged as fraudulent</strong> because they might get fined. " +
-        "The lower the probability of fraud you assign, the better for the manager. " +
-        "The lower your rating, the more likely the manager earns a <strong>bonus</strong>.</p>" +
-
-        "<div class='incentive-cards'>" +
+        "<p>The manager sees <em>all</em> of the firm's transactions but only shows you " +
+          "<strong>4</strong>. The manager cannot fabricate transactions -- only choose which to reveal.</p>" +
+        "<p>The manager prefers <strong>lower</strong> fraud ratings. A low rating from you means " +
+          "the manager is unlikely to be fined and more likely to earn a bonus.</p>" +
+        "<div class='incentive-cards incentive-cards-compact'>" +
           "<div class='incentive-card incentive-card-good'>" +
             "<div class='incentive-card-icon'>&#9989;</div>" +
-            "<div><strong>Your fraud rating: LOW</strong></div>" +
+            "<div><strong>Your rating: LOW</strong></div>" +
             "<div>Manager earns a bonus</div>" +
           "</div>" +
           "<div class='incentive-card incentive-card-bad'>" +
             "<div class='incentive-card-icon'>&#10060;</div>" +
-            "<div><strong>Your fraud rating: HIGH</strong></div>" +
+            "<div><strong>Your rating: HIGH</strong></div>" +
             "<div>Manager gets fined</div>" +
           "</div>" +
         "</div>",
-      minTimeSeconds: 12
-    },
-
-    // -- Page 5: Firm Sizes --
-    {
-      id: "p1_inst_what",
-      type: "instructions",
-      title: "Firm Sizes",
-      body:
-        "<p>Firms come in different sizes. A larger firm naturally has more transactions.</p>" +
-
-        "<div class='firm-size-row'>" +
-          "<div class='firm-size-card firm-size-card-small'>" +
-            "<div class='firm-size-icon'>&#127970;</div>" +
-            "<div class='firm-size-label'>Small Firm</div>" +
-            "<div class='firm-size-count'>10 transactions</div>" +
-          "</div>" +
-          "<div class='firm-size-card firm-size-card-medium'>" +
-            "<div class='firm-size-icon'>&#127971;</div>" +
-            "<div class='firm-size-label'>Medium Firm</div>" +
-            "<div class='firm-size-count'>20 transactions</div>" +
-          "</div>" +
-          "<div class='firm-size-card firm-size-card-large'>" +
-            "<div class='firm-size-icon'>&#127972;</div>" +
-            "<div class='firm-size-label'>Large Firm</div>" +
-            "<div class='firm-size-count'>50 transactions</div>" +
-          "</div>" +
-        "</div>" +
-
-        "<p>Regardless of firm size, the manager always reviews and shows you <strong>4 transactions</strong>.</p>",
       minTimeSeconds: 10
     },
 
-    // -- Page 6: Your Job --
+    // -- Page 11: Example (1 of 3) --
     {
-      id: "p1_inst_job",
+      id: "p1_example_1",
       type: "instructions",
-      title: "Your Job",
+      title: "Example",
       body:
-        "<p>For each firm, you will:</p>" +
-        "<ol>" +
-        "<li>Rate how likely the firm is fraudulent (0-100%)</li>" +
-        "<li>Rate your confidence in that assessment</li>" +
-        "</ol>" +
-
-        "<p>Remember: <strong>80%</strong> of firms are non-fraudulent and only " +
-        "<strong>20%</strong> are fraudulent.</p>" +
-
-        "<div style='display:flex; align-items:center; gap:16px; justify-content:center; margin:18px 0;'>" +
-          "<div style='width:100px; height:100px; border-radius:50%; background:conic-gradient(#3b82f6 0deg 288deg, #f59e0b 288deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
-          "<div style='display:flex; flex-direction:column; gap:6px; text-align:left; font-size:14px;'>" +
-            "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#3b82f6; border-radius:3px;'></span><strong>Non-Fraudulent 80%</strong></div>" +
-            "<div style='display:flex; align-items:center; gap:8px;'><span style='display:inline-block; width:14px; height:14px; background:#f59e0b; border-radius:3px;'></span>Fraudulent 20%</div>" +
-          "</div>" +
-        "</div>",
-      minTimeSeconds: 8
+        "<p class='example-subtitle'>A medium firm has 10 transactions.</p>" +
+        "<div class='example-grid'>" +
+          "<div class='transaction-doc small hidden'>?</div>" +
+          "<div class='transaction-doc small hidden'>?</div>" +
+          "<div class='transaction-doc small hidden'>?</div>" +
+          "<div class='transaction-doc small hidden'>?</div>" +
+          "<div class='transaction-doc small hidden'>?</div>" +
+          "<div class='transaction-doc small hidden'>?</div>" +
+          "<div class='transaction-doc small hidden'>?</div>" +
+          "<div class='transaction-doc small hidden'>?</div>" +
+          "<div class='transaction-doc small hidden'>?</div>" +
+          "<div class='transaction-doc small hidden'>?</div>" +
+        "</div>" +
+        "<p style='text-align:center; margin-top:8px;'>This firm has <strong>10 transactions</strong> in total.</p>",
+      minTimeSeconds: 4
     },
 
-    // -- Page 7: Before the Quiz --
+    // -- Page 12: Example (2 of 3) --
     {
-      id: "p1_inst_pre_quiz",
+      id: "p1_example_2",
       type: "instructions",
-      title: "Before the Quiz",
+      title: "Example (2 of 3)",
       body:
-        "<p>Let's check you understood the basics. You have <strong>one attempt</strong>.</p>",
+        "<p class='example-subtitle'>The manager shows you only 4.</p>" +
+        "<div class='example-grid'>" +
+          "<div class='transaction-doc small normal'>N</div>" +
+          "<div class='transaction-doc small flagged'>F</div>" +
+          "<div class='transaction-doc small normal'>N</div>" +
+          "<div class='transaction-doc small flagged'>F</div>" +
+          "<div class='transaction-doc small hidden'>?</div>" +
+          "<div class='transaction-doc small hidden'>?</div>" +
+          "<div class='transaction-doc small hidden'>?</div>" +
+          "<div class='transaction-doc small hidden'>?</div>" +
+          "<div class='transaction-doc small hidden'>?</div>" +
+          "<div class='transaction-doc small hidden'>?</div>" +
+        "</div>" +
+        "<p style='text-align:center; margin-top:8px;'>You see <strong>4 transactions</strong>: 2 Normal, 2 Flagged. The other 6 are <strong>hidden</strong>.</p>",
       minTimeSeconds: 5
     },
 
-    // -- Page 8: Comprehension Quiz --
+    // -- Page 13: Example (3 of 3) --
+    {
+      id: "p1_example_3",
+      type: "instructions",
+      title: "Example (3 of 3)",
+      body:
+        "<p class='example-subtitle'>In this example, all 6 hidden transactions were Flagged.</p>" +
+        "<div class='example-grid'>" +
+          "<div class='transaction-doc small normal'>N</div>" +
+          "<div class='transaction-doc small flagged'>F</div>" +
+          "<div class='transaction-doc small normal'>N</div>" +
+          "<div class='transaction-doc small flagged'>F</div>" +
+          "<div class='transaction-doc small flagged reveal'>F</div>" +
+          "<div class='transaction-doc small flagged reveal'>F</div>" +
+          "<div class='transaction-doc small flagged reveal'>F</div>" +
+          "<div class='transaction-doc small flagged reveal'>F</div>" +
+          "<div class='transaction-doc small flagged reveal'>F</div>" +
+          "<div class='transaction-doc small flagged reveal'>F</div>" +
+        "</div>" +
+        "<p style='margin-top:8px;'><strong>Why it matters</strong>: The manager chose to hide transactions " +
+          "that looked bad. A firm that shows only 2 Flagged out of 4 may actually have many more hidden.</p>",
+      minTimeSeconds: 8
+    },
+
+    // -- Page 14: Quiz --
     {
       id: "p1_comprehension",
       type: "comprehension",
@@ -338,7 +539,7 @@ var SURVEY_CONFIG = {
           ]
         },
         {
-          prompt: "Can a non-fraudulent firm have Flagged transactions?",
+          prompt: "Can a clean firm have Flagged transactions?",
           type: "radio",
           correct: "yes",
           options: [
@@ -354,14 +555,14 @@ var SURVEY_CONFIG = {
                    "You will still be paid &pound;1.00 for this part. Thank you for your time."
     },
 
-    // -- Page 10: Result --
+    // -- Page 15: Completion --
     {
       id: "p1_comprehension_result",
       type: "completion",
       title: "You Passed!",
       body: "<p>You understand the task.</p>" +
-            "<p><strong>Part 2</strong> is a separate Prolific study (~15 min, " +
-            "&pound;2.50 + up to &pound;1.50 accuracy bonus).</p>"
+            "<p><strong>Part 2</strong> is a separate Prolific study (~10 min, " +
+            "&pound;1.50 base + up to &pound;1.00 accuracy bonus).</p>"
     }
   ],
 
@@ -380,7 +581,7 @@ var SURVEY_CONFIG = {
       subtitle: "",
       body: "<p>This part takes about <strong>10 minutes</strong>. " +
             "You will evaluate <strong>9 firms</strong> for fraud.</p>" +
-            "<p>Pay: <strong>&pound;2.50</strong> base + up to <strong>&pound;1.50</strong> accuracy bonus.</p>",
+            "<p>Pay: <strong>&pound;1.50</strong> base + up to <strong>&pound;1.00</strong> accuracy bonus.</p>",
       buttonText: "Continue"
     },
 
@@ -392,24 +593,24 @@ var SURVEY_CONFIG = {
       body:
         "<p>Firms have transactions classified as " +
         "<span class='doc-icon doc-icon-normal' style='display:inline-flex; width:20px; height:24px; font-size:11px; vertical-align:middle;'>N</span> " +
-        "<span style='color:#2d6a4f; font-weight:600;'>Normal</span> or " +
+        "<span style='color:#15803d; font-weight:600;'>Normal</span> or " +
         "<span class='doc-icon doc-icon-flagged' style='display:inline-flex; width:20px; height:24px; font-size:11px; vertical-align:middle;'>F</span> " +
-        "<span style='color:#c92a2a; font-weight:600;'>Flagged</span>. " +
+        "<span style='color:#b91c1c; font-weight:600;'>Flagged</span>. " +
         "A manager picks which ones to show you. The manager earns more when you rate fraud lower.</p>" +
 
         "<div style='display:flex; align-items:center; gap:16px; justify-content:center; margin:16px 0;'>" +
           "<div style='text-align:center;'>" +
             "<div style='font-weight:600; font-size:12px; margin-bottom:6px; color:#1e293b;'>How Common Is Fraud?</div>" +
-            "<div style='width:80px; height:80px; border-radius:50%; background:conic-gradient(#3b82f6 0deg 288deg, #f59e0b 288deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1); margin:0 auto;'></div>" +
+            "<div style='width:80px; height:80px; border-radius:50%; background:conic-gradient(#14b8a6 0deg 288deg, #7c3aed 288deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1); margin:0 auto;'></div>" +
             "<div style='display:flex; flex-direction:column; gap:3px; text-align:left; font-size:12px; margin-top:6px;'>" +
-              "<div style='display:flex; align-items:center; gap:5px;'><span style='display:inline-block; width:10px; height:10px; background:#3b82f6; border-radius:2px;'></span><strong>80% Non-Fraud</strong></div>" +
-              "<div style='display:flex; align-items:center; gap:5px;'><span style='display:inline-block; width:10px; height:10px; background:#f59e0b; border-radius:2px;'></span>20% Fraud</div>" +
+              "<div style='display:flex; align-items:center; gap:5px;'><span style='display:inline-block; width:10px; height:10px; background:#14b8a6; border-radius:2px;'></span><strong>80% Clean</strong></div>" +
+              "<div style='display:flex; align-items:center; gap:5px;'><span style='display:inline-block; width:10px; height:10px; background:#7c3aed; border-radius:2px;'></span>20% Fraudulent</div>" +
             "</div>" +
           "</div>" +
           "<div style='text-align:center;'>" +
-            "<div style='font-weight:600; font-size:12px; margin-bottom:6px; color:#1e293b;'>Non-Fraudulent</div>" +
+            "<div style='font-weight:600; font-size:12px; margin-bottom:6px; color:#14b8a6; border:2px solid #14b8a6; padding:2px 8px; border-radius:6px; display:inline-block;'>Clean Firm</div>" +
             "<div style='display:flex; align-items:center; gap:10px;'>" +
-              "<div style='width:80px; height:80px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 180deg, #ef4444 180deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
+              "<div style='width:80px; height:80px; border-radius:50%; background:conic-gradient(#22c55e 0deg 180deg, #ef4444 180deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
               "<div style='display:flex; flex-direction:column; gap:3px; text-align:left; font-size:12px;'>" +
                 "<div style='display:flex; align-items:center; gap:5px;'><span class='doc-icon doc-icon-normal' style='width:16px; height:18px; font-size:9px;'>N</span><strong>50%</strong></div>" +
                 "<div style='display:flex; align-items:center; gap:5px;'><span class='doc-icon doc-icon-flagged' style='width:16px; height:18px; font-size:9px;'>F</span>50%</div>" +
@@ -417,9 +618,9 @@ var SURVEY_CONFIG = {
             "</div>" +
           "</div>" +
           "<div style='text-align:center;'>" +
-            "<div style='font-weight:600; font-size:12px; margin-bottom:6px; color:#1e293b;'>Fraudulent</div>" +
+            "<div style='font-weight:600; font-size:12px; margin-bottom:6px; color:#7c3aed; border:2px solid #7c3aed; padding:2px 8px; border-radius:6px; display:inline-block;'>Fraudulent Firm</div>" +
             "<div style='display:flex; align-items:center; gap:10px;'>" +
-              "<div style='width:80px; height:80px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 144deg, #ef4444 144deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
+              "<div style='width:80px; height:80px; border-radius:50%; background:conic-gradient(#22c55e 0deg 144deg, #ef4444 144deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
               "<div style='display:flex; flex-direction:column; gap:3px; text-align:left; font-size:12px;'>" +
                 "<div style='display:flex; align-items:center; gap:5px;'><span class='doc-icon doc-icon-normal' style='width:16px; height:18px; font-size:9px;'>N</span>40%</div>" +
                 "<div style='display:flex; align-items:center; gap:5px;'><span class='doc-icon doc-icon-flagged' style='width:16px; height:18px; font-size:9px;'>F</span><strong>60%</strong></div>" +
@@ -520,9 +721,9 @@ var SURVEY_CONFIG = {
       type: "welcome",
       title: "Welcome",
       subtitle: "Fraud Assessment Study",
-      body: "<p>Help us study how people evaluate firms for fraud. " +
-            "This takes about <strong>20 minutes</strong>.</p>" +
-            "<p>Pay: <strong>&pound;3.50</strong> base + up to <strong>&pound;1.50</strong> accuracy bonus.</p>" +
+      body: "<p>Help us study how people detect fraudulent firms. " +
+            "This takes about <strong>15 minutes</strong>.</p>" +
+            "<p>Pay: <strong>&pound;2.50</strong> base + up to <strong>&pound;1.00</strong> accuracy bonus.</p>" +
             "<p>Please use a <strong>desktop or laptop</strong> for the best experience.</p>",
       buttonText: "Begin"
     },
@@ -532,12 +733,11 @@ var SURVEY_CONFIG = {
       id: "consent",
       type: "consent",
       title: "Consent",
-      body: "<p>You are being invited to participate in a research study about " +
-            "decision-making under uncertainty.</p>" +
+      body: "<p>You are being invited to participate in a research study about decision-making.</p>" +
             "<p><strong>What you will do:</strong> Learn a fraud assessment task, pass a quiz, " +
             "then evaluate 9 firms.</p>" +
-            "<p><strong>Time:</strong> ~20 minutes.</p>" +
-            "<p><strong>Pay:</strong> &pound;3.50 base + up to &pound;1.50 accuracy bonus.</p>" +
+            "<p><strong>Time:</strong> ~15 minutes.</p>" +
+            "<p><strong>Pay:</strong> &pound;2.50 base + up to &pound;1.00 accuracy bonus.</p>" +
             "<p><strong>Risks:</strong> None beyond everyday life.</p>" +
             "<p><strong>Confidentiality:</strong> Anonymous. Prolific ID collected only for payment.</p>" +
             "<p><strong>Voluntary:</strong> Withdraw at any time by closing this window.</p>",
@@ -546,87 +746,122 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 15
     },
 
-    // -- The Task --
+    // -- Your Mission --
     {
-      id: "inst_task",
+      id: "inst_mission",
       type: "instructions",
-      title: "The Task",
+      title: "Your Mission",
       body:
-        "<p>You will evaluate firms for fraud. Each firm has transactions classified as " +
-        "<span class='doc-icon doc-icon-normal' style='display:inline-flex; width:24px; height:28px; font-size:12px; vertical-align:middle;'>N</span> " +
-        "<span style='color:#2d6a4f; font-weight:600;'>Normal</span> or " +
-        "<span class='doc-icon doc-icon-flagged' style='display:inline-flex; width:24px; height:28px; font-size:12px; vertical-align:middle;'>F</span> " +
-        "<span style='color:#c92a2a; font-weight:600;'>Flagged</span>.</p>" +
-
-        "<p>The mix differs between firm types:</p>" +
-
-        "<div style='display:flex; gap:32px; justify-content:center; flex-wrap:wrap; margin:20px 0;'>" +
-          "<div style='text-align:center;'>" +
-            "<div style='font-weight:600; font-size:15px; margin-bottom:10px; color:#1e293b;'>Non-Fraudulent Firm</div>" +
-            "<div style='display:flex; align-items:center; gap:16px;'>" +
-              "<div style='width:120px; height:120px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 180deg, #ef4444 180deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
-              "<div style='display:flex; flex-direction:column; gap:6px; text-align:left; font-size:14px;'>" +
-                "<div style='display:flex; align-items:center; gap:8px;'><span class='doc-icon doc-icon-normal' style='width:20px; height:24px; font-size:11px;'>N</span><strong>Normal 50%</strong></div>" +
-                "<div style='display:flex; align-items:center; gap:8px;'><span class='doc-icon doc-icon-flagged' style='width:20px; height:24px; font-size:11px;'>F</span>Flagged 50%</div>" +
-              "</div>" +
-            "</div>" +
-          "</div>" +
-          "<div style='text-align:center;'>" +
-            "<div style='font-weight:600; font-size:15px; margin-bottom:10px; color:#1e293b;'>Fraudulent Firm</div>" +
-            "<div style='display:flex; align-items:center; gap:16px;'>" +
-              "<div style='width:120px; height:120px; border-radius:50%; background:conic-gradient(#4CAF50 0deg 144deg, #ef4444 144deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
-              "<div style='display:flex; flex-direction:column; gap:6px; text-align:left; font-size:14px;'>" +
-                "<div style='display:flex; align-items:center; gap:8px;'><span class='doc-icon doc-icon-normal' style='width:20px; height:24px; font-size:11px;'>N</span>Normal 40%</div>" +
-                "<div style='display:flex; align-items:center; gap:8px;'><span class='doc-icon doc-icon-flagged' style='width:20px; height:24px; font-size:11px;'>F</span><strong>Flagged 60%</strong></div>" +
-              "</div>" +
-            "</div>" +
-          "</div>" +
-        "</div>",
-      minTimeSeconds: 12
+        "<div class='mission-badge'>" +
+          "<svg viewBox='0 0 100 120' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
+            "<defs>" +
+              "<linearGradient id='shieldGrad2' x1='0%' y1='0%' x2='0%' y2='100%'>" +
+                "<stop offset='0%' stop-color='#0ea5a0'/>" +
+                "<stop offset='100%' stop-color='#0f766e'/>" +
+              "</linearGradient>" +
+            "</defs>" +
+            "<path d='M50 5 L90 20 V55 C90 82 72 105 50 115 C28 105 10 82 10 55 V20 Z' " +
+                  "fill='url(#shieldGrad2)' stroke='#0f766e' stroke-width='2'/>" +
+            "<path d='M32 58 L45 72 L70 42' stroke='#ffffff' stroke-width='7' " +
+                  "stroke-linecap='round' stroke-linejoin='round' fill='none'/>" +
+          "</svg>" +
+          "<div class='mission-badge-label'>AUDITOR</div>" +
+        "</div>" +
+        "<p style='text-align:center; font-size:19px; max-width:560px; margin:0 auto;'>" +
+          "You are a <strong>government auditor</strong>. Your job is to detect " +
+          "<strong>fraudulent firms</strong>. For each firm you investigate, you will estimate " +
+          "the probability that it is fraudulent." +
+        "</p>",
+      minTimeSeconds: 6
     },
 
-    // -- The Manager --
+    // -- Try the Slider --
     {
-      id: "inst_manager",
+      id: "slider_demo",
+      type: "slider_demo",
+      title: "Try the Slider",
+      body: "<p>Here is how you will report your fraud estimate. " +
+            "Drag the slider to any value to continue.</p>",
+      hint: "Drag left to right. You can be anywhere from 0% (certainly clean) to 100% (certainly fraudulent).",
+      minTimeSeconds: 4
+    },
+
+    // -- Firms: Clean or Fraudulent --
+    {
+      id: "inst_firms",
       type: "instructions",
-      title: "The Manager",
+      title: "Firms: Clean or Fraudulent",
       body:
-        "<div style='display:flex; align-items:center; gap:20px; padding:16px 20px; background:#f8f9fa; border-radius:10px; margin-bottom:18px;'>" +
-          "<div style='font-size:48px; flex-shrink:0;'>&#128188;</div>" +
-          "<div style='display:flex; align-items:center; gap:8px; font-size:28px;'>&#10132;</div>" +
-          "<div style='display:flex; gap:6px;'>" +
-            "<span class='doc-icon doc-icon-normal doc-icon-large'>N</span>" +
-            "<span class='doc-icon doc-icon-flagged doc-icon-large'>F</span>" +
-            "<span class='doc-icon doc-icon-normal doc-icon-large'>N</span>" +
-            "<span class='doc-icon doc-icon-normal doc-icon-large'>N</span>" +
+        "<div class='firm-prior-visual'>" +
+          "<div class='firm-prior-pie'></div>" +
+          "<div class='firm-prior-legend'>" +
+            "<div class='firm-prior-legend-item'>" +
+              "<span class='firm-prior-swatch' style='background:#14b8a6;'></span>" +
+              "<span><strong>80%</strong> Clean</span>" +
+            "</div>" +
+            "<div class='firm-prior-legend-item'>" +
+              "<span class='firm-prior-swatch' style='background:#7c3aed;'></span>" +
+              "<span><strong>20%</strong> Fraudulent</span>" +
+            "</div>" +
           "</div>" +
-          "<div style='display:flex; align-items:center; gap:8px; font-size:28px;'>&#10132;</div>" +
-          "<div style='font-size:48px; flex-shrink:0;'>&#128100;</div>" +
         "</div>" +
+        "<p style='text-align:center; font-size:18px; margin-top:8px;'>" +
+          "Most firms are <strong>clean</strong>. About <strong>1 in 5</strong> is fraudulent." +
+        "</p>",
+      minTimeSeconds: 6
+    },
 
-        "<p>A manager sees <strong>all</strong> of a firm's transactions but shows you only some. " +
-        "The manager cannot change or fabricate transactions -- only choose which ones you see.</p>" +
-
-        "<p>For example, if a firm has 10 transactions and the manager can show you 4, " +
-        "the manager picks which 4 to reveal.</p>" +
-
-        "<p>The manager does <strong>not want to be flagged as fraudulent</strong> because they might get fined. " +
-        "The lower the probability of fraud you assign, the better for the manager. " +
-        "The lower your rating, the more likely the manager earns a <strong>bonus</strong>.</p>" +
-
-        "<div class='incentive-cards'>" +
-          "<div class='incentive-card incentive-card-good'>" +
-            "<div class='incentive-card-icon'>&#9989;</div>" +
-            "<div><strong>Your fraud rating: LOW</strong></div>" +
-            "<div>Manager earns a bonus</div>" +
+    // -- Two Types of Transactions --
+    {
+      id: "inst_two_types",
+      type: "instructions",
+      title: "Two Types of Transactions",
+      body:
+        "<div class='two-types-row'>" +
+          "<div class='transaction-doc-wrap'>" +
+            "<div class='transaction-doc large normal'>N</div>" +
+            "<div class='transaction-doc-caption' style='color:#15803d;'>Normal</div>" +
           "</div>" +
-          "<div class='incentive-card incentive-card-bad'>" +
-            "<div class='incentive-card-icon'>&#10060;</div>" +
-            "<div><strong>Your fraud rating: HIGH</strong></div>" +
-            "<div>Manager gets fined</div>" +
+          "<div class='transaction-doc-wrap'>" +
+            "<div class='transaction-doc large flagged'>F</div>" +
+            "<div class='transaction-doc-caption' style='color:#b91c1c;'>Flagged</div>" +
           "</div>" +
-        "</div>",
-      minTimeSeconds: 12
+        "</div>" +
+        "<p style='text-align:center; font-size:18px; margin-top:8px;'>" +
+          "Every transaction is classified as either <strong>Normal</strong> or <strong>Flagged</strong>." +
+        "</p>",
+      minTimeSeconds: 6
+    },
+
+    // -- Firms Look Different --
+    {
+      id: "inst_mix_differs",
+      type: "instructions",
+      title: "Firms Look Different",
+      body:
+        "<div class='type-pie-row'>" +
+          "<div class='type-pie-card type-pie-clean'>" +
+            "<div class='type-pie-label'>Clean Firm</div>" +
+            "<div class='type-pie' style='background:conic-gradient(#22c55e 0deg 180deg, #ef4444 180deg 360deg);'></div>" +
+            "<div class='type-pie-legend'>" +
+              "<div class='type-pie-legend-item'><span class='doc-icon doc-icon-normal' style='width:18px; height:22px; font-size:10px;'>N</span><strong>50%</strong></div>" +
+              "<div class='type-pie-legend-item'><span class='doc-icon doc-icon-flagged' style='width:18px; height:22px; font-size:10px;'>F</span>50%</div>" +
+            "</div>" +
+          "</div>" +
+          "<div class='type-pie-card type-pie-fraud'>" +
+            "<div class='type-pie-label'>Fraudulent Firm</div>" +
+            "<div class='type-pie' style='background:conic-gradient(#22c55e 0deg 144deg, #ef4444 144deg 360deg);'></div>" +
+            "<div class='type-pie-legend'>" +
+              "<div class='type-pie-legend-item'><span class='doc-icon doc-icon-normal' style='width:18px; height:22px; font-size:10px;'>N</span>40%</div>" +
+              "<div class='type-pie-legend-item'><span class='doc-icon doc-icon-flagged' style='width:18px; height:22px; font-size:10px;'>F</span><strong>60%</strong></div>" +
+            "</div>" +
+          "</div>" +
+        "</div>" +
+        "<p style='text-align:center; font-size:17px; margin-top:8px;'>" +
+          "<strong>Clean</strong> firms have about half Normal and half Flagged. " +
+          "<strong>Fraudulent</strong> firms tilt toward <strong>Flagged</strong> -- about 60%." +
+        "</p>",
+      minTimeSeconds: 8
     },
 
     // -- Firm Sizes --
@@ -635,38 +870,124 @@ var SURVEY_CONFIG = {
       type: "instructions",
       title: "Firm Sizes",
       body:
-        "<p>Firms come in different sizes. A larger firm naturally has more transactions.</p>" +
-
-        "<div class='firm-size-row'>" +
-          "<div class='firm-size-card firm-size-card-small'>" +
-            "<div class='firm-size-icon'>&#127970;</div>" +
-            "<div class='firm-size-label'>Small Firm</div>" +
-            "<div class='firm-size-count'>10 transactions</div>" +
+        "<div class='firm-size-row size-diff'>" +
+          "<div class='firm-size-card firm-size-card-small size-diff-small'>" +
+            "<svg class='firm-icon-small' viewBox='0 0 60 80' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
+              "<rect x='10' y='40' width='40' height='40' fill='#cbd5e1' stroke='#475569' stroke-width='2'/>" +
+            "</svg>" +
+            "<div class='firm-size-number'>10</div>" +
+            "<div class='firm-size-subtext'>transactions</div>" +
           "</div>" +
-          "<div class='firm-size-card firm-size-card-medium'>" +
-            "<div class='firm-size-icon'>&#127971;</div>" +
-            "<div class='firm-size-label'>Medium Firm</div>" +
-            "<div class='firm-size-count'>20 transactions</div>" +
+          "<div class='firm-size-card firm-size-card-medium size-diff-medium'>" +
+            "<svg class='firm-icon-medium' viewBox='0 0 80 120' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
+              "<rect x='10' y='30' width='60' height='90' fill='#cbd5e1' stroke='#475569' stroke-width='2'/>" +
+            "</svg>" +
+            "<div class='firm-size-number'>20</div>" +
+            "<div class='firm-size-subtext'>transactions</div>" +
           "</div>" +
-          "<div class='firm-size-card firm-size-card-large'>" +
-            "<div class='firm-size-icon'>&#127972;</div>" +
-            "<div class='firm-size-label'>Large Firm</div>" +
-            "<div class='firm-size-count'>50 transactions</div>" +
+          "<div class='firm-size-card firm-size-card-large size-diff-large'>" +
+            "<svg class='firm-icon-large' viewBox='0 0 110 180' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
+              "<rect x='10' y='10' width='90' height='170' fill='#cbd5e1' stroke='#475569' stroke-width='2'/>" +
+            "</svg>" +
+            "<div class='firm-size-number'>50</div>" +
+            "<div class='firm-size-subtext'>transactions</div>" +
           "</div>" +
         "</div>" +
+        "<p style='text-align:center; font-size:17px; margin-top:8px;'>" +
+          "Firms come in three sizes. The manager always shows you <strong>4 transactions</strong>." +
+        "</p>",
+      minTimeSeconds: 8
+    },
 
-        "<p>Regardless of firm size, the manager always reviews and shows you <strong>4 transactions</strong>.</p>",
+    // -- The Manager --
+    {
+      id: "inst_manager",
+      type: "instructions",
+      title: "The Manager",
+      body:
+        "<div class='manager-visual'>" +
+          "<div class='manager-figure'>&#128188;</div>" +
+          "<div class='manager-transactions'>" +
+            "<span class='transaction-doc small normal manager-show'>N</span>" +
+            "<span class='transaction-doc small flagged manager-hide'>F</span>" +
+            "<span class='transaction-doc small normal manager-show'>N</span>" +
+            "<span class='transaction-doc small flagged manager-hide'>F</span>" +
+            "<span class='transaction-doc small normal manager-show'>N</span>" +
+            "<span class='transaction-doc small flagged manager-hide'>F</span>" +
+          "</div>" +
+        "</div>" +
+        "<p>The manager sees <em>all</em> of the firm's transactions but only shows you " +
+          "<strong>4</strong>. The manager cannot fabricate transactions -- only choose which to reveal.</p>" +
+        "<p>The manager prefers <strong>lower</strong> fraud ratings. A low rating from you means " +
+          "the manager is unlikely to be fined and more likely to earn a bonus.</p>" +
+        "<div class='incentive-cards incentive-cards-compact'>" +
+          "<div class='incentive-card incentive-card-good'>" +
+            "<div class='incentive-card-icon'>&#9989;</div>" +
+            "<div><strong>Your rating: LOW</strong></div>" +
+            "<div>Manager earns a bonus</div>" +
+          "</div>" +
+          "<div class='incentive-card incentive-card-bad'>" +
+            "<div class='incentive-card-icon'>&#10060;</div>" +
+            "<div><strong>Your rating: HIGH</strong></div>" +
+            "<div>Manager gets fined</div>" +
+          "</div>" +
+        "</div>",
       minTimeSeconds: 10
     },
 
-    // -- Before the Quiz --
+    // -- Example (1 of 3) --
     {
-      id: "inst_pre_quiz",
+      id: "example_1",
       type: "instructions",
-      title: "Before the Quiz",
+      title: "Example",
       body:
-        "<p>Let's check you understood the basics. You have <strong>one attempt</strong>.</p>",
+        "<p class='example-subtitle'>A medium firm has 10 transactions.</p>" +
+        "<div class='example-grid'>" +
+          "<div class='transaction-doc small hidden'>?</div><div class='transaction-doc small hidden'>?</div>" +
+          "<div class='transaction-doc small hidden'>?</div><div class='transaction-doc small hidden'>?</div>" +
+          "<div class='transaction-doc small hidden'>?</div><div class='transaction-doc small hidden'>?</div>" +
+          "<div class='transaction-doc small hidden'>?</div><div class='transaction-doc small hidden'>?</div>" +
+          "<div class='transaction-doc small hidden'>?</div><div class='transaction-doc small hidden'>?</div>" +
+        "</div>" +
+        "<p style='text-align:center; margin-top:8px;'>This firm has <strong>10 transactions</strong> in total.</p>",
+      minTimeSeconds: 4
+    },
+
+    // -- Example (2 of 3) --
+    {
+      id: "example_2",
+      type: "instructions",
+      title: "Example (2 of 3)",
+      body:
+        "<p class='example-subtitle'>The manager shows you only 4.</p>" +
+        "<div class='example-grid'>" +
+          "<div class='transaction-doc small normal'>N</div><div class='transaction-doc small flagged'>F</div>" +
+          "<div class='transaction-doc small normal'>N</div><div class='transaction-doc small flagged'>F</div>" +
+          "<div class='transaction-doc small hidden'>?</div><div class='transaction-doc small hidden'>?</div>" +
+          "<div class='transaction-doc small hidden'>?</div><div class='transaction-doc small hidden'>?</div>" +
+          "<div class='transaction-doc small hidden'>?</div><div class='transaction-doc small hidden'>?</div>" +
+        "</div>" +
+        "<p style='text-align:center; margin-top:8px;'>You see <strong>4 transactions</strong>: 2 Normal, 2 Flagged. The other 6 are <strong>hidden</strong>.</p>",
       minTimeSeconds: 5
+    },
+
+    // -- Example (3 of 3) --
+    {
+      id: "example_3",
+      type: "instructions",
+      title: "Example (3 of 3)",
+      body:
+        "<p class='example-subtitle'>In this example, all 6 hidden transactions were Flagged.</p>" +
+        "<div class='example-grid'>" +
+          "<div class='transaction-doc small normal'>N</div><div class='transaction-doc small flagged'>F</div>" +
+          "<div class='transaction-doc small normal'>N</div><div class='transaction-doc small flagged'>F</div>" +
+          "<div class='transaction-doc small flagged reveal'>F</div><div class='transaction-doc small flagged reveal'>F</div>" +
+          "<div class='transaction-doc small flagged reveal'>F</div><div class='transaction-doc small flagged reveal'>F</div>" +
+          "<div class='transaction-doc small flagged reveal'>F</div><div class='transaction-doc small flagged reveal'>F</div>" +
+        "</div>" +
+        "<p style='margin-top:8px;'><strong>Why it matters</strong>: The manager chose to hide transactions " +
+          "that looked bad. A firm that shows only 2 Flagged out of 4 may actually have many more hidden.</p>",
+      minTimeSeconds: 8
     },
 
     // -- Comprehension Quiz --
@@ -710,7 +1031,7 @@ var SURVEY_CONFIG = {
           ]
         },
         {
-          prompt: "Can a non-fraudulent firm have Flagged transactions?",
+          prompt: "Can a clean firm have Flagged transactions?",
           type: "radio",
           correct: "yes",
           options: [
