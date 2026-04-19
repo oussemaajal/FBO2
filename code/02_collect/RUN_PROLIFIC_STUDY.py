@@ -82,10 +82,8 @@ def get_recommended_filters(loose: bool = False) -> list:
         # At least 100 prior approved submissions (experience)
         {"filter_id": "approval_numbers", "selected_range": {"lower": 100, "upper": 100000}},
 
-        # First language: English
-        {"filter_id": "first-language", "selected_values": ["English"]},
-
-        # Fluent in English
+        # Fluent in English (dropped first-language=English per Oussema:
+        # fluency is sufficient, no need to require English as first language)
         {"filter_id": "fluent-languages", "selected_values": ["English"]},
 
         # Current country of residence (English-native)
