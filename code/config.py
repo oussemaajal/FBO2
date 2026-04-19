@@ -94,16 +94,17 @@ EXPERIMENT_PARAMS = {
     'total_pilot': 300,   # 15 cells x 20
     'total_full': 900,    # 15 cells x 60
 
-    # Payment (GBP pence) -- matches current survey copy (v3.11)
-    'part1_reward_pence': 100,  # 1.00 GBP
-    'part2_reward_pence': 150,  # 1.50 GBP base
-    'bonus_max_pence': 100,     # 1.00 GBP max accuracy bonus
+    # Payment (USD cents) -- matches current survey copy (v4.1)
+    # Prolific 'reward' field is in minor currency units; if the Prolific
+    # account is USD-denominated, 100 = $1.00. If GBP, 100 = 1.00 GBP.
+    'part1_reward_pence': 100,  # $1.00
+    'part2_reward_pence': 150,  # $1.50 base
+    'bonus_max_pence': 100,     # $1.00 max accuracy bonus
     'estimated_time_part1_min': 5,
     'estimated_time_part2_min': 10,
 
     # Default participant counts (within-subject design; no between-subject cells)
-    # These are used by RUN_PROLIFIC_STUDY.py when --n is not supplied.
-    'default_n_pilot': 30,
+    'default_n_pilot': 20,
     'default_n_full': 250,
 
     # Completion codes

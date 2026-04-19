@@ -185,6 +185,19 @@ class ProlificClient:
             return {'id': study_id, 'status': 'PAUSED'}
         return self._post(f'studies/{study_id}/transition/', {'action': 'PAUSE'})
 
+    def delete_study(self, study_id: str) -> bool:
+        """Delete an UNPUBLISHED study. Returns True on success."""
+        if DRY_RUN:
+            print(f"[DRY-RUN] Would delete study {study_id}")
+            return True
+        url = f"{self.base_url}/studies/{study_id}/"
+        resp = requests.delete(url, headers=self._headers())
+        if resp.status_code >= 400:
+            print(f"\n[Prolific API error {resp.status_code}] DELETE studies/{study_id}/")
+            print(f"  Response: {resp.text[:1000]}\n")
+        resp.raise_for_status()
+        return True
+
     def get_study_status(self, study_id: str) -> dict:
         """Get study status and submission counts."""
         return self._get(f'studies/{study_id}/')

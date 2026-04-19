@@ -552,7 +552,8 @@
       this.responses[page.id].quizResponses = this.quizResponses.slice();
       this.responses[page.id].quizNumCorrect = numCorrect;
       this.responses[page.id].quizRetakeCount = this.quizRetakeCount;
-      if (numCorrect >= 9) {
+      // Passing threshold: 90% or above (11 of 12 = 91.7%)
+      if (numCorrect >= 11) {
         this.goToPageId('p1_comprehension_result');
       } else {
         this.goToPageId('p1_quiz_fail');
@@ -958,7 +959,7 @@
       bayesPosterior: truth,
       errorPp: Math.round(error * 10000) / 100,
       amount: amount,
-      currency: bonusCfg.currency || 'GBP'
+      currency: bonusCfg.currency || 'USD'
     };
   };
 
@@ -1063,7 +1064,7 @@
     var total = this.quizResponses.length || 10;
     var html = '<h1 class="page-title">' + (page.title || 'Almost There') + '</h1>';
     html += '<div class="quiz-fail-score">' + numCorrect + '<span class="quiz-fail-score-denom"> / ' + total + '</span></div>';
-    html += '<p style="text-align:center; font-size:16px;">You got <strong>' + numCorrect + ' out of ' + total + '</strong> correct. The passing grade is <strong>9 of 10</strong>.</p>';
+    html += '<p style="text-align:center; font-size:16px;">You got <strong>' + numCorrect + ' out of ' + total + '</strong> correct. The passing grade is <strong>11 of 12</strong>.</p>';
     html += '<p style="text-align:center; color:#475569;">No worries -- the instructions are detailed. Take another pass through and try again.</p>';
     html += '<div class="quiz-fail-buttons">';
     html += '<button type="button" class="btn btn-primary" id="quiz_retake">' + esc(page.retakeText || 'Retake instructions') + '</button>';
