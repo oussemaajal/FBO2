@@ -78,12 +78,17 @@ EXPERIMENT_PARAMS = {
     'total_pilot': 300,   # 15 cells x 20
     'total_full': 900,    # 15 cells x 60
 
-    # Payment (GBP pence)
+    # Payment (GBP pence) -- matches current survey copy (v3.11)
     'part1_reward_pence': 100,  # 1.00 GBP
-    'part2_reward_pence': 250,  # 2.50 GBP
-    'bonus_max_pence': 150,     # 1.50 GBP max bonus
+    'part2_reward_pence': 150,  # 1.50 GBP base
+    'bonus_max_pence': 100,     # 1.00 GBP max accuracy bonus
     'estimated_time_part1_min': 5,
-    'estimated_time_part2_min': 15,
+    'estimated_time_part2_min': 10,
+
+    # Default participant counts (within-subject design; no between-subject cells)
+    # These are used by RUN_PROLIFIC_STUDY.py when --n is not supplied.
+    'default_n_pilot': 60,
+    'default_n_full': 250,
 
     # Completion codes
     'pass_code_part1': 'PASS1SN',
