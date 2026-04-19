@@ -285,6 +285,7 @@
         case 'questionnaire':   html = self.renderQuestionnaire(page); break;
         case 'completion':      html = self.renderCompletion(page); break;
         case 'slider_tutorial': html = self.renderSliderTutorial(page); break;
+        case 'slider_demo':     html = self.renderSliderDemo(page); break;
         case 'debrief':         html = self.renderDebrief(page); break;
         default:                html = '<p>Unknown page type: ' + esc(page.type) + '</p>';
       }
@@ -564,6 +565,15 @@
       } else if (field.getAttribute('data-field-type') === 'dropdown') {
         var sel = document.getElementById(name);
         if (!sel || sel.value === '') { this.showError(name, 'Please make a selection.'); valid = false; }
+      }
+    }
+
+    // Slider demo: require slider to be dragged
+    if (page.type === 'slider_demo') {
+      var demoSlider = document.getElementById('demo_slider');
+      if (demoSlider && demoSlider.getAttribute('data-touched') !== 'true') {
+        this.showError('demo_slider', 'Please drag the slider to continue.');
+        valid = false;
       }
     }
 
@@ -971,33 +981,33 @@
     html += '<div class="reference-panel">';
     html += '<div class="reference-title">Reference</div>';
 
-    // Firm Type distribution pie (blue/orange) -- ABOVE transaction pies
+    // Firm Type distribution pie (teal/purple) -- ABOVE transaction pies
     html += '<div class="ref-firm-type-section">';
     html += '<div class="ref-firm-type-label">How Common Is Fraud?</div>';
     html += '<div class="ref-firm-type-row">';
-    html += '<div class="ref-firm-type-pie" style="background:conic-gradient(#3b82f6 0deg 288deg, #f59e0b 288deg 360deg);"></div>';
+    html += '<div class="ref-firm-type-pie" style="background:conic-gradient(#14b8a6 0deg 288deg, #7c3aed 288deg 360deg);"></div>';
     html += '<div class="ref-firm-type-legend">';
-    html += '<div class="ref-firm-type-legend-item"><span class="ref-firm-type-swatch" style="background:#3b82f6;"></span><span><strong>80%</strong> Non-Fraud</span></div>';
-    html += '<div class="ref-firm-type-legend-item"><span class="ref-firm-type-swatch" style="background:#f59e0b;"></span><span><strong>20%</strong> Fraud</span></div>';
+    html += '<div class="ref-firm-type-legend-item"><span class="ref-firm-type-swatch" style="background:#14b8a6;"></span><span><strong>80%</strong> Clean</span></div>';
+    html += '<div class="ref-firm-type-legend-item"><span class="ref-firm-type-swatch" style="background:#7c3aed;"></span><span><strong>20%</strong> Fraudulent</span></div>';
     html += '</div></div></div>';
 
-    // Non-fraud pie: 50% Normal, 50% Flagged
-    html += '<div class="ref-pie-section">';
-    html += '<div class="ref-pie-label">Non-Fraudulent Firm</div>';
+    // Clean pie: 50% Normal, 50% Flagged  (teal framing)
+    html += '<div class="ref-pie-section ref-pie-clean">';
+    html += '<div class="ref-pie-label ref-pie-label-clean">Clean Firm</div>';
     html += '<div class="ref-pie-row">';
-    html += '<div class="ref-pie" style="background:conic-gradient(#4CAF50 0deg 180deg, #ef4444 180deg 360deg);"></div>';
+    html += '<div class="ref-pie" style="background:conic-gradient(#22c55e 0deg 180deg, #ef4444 180deg 360deg);"></div>';
     html += '<div class="ref-pie-legend">';
-    html += '<div class="ref-legend-item"><span class="ref-swatch" style="background:#4CAF50;"></span><span>Normal 50%</span></div>';
+    html += '<div class="ref-legend-item"><span class="ref-swatch" style="background:#22c55e;"></span><span>Normal 50%</span></div>';
     html += '<div class="ref-legend-item"><span class="ref-swatch" style="background:#ef4444;"></span><span>Flagged 50%</span></div>';
     html += '</div></div></div>';
 
-    // Fraud pie: 40% Normal, 60% Flagged
-    html += '<div class="ref-pie-section">';
-    html += '<div class="ref-pie-label">Fraudulent Firm</div>';
+    // Fraudulent pie: 40% Normal, 60% Flagged  (purple framing)
+    html += '<div class="ref-pie-section ref-pie-fraud">';
+    html += '<div class="ref-pie-label ref-pie-label-fraud">Fraudulent Firm</div>';
     html += '<div class="ref-pie-row">';
-    html += '<div class="ref-pie" style="background:conic-gradient(#4CAF50 0deg 144deg, #ef4444 144deg 360deg);"></div>';
+    html += '<div class="ref-pie" style="background:conic-gradient(#22c55e 0deg 144deg, #ef4444 144deg 360deg);"></div>';
     html += '<div class="ref-pie-legend">';
-    html += '<div class="ref-legend-item"><span class="ref-swatch" style="background:#4CAF50;"></span><span>Normal 40%</span></div>';
+    html += '<div class="ref-legend-item"><span class="ref-swatch" style="background:#22c55e;"></span><span>Normal 40%</span></div>';
     html += '<div class="ref-legend-item"><span class="ref-swatch" style="background:#ef4444;"></span><span>Flagged 60%</span></div>';
     html += '</div></div></div>';
 
@@ -1198,6 +1208,26 @@
         break;
     }
     html += '<div class="field-error" id="error_' + q.id + '"></div></div>';
+    return html;
+  };
+
+  // ── Slider Demo (Part 1 Try-the-Slider page) ───────────────────────────
+  SurveyEngine.prototype.renderSliderDemo = function (page) {
+    var html = '<h1 class="page-title">' + (page.title || 'Try the Slider') + '</h1>';
+    html += '<div class="page-body">' + (page.body || '') + '</div>';
+    html += '<div class="dv-card" style="max-width:620px; margin:0 auto;">';
+    html += '<div class="slider-value-display" id="demo_slider_display">50%</div>';
+    html += '<div class="slider-wrapper">';
+    html += '<span class="slider-label">0%</span>';
+    html += '<input type="range" class="slider-input" id="demo_slider" name="demo_slider" ' +
+            'min="0" max="100" step="1" value="50" data-touched="false" data-display="demo_slider_display">';
+    html += '<span class="slider-label">100%</span>';
+    html += '</div>';
+    html += '<div class="slider-hint">' +
+      (page.hint || 'Drag left to right. You can be anywhere from 0% to 100%.') +
+      '</div>';
+    html += '<div class="field-error" id="error_demo_slider"></div>';
+    html += '</div>';
     return html;
   };
 

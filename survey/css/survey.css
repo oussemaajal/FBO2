@@ -1774,3 +1774,409 @@ body {
     padding: 20px;
   }
 }
+
+/* ==========================================================================
+   NEW PART 1 VISUALS (Redesigned Flow)
+   Color System:
+     Clean firm        = TEAL   #14b8a6
+     Fraudulent firm   = PURPLE #7c3aed
+     Normal txn        = GREEN  #22c55e
+     Flagged txn       = RED    #ef4444
+   ========================================================================== */
+
+/* ---------- Mission Badge (shield) ---------- */
+.mission-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  padding: 12px;
+  width: 180px;
+}
+
+.mission-badge svg {
+  width: 140px;
+  height: auto;
+  filter: drop-shadow(0 4px 14px rgba(20, 184, 166, 0.35));
+}
+
+.mission-badge-label {
+  margin-top: 10px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: #0f766e;
+  text-transform: uppercase;
+}
+
+/* ---------- Firm Prior Pie (teal / purple, 80/20) ---------- */
+.firm-prior-visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  margin: 8px 0 20px;
+}
+
+.firm-prior-pie {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: conic-gradient(#14b8a6 0deg 288deg, #7c3aed 288deg 360deg);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+}
+
+.firm-prior-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 17px;
+}
+
+.firm-prior-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.firm-prior-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+/* ---------- Firm Type Icons (two buildings on prior page) ---------- */
+.firm-types-row {
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+  margin: 16px 0 20px;
+  flex-wrap: wrap;
+}
+
+.firm-type-icon {
+  text-align: center;
+  padding: 8px;
+}
+
+.firm-type-icon svg {
+  width: 110px;
+  height: auto;
+}
+
+.firm-type-label {
+  margin-top: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 4px 14px;
+  border-radius: 8px;
+  display: inline-block;
+}
+
+.firm-type-clean .firm-type-label {
+  color: #0f766e;
+  border: 2px solid #14b8a6;
+  background: #ccfbf1;
+}
+
+.firm-type-fraud .firm-type-label {
+  color: #5b21b6;
+  border: 2px solid #7c3aed;
+  background: #ede9fe;
+}
+
+/* ---------- Firm Fanout Visual (Page 6) ---------- */
+.firm-fanout-visual {
+  display: flex;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.firm-fanout-visual svg {
+  width: 340px;
+  max-width: 100%;
+  height: auto;
+}
+
+/* ---------- Two Types Row (Page 7) ---------- */
+.two-types-row {
+  display: flex;
+  gap: 80px;
+  justify-content: center;
+  align-items: flex-end;
+  margin: 16px 0 24px;
+  flex-wrap: wrap;
+}
+
+.transaction-doc-wrap {
+  text-align: center;
+}
+
+.transaction-doc-caption {
+  margin-top: 12px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* ---------- Transaction Doc Icon (generic base) ---------- */
+.transaction-doc {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  border: 3px solid #cbd5e1;
+  border-radius: 6px;
+  color: #64748b;
+  width: 48px;
+  height: 58px;
+  font-size: 22px;
+  user-select: none;
+}
+
+.transaction-doc.normal {
+  border-color: #22c55e;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.transaction-doc.flagged {
+  border-color: #ef4444;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.transaction-doc.hidden {
+  border: 3px dashed #94a3b8;
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
+.transaction-doc.large {
+  width: 130px;
+  height: 160px;
+  font-size: 72px;
+  border-radius: 10px;
+  border-width: 5px;
+}
+
+.transaction-doc.small {
+  width: 54px;
+  height: 66px;
+  font-size: 24px;
+  border-radius: 6px;
+  border-width: 3px;
+}
+
+.transaction-doc.reveal {
+  animation: docReveal 420ms ease;
+}
+
+@keyframes docReveal {
+  from { transform: scale(0.6); opacity: 0.4; }
+  to   { transform: scale(1);   opacity: 1;   }
+}
+
+/* ---------- Type Pie Row (Page 8: Firms Look Different) ---------- */
+.type-pie-row {
+  display: flex;
+  gap: 36px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 12px 0 20px;
+}
+
+.type-pie-card {
+  border-radius: 14px;
+  padding: 18px 22px;
+  text-align: center;
+  border: 3px solid transparent;
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.type-pie-card.type-pie-clean {
+  border-color: #14b8a6;
+  background: #f0fdfa;
+}
+
+.type-pie-card.type-pie-fraud {
+  border-color: #7c3aed;
+  background: #faf5ff;
+}
+
+.type-pie-label {
+  font-size: 16px;
+  font-weight: 800;
+  margin-bottom: 12px;
+  letter-spacing: 0.5px;
+}
+
+.type-pie-card.type-pie-clean .type-pie-label { color: #0f766e; }
+.type-pie-card.type-pie-fraud .type-pie-label { color: #5b21b6; }
+
+.type-pie {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  margin: 0 auto 12px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+}
+
+.type-pie-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  align-items: flex-start;
+  max-width: 120px;
+  margin: 0 auto;
+}
+
+.type-pie-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---------- Firm Size Cards with Size Difference (Page 9) ---------- */
+.firm-size-row.size-diff {
+  align-items: flex-end;
+  gap: 28px;
+}
+
+.firm-size-card.size-diff-small,
+.firm-size-card.size-diff-medium,
+.firm-size-card.size-diff-large {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 18px 18px;
+  min-width: 130px;
+  background: #ffffff;
+}
+
+.firm-icon-small  { width: 60px;  height: 80px; }
+.firm-icon-medium { width: 80px;  height: 120px; }
+.firm-icon-large  { width: 110px; height: 180px; }
+
+.firm-size-number {
+  font-size: 46px;
+  font-weight: 900;
+  color: #1e293b;
+  line-height: 1;
+  margin-top: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.firm-size-subtext {
+  font-size: 13px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+
+/* ---------- Manager Visual (Page 10) ---------- */
+.manager-visual {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  justify-content: center;
+  padding: 18px 20px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  margin: 0 auto 20px;
+  max-width: 620px;
+}
+
+.manager-figure {
+  font-size: 56px;
+  flex-shrink: 0;
+}
+
+.manager-transactions {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 8px;
+}
+
+.manager-show {
+  outline: 3px solid #22c55e;
+  outline-offset: 2px;
+  filter: none;
+}
+
+.manager-hide {
+  opacity: 0.35;
+  filter: grayscale(0.6);
+}
+
+.incentive-cards-compact .incentive-card {
+  padding: 12px 14px;
+  font-size: 14px;
+  min-width: 160px;
+  max-width: 220px;
+}
+
+.incentive-cards-compact .incentive-card-icon {
+  font-size: 22px;
+  margin-bottom: 2px;
+}
+
+/* ---------- Example Grid (Pages 11-13) ---------- */
+.example-subtitle {
+  text-align: center;
+  font-size: 17px;
+  color: #475569;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.example-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  justify-items: center;
+  max-width: 360px;
+  margin: 0 auto 16px;
+}
+
+/* ---------- Reference Panel: Teal/Purple Framing for Clean/Fraud ---------- */
+.ref-pie-section.ref-pie-clean {
+  padding: 10px;
+  background: #f0fdfa;
+  border: 2px solid #14b8a6;
+  border-radius: 10px;
+  margin-bottom: 14px;
+}
+
+.ref-pie-section.ref-pie-fraud {
+  padding: 10px;
+  background: #faf5ff;
+  border: 2px solid #7c3aed;
+  border-radius: 10px;
+  margin-bottom: 14px;
+}
+
+.ref-pie-label-clean { color: #0f766e; }
+.ref-pie-label-fraud { color: #5b21b6; }
+
+/* ---------- Responsive tweaks for new pages ---------- */
+@media (max-width: 600px) {
+  .firm-prior-pie { width: 140px; height: 140px; }
+  .type-pie { width: 120px; height: 120px; }
+  .transaction-doc.large { width: 100px; height: 124px; font-size: 56px; }
+  .firm-icon-large { width: 90px; height: 150px; }
+  .firm-icon-medium { width: 66px; height: 100px; }
+  .firm-icon-small { width: 50px; height: 66px; }
+  .firm-size-number { font-size: 34px; }
+  .mission-badge svg { width: 110px; }
+  .example-grid { max-width: 300px; gap: 8px; }
+  .two-types-row { gap: 40px; }
+}
+
