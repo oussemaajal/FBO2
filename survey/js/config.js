@@ -466,40 +466,40 @@ var SURVEY_CONFIG = {
       type: "instructions",
       title: "The Manager",
       body:
-        "<div class='manager-flow-diagram'>" +
-          "<div class='mfd-col'>" +
-            "<div class='mfd-col-label'>Firm has</div>" +
-            "<div class='mfd-stack'>" +
-              "<span class='transaction-doc small hidden'>?</span>" +
-              "<span class='transaction-doc small hidden'>?</span>" +
-              "<span class='transaction-doc small hidden'>?</span>" +
-              "<span class='transaction-doc small hidden'>?</span>" +
-              "<span class='transaction-doc small hidden'>?</span>" +
-              "<span class='transaction-doc small hidden'>?</span>" +
-              "<span class='transaction-doc small hidden'>?</span>" +
-              "<span class='transaction-doc small hidden'>?</span>" +
-              "<span class='transaction-doc small hidden'>?</span>" +
-              "<span class='transaction-doc small hidden'>?</span>" +
+        "<div class='manager-flow'>" +
+          "<div class='mf-side'>" +
+            "<div class='mf-label'>Firm has</div>" +
+            "<div class='mf-docs-10'>" +
+              "<span class='mf-doc'>?</span>" +
+              "<span class='mf-doc'>?</span>" +
+              "<span class='mf-doc'>?</span>" +
+              "<span class='mf-doc'>?</span>" +
+              "<span class='mf-doc'>?</span>" +
+              "<span class='mf-doc'>?</span>" +
+              "<span class='mf-doc'>?</span>" +
+              "<span class='mf-doc'>?</span>" +
+              "<span class='mf-doc'>?</span>" +
+              "<span class='mf-doc'>?</span>" +
             "</div>" +
-            "<div class='mfd-col-sub'>all transactions</div>" +
+            "<div class='mf-sub'>all transactions</div>" +
           "</div>" +
-          "<div class='mfd-arrow'>" +
-            "<svg viewBox='0 0 100 80' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
-              "<circle cx='50' cy='28' r='12' fill='#475569'/>" +
-              "<path d='M30 62 Q50 44 70 62 L70 74 L30 74 Z' fill='#475569'/>" +
-              "<line x1='14' y1='42' x2='86' y2='42' stroke='#94a3b8' stroke-width='2' stroke-dasharray='4,3'/>" +
+          "<div class='mf-middle'>" +
+            "<svg class='mf-manager-svg' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
+              "<circle cx='30' cy='20' r='10' fill='#475569'/>" +
+              "<path d='M12 56 Q30 36 48 56 L48 60 L12 60 Z' fill='#475569'/>" +
             "</svg>" +
-            "<div class='mfd-arrow-label'>Manager picks</div>" +
+            "<div class='mf-arrow'>&#10140;</div>" +
+            "<div class='mf-middle-label'>picks 4</div>" +
           "</div>" +
-          "<div class='mfd-col'>" +
-            "<div class='mfd-col-label'>You see</div>" +
-            "<div class='mfd-reveal'>" +
-              "<span class='transaction-doc small hidden'>?</span>" +
-              "<span class='transaction-doc small hidden'>?</span>" +
-              "<span class='transaction-doc small hidden'>?</span>" +
-              "<span class='transaction-doc small hidden'>?</span>" +
+          "<div class='mf-side'>" +
+            "<div class='mf-label'>You see</div>" +
+            "<div class='mf-docs-4'>" +
+              "<span class='mf-doc mf-doc-selected'>?</span>" +
+              "<span class='mf-doc mf-doc-selected'>?</span>" +
+              "<span class='mf-doc mf-doc-selected'>?</span>" +
+              "<span class='mf-doc mf-doc-selected'>?</span>" +
             "</div>" +
-            "<div class='mfd-col-sub'>only 4</div>" +
+            "<div class='mf-sub'>only 4</div>" +
           "</div>" +
         "</div>" +
         "<p style='text-align:center;'>The manager chooses which <strong>4 transactions</strong> " +
@@ -507,14 +507,14 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 8
     },
 
-    // -- Page 10b: Manager Incentives --
+    // -- Page 12: Manager Incentives --
     {
       id: "p1_inst_incentives",
       type: "instructions",
       title: "Manager Incentives",
       body:
         "<p style='text-align:center; font-size:18px; margin-bottom:20px;'>" +
-          "How well the manager does depends on <strong>your rating</strong>:" +
+          "How well the manager does depends on the <strong>fraud probability</strong> you assign:" +
         "</p>" +
         "<div class='incentive-examples'>" +
           "<div class='incentive-example incentive-good'>" +
@@ -527,7 +527,7 @@ var SURVEY_CONFIG = {
               "</svg>" +
             "</div>" +
             "<div class='incentive-rating-gauge'>" +
-              "<div class='incentive-rating-label'>Your rating</div>" +
+              "<div class='incentive-rating-label'>Fraud probability</div>" +
               "<div class='incentive-rating-value' style='color:#059669;'>15%</div>" +
               "<div class='incentive-rating-bar'>" +
                 "<div class='incentive-rating-fill' style='width:15%; background:#10b981;'></div>" +
@@ -548,7 +548,7 @@ var SURVEY_CONFIG = {
               "</svg>" +
             "</div>" +
             "<div class='incentive-rating-gauge'>" +
-              "<div class='incentive-rating-label'>Your rating</div>" +
+              "<div class='incentive-rating-label'>Fraud probability</div>" +
               "<div class='incentive-rating-value' style='color:#dc2626;'>75%</div>" +
               "<div class='incentive-rating-bar'>" +
                 "<div class='incentive-rating-fill' style='width:75%; background:#ef4444;'></div>" +
@@ -560,10 +560,53 @@ var SURVEY_CONFIG = {
             "</div>" +
           "</div>" +
         "</div>" +
-        "<p style='text-align:center; font-size:16px; margin-top:20px; color:#475569;'>" +
-          "Managers prefer <strong>low</strong> fraud ratings from auditors." +
-        "</p>",
+        "<div class='manager-hero-callout'>" +
+          "<div class='manager-hero-arrow'>&#128073;</div>" +
+          "<div class='manager-hero-text'>" +
+            "The manager <strong>wants you to assign a LOW fraud probability</strong>, " +
+            "whether the firm is actually fraudulent or not." +
+          "</div>" +
+        "</div>",
       minTimeSeconds: 8
+    },
+
+    // -- Page 13: Your Bonus (Auditor Incentive) --
+    {
+      id: "p1_inst_your_bonus",
+      type: "instructions",
+      title: "Your Bonus",
+      body:
+        "<p style='text-align:center; font-size:18px; margin-bottom:12px;'>" +
+          "<strong>Your pay depends on how accurate your fraud probabilities are.</strong>" +
+        "</p>" +
+        "<p style='text-align:center; font-size:15px; color:#475569; margin-bottom:24px; max-width:640px; margin-left:auto; margin-right:auto;'>" +
+          "Each firm you rate enters a lottery. The higher the fraud probability you assigned, " +
+          "the more likely that firm will actually be audited." +
+        "</p>" +
+        "<div class='auditor-outcomes'>" +
+          "<div class='auditor-outcome auditor-outcome-good'>" +
+            "<div class='auditor-outcome-badge'>&#10004;</div>" +
+            "<div class='auditor-outcome-title'>Audited firm is Fraudulent</div>" +
+            "<div class='auditor-outcome-body'>" +
+              "You called it right. " +
+              "<strong>You earn a bonus.</strong>" +
+            "</div>" +
+          "</div>" +
+          "<div class='auditor-outcome auditor-outcome-bad'>" +
+            "<div class='auditor-outcome-badge'>&#10060;</div>" +
+            "<div class='auditor-outcome-title'>Audited firm is Clean</div>" +
+            "<div class='auditor-outcome-body'>" +
+              "False alarm. " +
+              "<strong>You lose money.</strong>" +
+            "</div>" +
+          "</div>" +
+        "</div>" +
+        "<div class='auditor-rule'>" +
+          "<p style='margin:0;'><strong>Rule of thumb:</strong> " +
+          "Assign a high fraud probability <em>only</em> when you're confident the firm is fraudulent. " +
+          "Assign a low probability when the firm is likely clean.</p>" +
+        "</div>",
+      minTimeSeconds: 10
     },
 
     // -- Page 11: Your Job + Try the Slider --
