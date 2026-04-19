@@ -1035,7 +1035,7 @@
     // DV1: Fraud Probability Slider (default 20%, 10% increments)
     html += '<div class="dv-card">';
     html += '<div class="question-prompt">What is the probability that this firm is fraudulent?<span class="question-required">*</span></div>';
-    html += '<div class="slider-value-display" id="fraud_prob_display">20%</div>';
+    html += '<div class="slider-sentence">This firm is <span class="slider-sentence-value" id="fraud_prob_display">20%</span> likely to be fraudulent.</div>';
     html += '<div class="slider-endpoint-labels">';
     html += '<span class="slider-endpoint-label clean">Certainly clean</span>';
     html += '<span class="slider-endpoint-label fraud">Certainly fraudulent</span>';
@@ -1220,7 +1220,7 @@
     var html = '<h1 class="page-title">' + (page.title || 'Try the Slider') + '</h1>';
     html += '<div class="page-body">' + (page.body || '') + '</div>';
     html += '<div class="dv-card" style="max-width:620px; margin:0 auto;">';
-    html += '<div class="slider-value-display" id="demo_slider_display">50%</div>';
+    html += '<div class="slider-sentence">This firm is <span class="slider-sentence-value" id="demo_slider_display">50%</span> likely to be fraudulent.</div>';
     html += '<div class="slider-endpoint-labels">';
     html += '<span class="slider-endpoint-label clean">Certainly clean</span>';
     html += '<span class="slider-endpoint-label fraud">Certainly fraudulent</span>';
