@@ -386,18 +386,81 @@ var SURVEY_CONFIG = {
         "</div>" +
         "<p style='text-align:center; font-size:17px; margin-top:8px;'>" +
           "Firms come in three sizes. Larger firms process more transactions." +
-        "</p>" +
-        "<div class='size-constant-note'>" +
-          "<div class='size-constant-badge'>4</div>" +
-          "<div class='size-constant-text'>" +
-            "<strong>Regardless of firm size</strong>, the manager " +
-            "discloses only <strong>4 transactions</strong> to you." +
-          "</div>" +
-        "</div>",
+        "</p>",
       minTimeSeconds: 8
     },
 
-    // -- Page 10: The Manager --
+    // -- Page 10: You Always See 4 --
+    {
+      id: "p1_inst_always_four",
+      type: "instructions",
+      title: "You Always See 4",
+      body:
+        "<p style='text-align:center; font-size:20px; margin-bottom:28px; color:#1e293b;'>" +
+          "Whatever the firm size, <strong>you only see 4 transactions</strong>." +
+        "</p>" +
+        "<div class='always-four-row'>" +
+          // Small firm
+          "<div class='af-col'>" +
+            "<svg class='af-firm af-firm-small' viewBox='0 0 60 80' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
+              "<rect x='10' y='40' width='40' height='40' fill='#cbd5e1' stroke='#475569' stroke-width='2'/>" +
+              "<rect x='18' y='48' width='6' height='6' fill='#64748b'/>" +
+              "<rect x='28' y='48' width='6' height='6' fill='#64748b'/>" +
+              "<rect x='38' y='48' width='6' height='6' fill='#64748b'/>" +
+              "<rect x='18' y='60' width='6' height='6' fill='#64748b'/>" +
+              "<rect x='28' y='60' width='6' height='6' fill='#64748b'/>" +
+              "<rect x='38' y='60' width='6' height='6' fill='#64748b'/>" +
+            "</svg>" +
+            "<div class='af-size-label'>Small firm</div>" +
+            "<div class='af-size-num'>10</div>" +
+            "<div class='af-arrow'>&#8595;</div>" +
+            "<div class='af-four-badge'>4</div>" +
+          "</div>" +
+          // Medium firm
+          "<div class='af-col'>" +
+            "<svg class='af-firm af-firm-medium' viewBox='0 0 80 120' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
+              "<rect x='10' y='30' width='60' height='90' fill='#cbd5e1' stroke='#475569' stroke-width='2'/>" +
+              "<g fill='#64748b'>" +
+                "<rect x='20' y='40' width='7' height='7'/><rect x='33' y='40' width='7' height='7'/><rect x='46' y='40' width='7' height='7'/><rect x='59' y='40' width='7' height='7'/>" +
+                "<rect x='20' y='54' width='7' height='7'/><rect x='33' y='54' width='7' height='7'/><rect x='46' y='54' width='7' height='7'/><rect x='59' y='54' width='7' height='7'/>" +
+                "<rect x='20' y='68' width='7' height='7'/><rect x='33' y='68' width='7' height='7'/><rect x='46' y='68' width='7' height='7'/><rect x='59' y='68' width='7' height='7'/>" +
+                "<rect x='20' y='82' width='7' height='7'/><rect x='33' y='82' width='7' height='7'/><rect x='46' y='82' width='7' height='7'/><rect x='59' y='82' width='7' height='7'/>" +
+              "</g>" +
+            "</svg>" +
+            "<div class='af-size-label'>Medium firm</div>" +
+            "<div class='af-size-num'>20</div>" +
+            "<div class='af-arrow'>&#8595;</div>" +
+            "<div class='af-four-badge'>4</div>" +
+          "</div>" +
+          // Large firm
+          "<div class='af-col'>" +
+            "<svg class='af-firm af-firm-large' viewBox='0 0 100 160' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
+              "<rect x='10' y='10' width='80' height='150' fill='#cbd5e1' stroke='#475569' stroke-width='2'/>" +
+              "<g fill='#64748b'>" +
+                "<rect x='20' y='20' width='7' height='7'/><rect x='34' y='20' width='7' height='7'/><rect x='48' y='20' width='7' height='7'/><rect x='62' y='20' width='7' height='7'/><rect x='76' y='20' width='7' height='7'/>" +
+                "<rect x='20' y='34' width='7' height='7'/><rect x='34' y='34' width='7' height='7'/><rect x='48' y='34' width='7' height='7'/><rect x='62' y='34' width='7' height='7'/><rect x='76' y='34' width='7' height='7'/>" +
+                "<rect x='20' y='48' width='7' height='7'/><rect x='34' y='48' width='7' height='7'/><rect x='48' y='48' width='7' height='7'/><rect x='62' y='48' width='7' height='7'/><rect x='76' y='48' width='7' height='7'/>" +
+                "<rect x='20' y='62' width='7' height='7'/><rect x='34' y='62' width='7' height='7'/><rect x='48' y='62' width='7' height='7'/><rect x='62' y='62' width='7' height='7'/><rect x='76' y='62' width='7' height='7'/>" +
+                "<rect x='20' y='76' width='7' height='7'/><rect x='34' y='76' width='7' height='7'/><rect x='48' y='76' width='7' height='7'/><rect x='62' y='76' width='7' height='7'/><rect x='76' y='76' width='7' height='7'/>" +
+                "<rect x='20' y='90' width='7' height='7'/><rect x='34' y='90' width='7' height='7'/><rect x='48' y='90' width='7' height='7'/><rect x='62' y='90' width='7' height='7'/><rect x='76' y='90' width='7' height='7'/>" +
+                "<rect x='20' y='104' width='7' height='7'/><rect x='34' y='104' width='7' height='7'/><rect x='48' y='104' width='7' height='7'/><rect x='62' y='104' width='7' height='7'/><rect x='76' y='104' width='7' height='7'/>" +
+                "<rect x='20' y='118' width='7' height='7'/><rect x='34' y='118' width='7' height='7'/><rect x='48' y='118' width='7' height='7'/><rect x='62' y='118' width='7' height='7'/><rect x='76' y='118' width='7' height='7'/>" +
+                "<rect x='20' y='132' width='7' height='7'/><rect x='34' y='132' width='7' height='7'/><rect x='48' y='132' width='7' height='7'/><rect x='62' y='132' width='7' height='7'/><rect x='76' y='132' width='7' height='7'/>" +
+              "</g>" +
+            "</svg>" +
+            "<div class='af-size-label'>Large firm</div>" +
+            "<div class='af-size-num'>50</div>" +
+            "<div class='af-arrow'>&#8595;</div>" +
+            "<div class='af-four-badge'>4</div>" +
+          "</div>" +
+        "</div>" +
+        "<p style='text-align:center; font-size:16px; margin-top:24px; color:#475569;'>" +
+          "A large firm has 50 transactions but you still only see 4." +
+        "</p>",
+      minTimeSeconds: 6
+    },
+
+    // -- Page 11: The Manager --
     {
       id: "p1_inst_manager",
       type: "instructions",
