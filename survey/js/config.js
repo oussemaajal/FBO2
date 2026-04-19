@@ -35,7 +35,7 @@ var SURVEY_CONFIG = {
   study: {
     title: "Fraud Assessment Study",
     version: "3.2.0",
-    dataEndpoint: ""  // Google Sheets Apps Script URL -- fill before deploy
+    dataEndpoint: "https://script.google.com/macros/s/AKfycbzRoZbHXjC_M_bvjMVcqMl8jdSdE3_80qV4srsAFB-JPLrAvBUuBN8SXr-9Fn6TBPYSEg/exec"
   },
 
   // -- Prolific Integration -------------------------------------------------
