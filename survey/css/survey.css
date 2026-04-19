@@ -2689,3 +2689,86 @@ body {
   .two-types-row { gap: 40px; }
 }
 
+/* ==========================================================================
+   Multi-page Quiz (gate, per-question, fail)
+   ========================================================================== */
+
+/* Pre-quiz gate */
+.quiz-gate-stats {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  margin: 28px 0;
+  flex-wrap: wrap;
+}
+.quiz-gate-stat {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 20px;
+  min-width: 140px;
+  text-align: center;
+}
+.quiz-gate-stat-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #64748b;
+  font-weight: 700;
+}
+.quiz-gate-stat-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1e293b;
+  margin-top: 4px;
+}
+.quiz-gate-warning {
+  background: #fef3c7;
+  border-left: 5px solid #f59e0b;
+  padding: 14px 18px;
+  border-radius: 8px;
+  font-size: 15px;
+  color: #78350f;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+/* Quiz question progress */
+.quiz-progress {
+  text-align: center;
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 600;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.quiz-question-prompt {
+  font-size: 19px;
+  font-weight: 600;
+  color: #1e293b;
+  text-align: center;
+  margin: 12px 0 24px;
+  line-height: 1.5;
+}
+
+/* Quiz fail page */
+.quiz-fail-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 28px;
+  flex-wrap: wrap;
+}
+.quiz-fail-score {
+  text-align: center;
+  font-size: 32px;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 20px 0;
+}
+.quiz-fail-score-denom {
+  color: #94a3b8;
+  font-weight: 400;
+}
+

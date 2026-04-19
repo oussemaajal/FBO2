@@ -727,65 +727,198 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 5
     },
 
-    // -- Page 14: Quiz --
+    // -- Pre-quiz gate --
     {
-      id: "p1_comprehension",
-      type: "comprehension",
-      title: "Quiz",
-      description: "<p>Answer all questions correctly to proceed to Part 2.</p>",
-      questions: [
-        {
-          prompt: "For each firm, who decides which transactions you will see?",
-          type: "radio",
-          correct: "manager",
-          options: [
-            { value: "manager",  label: "The firm's manager" },
-            { value: "you",      label: "You, the auditor" },
-            { value: "random",   label: "A random selection" },
-            { value: "nobody",   label: "No one -- you see every transaction" }
-          ]
-        },
-        {
-          prompt: "The manager is more likely to earn a bonus when the auditor assigns a:",
-          type: "radio",
-          correct: "low",
-          options: [
-            { value: "low",        label: "Low fraud probability" },
-            { value: "high",       label: "High fraud probability" },
-            { value: "mid",        label: "A fraud probability close to 50%" },
-            { value: "no_effect",  label: "The probability does not affect the manager" }
-          ]
-        },
-        {
-          prompt: "Out of every 100 firms you audit, about how many are fraudulent?",
-          type: "radio",
-          correct: "20",
-          options: [
-            { value: "20", label: "About 20 out of 100 (20%)" },
-            { value: "40", label: "About 40 out of 100 (40%)" },
-            { value: "50", label: "About 50 out of 100 (50%)" },
-            { value: "80", label: "About 80 out of 100 (80%)" }
-          ]
-        },
-        {
-          prompt: "A clean firm has exactly 50% Normal and 50% Flagged transactions. A fraudulent firm has 40% Normal and 60% Flagged. Which of the following is true?",
-          type: "radio",
-          correct: "both",
-          options: [
-            { value: "both",  label: "Both types of firm can have Flagged transactions" },
-            { value: "only_fraud",  label: "Only fraudulent firms have Flagged transactions" },
-            { value: "only_clean",  label: "Only clean firms have Normal transactions" },
-            { value: "neither",  label: "Neither type has Flagged transactions" }
-          ]
-        }
-      ],
-      minTimeSeconds: 15,
-      maxAttempts: 1,
-      failMessage: "You did not answer all questions correctly. " +
-                   "You will still be paid &pound;1.00 for this part. Thank you for your time."
+      id: "p1_quiz_gate",
+      type: "quiz_gate",
+      title: "Before the Quiz",
+      body:
+        "<p style='text-align:center; font-size:18px;'>" +
+          "There is a <strong>10-question quiz</strong> ahead." +
+        "</p>" +
+        "<div class='quiz-gate-stats'>" +
+          "<div class='quiz-gate-stat'>" +
+            "<div class='quiz-gate-stat-label'>Questions</div>" +
+            "<div class='quiz-gate-stat-value'>10</div>" +
+          "</div>" +
+          "<div class='quiz-gate-stat'>" +
+            "<div class='quiz-gate-stat-label'>Format</div>" +
+            "<div class='quiz-gate-stat-value'>One at a time</div>" +
+          "</div>" +
+          "<div class='quiz-gate-stat'>" +
+            "<div class='quiz-gate-stat-label'>Passing grade</div>" +
+            "<div class='quiz-gate-stat-value'>9 of 10</div>" +
+          "</div>" +
+        "</div>" +
+        "<div class='quiz-gate-warning'>" +
+          "<strong>Important:</strong> You can go back to review the instructions now. " +
+          "Once you begin the quiz, <strong>you cannot go back</strong>." +
+        "</div>",
+      startButtonText: "Start Quiz",
+      minTimeSeconds: 6
     },
 
-    // -- Page 15: Completion --
+    // -- Quiz Q1 --
+    {
+      id: "p1_quiz_q1",
+      type: "quiz_question",
+      questionIndex: 1,
+      totalQuestions: 10,
+      prompt: "For each firm, who decides which transactions you will see?",
+      correct: "manager",
+      options: [
+        { value: "manager", label: "The firm's manager" },
+        { value: "you",     label: "You, the auditor" },
+        { value: "random",  label: "A random selection" },
+        { value: "nobody",  label: "No one -- you see every transaction" }
+      ]
+    },
+
+    // -- Quiz Q2 --
+    {
+      id: "p1_quiz_q2",
+      type: "quiz_question",
+      questionIndex: 2,
+      totalQuestions: 10,
+      prompt: "The manager is more likely to earn a bonus when the auditor assigns a:",
+      correct: "low",
+      options: [
+        { value: "low",       label: "Low fraud probability" },
+        { value: "high",      label: "High fraud probability" },
+        { value: "mid",       label: "A fraud probability close to 50%" },
+        { value: "no_effect", label: "The probability does not affect the manager" }
+      ]
+    },
+
+    // -- Quiz Q3 --
+    {
+      id: "p1_quiz_q3",
+      type: "quiz_question",
+      questionIndex: 3,
+      totalQuestions: 10,
+      prompt: "Out of every 100 firms you audit, about how many are fraudulent?",
+      correct: "20",
+      options: [
+        { value: "20", label: "About 20 out of 100 (20%)" },
+        { value: "40", label: "About 40 out of 100 (40%)" },
+        { value: "50", label: "About 50 out of 100 (50%)" },
+        { value: "80", label: "About 80 out of 100 (80%)" }
+      ]
+    },
+
+    // -- Quiz Q4 --
+    {
+      id: "p1_quiz_q4",
+      type: "quiz_question",
+      questionIndex: 4,
+      totalQuestions: 10,
+      prompt: "A clean firm has exactly 50% Normal and 50% Flagged transactions. A fraudulent firm has 40% Normal and 60% Flagged. Which of the following is true?",
+      correct: "both",
+      options: [
+        { value: "both",       label: "Both types of firm can have Flagged transactions" },
+        { value: "only_fraud", label: "Only fraudulent firms have Flagged transactions" },
+        { value: "only_clean", label: "Only clean firms have Normal transactions" },
+        { value: "neither",    label: "Neither type has Flagged transactions" }
+      ]
+    },
+
+    // -- Quiz Q5 --
+    {
+      id: "p1_quiz_q5",
+      type: "quiz_question",
+      questionIndex: 5,
+      totalQuestions: 10,
+      prompt: "How many total transactions does a Small firm have?",
+      correct: "10",
+      options: [
+        { value: "10", label: "10" },
+        { value: "20", label: "20" },
+        { value: "30", label: "30" },
+        { value: "50", label: "50" }
+      ]
+    },
+
+    // -- Quiz Q6 --
+    {
+      id: "p1_quiz_q6",
+      type: "quiz_question",
+      questionIndex: 6,
+      totalQuestions: 10,
+      prompt: "Regardless of firm size (Small, Medium, or Large), how many transactions does the manager disclose to you?",
+      correct: "4",
+      options: [
+        { value: "2",          label: "2" },
+        { value: "4",          label: "4" },
+        { value: "proportion", label: "A proportion of the firm size" },
+        { value: "all",        label: "All of them" }
+      ]
+    },
+
+    // -- Quiz Q7 --
+    {
+      id: "p1_quiz_q7",
+      type: "quiz_question",
+      questionIndex: 7,
+      totalQuestions: 10,
+      prompt: "In a clean firm, what percentage of its transactions are Flagged?",
+      correct: "50",
+      options: [
+        { value: "40", label: "40%" },
+        { value: "50", label: "50%" },
+        { value: "60", label: "60%" },
+        { value: "10", label: "10%" }
+      ]
+    },
+
+    // -- Quiz Q8 --
+    {
+      id: "p1_quiz_q8",
+      type: "quiz_question",
+      questionIndex: 8,
+      totalQuestions: 10,
+      prompt: "In a fraudulent firm, what percentage of its transactions are Flagged?",
+      correct: "60",
+      options: [
+        { value: "40",  label: "40%" },
+        { value: "50",  label: "50%" },
+        { value: "60",  label: "60%" },
+        { value: "100", label: "100%" }
+      ]
+    },
+
+    // -- Quiz Q9 --
+    {
+      id: "p1_quiz_q9",
+      type: "quiz_question",
+      questionIndex: 9,
+      totalQuestions: 10,
+      prompt: "You assigned a high fraud probability to a firm. Later, that firm is audited and turns out to be fraudulent. What happens to your pay?",
+      correct: "bonus",
+      options: [
+        { value: "bonus",        label: "You earn a bonus" },
+        { value: "paycut",       label: "You get a pay cut" },
+        { value: "nothing",      label: "Nothing changes" },
+        { value: "disqualified", label: "You are disqualified" }
+      ]
+    },
+
+    // -- Quiz Q10 --
+    {
+      id: "p1_quiz_q10",
+      type: "quiz_question",
+      questionIndex: 10,
+      totalQuestions: 10,
+      prompt: "You assigned a high fraud probability to a firm. Later, that firm is audited and turns out to be clean. What happens to your pay?",
+      correct: "paycut",
+      options: [
+        { value: "bonus",        label: "You earn a bonus" },
+        { value: "paycut",       label: "You get a pay cut" },
+        { value: "nothing",      label: "Nothing changes" },
+        { value: "disqualified", label: "You are disqualified" }
+      ]
+    },
+
+    // -- Quiz pass: Completion --
     {
       id: "p1_comprehension_result",
       type: "completion",
@@ -793,6 +926,22 @@ var SURVEY_CONFIG = {
       body: "<p>You understand the task.</p>" +
             "<p><strong>Part 2</strong> is a separate Prolific study (~10 min, " +
             "&pound;1.50 base + up to &pound;1.00 accuracy bonus).</p>"
+    },
+
+    // -- Quiz fail: offer retake or exit --
+    {
+      id: "p1_quiz_fail",
+      type: "quiz_fail",
+      title: "Almost There",
+      retakeText: "Retake instructions",
+      exitText: "Exit without retake"
+    },
+
+    // -- Fail completion (FAIL1SN) --
+    {
+      id: "p1_fail_completion",
+      type: "fail_completion",
+      title: "Part 1 Complete"
     }
   ],
 

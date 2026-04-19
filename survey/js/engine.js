@@ -68,6 +68,11 @@
     this.submitted = false;
     this.blockBoundaryIndices = [];
 
+    // Quiz state (multi-page 10-question quiz)
+    this.seenPages = new Set();     // page IDs the participant has advanced past
+    this.quizResponses = [];        // entries: {questionIndex, selected, correct}
+    this.quizRetakeCount = 0;       // how many times participant retook the quiz
+
     // DOM refs
     this.elContent = document.getElementById('pageContent');
     this.elNavButtons = document.getElementById('navButtons');
@@ -287,6 +292,10 @@
         case 'slider_tutorial': html = self.renderSliderTutorial(page); break;
         case 'slider_demo':     html = self.renderSliderDemo(page); break;
         case 'debrief':         html = self.renderDebrief(page); break;
+        case 'quiz_gate':       html = self.renderQuizGate(page); break;
+        case 'quiz_question':   html = self.renderQuizQuestion(page); break;
+        case 'quiz_fail':       html = self.renderQuizFail(page); break;
+        case 'fail_completion': html = self.renderFailCompletion(page); break;
         default:                html = '<p>Unknown page type: ' + esc(page.type) + '</p>';
       }
 
@@ -309,8 +318,9 @@
       void self.elContent.offsetHeight;
       self.elContent.style.animation = '';
 
-      // Show/hide nav buttons
-      var showNav = page.type !== 'debrief' && page.type !== 'completion';
+      // Show/hide nav buttons (quiz_fail and fail_completion render their own buttons)
+      var showNav = page.type !== 'debrief' && page.type !== 'completion'
+                    && page.type !== 'quiz_fail' && page.type !== 'fail_completion';
       self.elNavButtons.style.display = showNav ? '' : 'none';
 
       // Back button visibility
@@ -318,6 +328,7 @@
       var noBack = index === 0 || page.type === 'welcome' || page.type === 'debrief'
                    || page.type === 'comprehension' || page.type === 'transition'
                    || page.type === 'trial_attention' || page.type === 'trial_intro'
+                   || page.type === 'quiz_question'
                    || atBoundary;
       self.elBtnBack.style.display = noBack ? 'none' : '';
 
@@ -326,15 +337,19 @@
         self.elBtnNext.textContent = page.buttonText || 'Begin';
       } else if (page.type === 'transition') {
         self.elBtnNext.textContent = 'Continue';
+      } else if (page.type === 'quiz_gate') {
+        self.elBtnNext.textContent = page.startButtonText || 'Start Quiz';
+      } else if (page.type === 'quiz_question') {
+        self.elBtnNext.textContent = (page.questionIndex === page.totalQuestions) ? 'Submit Quiz' : 'Next';
       } else if (index === self.pages.length - 2) {
         self.elBtnNext.textContent = 'Submit';
       } else {
         self.elBtnNext.textContent = 'Next';
       }
 
-      // Min time enforcement
+      // Min time enforcement (bypassed if the participant has already seen this page)
       self.elBtnNext.disabled = false;
-      if (page.minTimeSeconds && page.minTimeSeconds > 0) {
+      if (page.minTimeSeconds && page.minTimeSeconds > 0 && !self.seenPages.has(page.id)) {
         self.enforceMinTime(page.minTimeSeconds);
       }
 
@@ -498,12 +513,52 @@
       this.handleAttentionCheck(page);
     }
 
+    // Quiz question: validate a radio was selected, record the answer
+    if (page.type === 'quiz_question') {
+      var sel = document.querySelector('input[name="quiz_q' + page.questionIndex + '"]:checked');
+      if (!sel) {
+        if (!this.devMode) {
+          this.showError('quiz_q' + page.questionIndex, 'Please select an option.');
+          return;
+        }
+      }
+      var selectedValue = sel ? sel.value : null;
+      this.quizResponses[page.questionIndex - 1] = {
+        questionIndex: page.questionIndex,
+        selected: selectedValue,
+        correct: selectedValue === page.correct
+      };
+    }
+
     if (!this.devMode && !this.validatePage()) return;
 
     this.collectPageData(this.currentPageIndex);
     this.collectStealthAnswers();
     this.recordPageEnd(this.currentPageIndex);
+
+    // Mark this page as seen so subsequent revisits skip the min-time overlay.
+    // Exclude quiz_question pages so a retake forces re-answer of each question.
+    if (page.type !== 'quiz_question') {
+      this.seenPages.add(page.id);
+    }
+
     this.saveProgress();
+
+    // After the final quiz question, branch on score
+    if (page.type === 'quiz_question' && page.questionIndex === page.totalQuestions) {
+      var numCorrect = this.quizResponses.filter(function (r) { return r && r.correct; }).length;
+      // Record quiz outcome in responses for audit trail
+      this.responses[page.id] = this.responses[page.id] || {};
+      this.responses[page.id].quizResponses = this.quizResponses.slice();
+      this.responses[page.id].quizNumCorrect = numCorrect;
+      this.responses[page.id].quizRetakeCount = this.quizRetakeCount;
+      if (numCorrect >= 9) {
+        this.goToPageId('p1_comprehension_result');
+      } else {
+        this.goToPageId('p1_quiz_fail');
+      }
+      return;
+    }
 
     var nextPage = this.pages[this.currentPageIndex + 1];
     if (nextPage && nextPage.type === 'debrief') {
@@ -513,6 +568,36 @@
     if (this.currentPageIndex < this.pages.length - 1) {
       this.renderPage(this.currentPageIndex + 1);
     }
+  };
+
+  // Jump to a specific page by its id; used for quiz routing and retakes.
+  SurveyEngine.prototype.goToPageId = function (id) {
+    for (var i = 0; i < this.pages.length; i++) {
+      if (this.pages[i].id === id) {
+        this.renderPage(i);
+        return true;
+      }
+    }
+    console.warn('[FBO2] goToPageId: id not found', id);
+    return false;
+  };
+
+  // Retake: clear quiz answers and seenPages for quiz pages, jump to instructions.
+  SurveyEngine.prototype.retakeQuiz = function () {
+    this.quizResponses = [];
+    this.quizRetakeCount += 1;
+    var self = this;
+    this.pages.forEach(function (p) {
+      if (p.type && p.type.indexOf('quiz_') === 0) {
+        self.seenPages.delete(p.id);
+      }
+    });
+    this.goToPageId('p1_inst_mission');
+  };
+
+  // Exit without retake: go to the FAIL1SN completion page.
+  SurveyEngine.prototype.exitQuizNoRetake = function () {
+    this.goToPageId('p1_fail_completion');
   };
 
   SurveyEngine.prototype.prevPage = function () {
@@ -708,6 +793,9 @@
       attentionFailed: this.attentionResults.filter(function (r) { return !r.passed; }).length,
       trialAttentionResults: this.trialAttentionResults,
       trialAttentionAllCorrect: this.trialAttentionResults.filter(function (r) { return r.allCorrect; }).length,
+      quizResponses: this.quizResponses,
+      quizNumCorrect: this.quizResponses.filter(function (r) { return r && r.correct; }).length,
+      quizRetakeCount: this.quizRetakeCount,
       bonus: this.bonusInfo,
       botMetrics: botMetrics,
       stealthCheck: this.collectStealthAnswers()
@@ -936,6 +1024,85 @@
       html += '<div class="field-error" id="error_' + fieldId + '"></div></div>';
     });
     html += '<div class="comp-note" style="margin-top:16px;color:#6b7280;font-size:15px;">You have one attempt. All answers must be correct to continue.</div>';
+    return html;
+  };
+
+  // ── Quiz Gate ──────────────────────────────────────────────────────────
+  SurveyEngine.prototype.renderQuizGate = function (page) {
+    var html = '<h1 class="page-title">' + (page.title || 'Before the Quiz') + '</h1>';
+    html += '<div class="page-body">' + (page.body || '') + '</div>';
+    return html;
+  };
+
+  // ── Quiz Question (one per page) ───────────────────────────────────────
+  SurveyEngine.prototype.renderQuizQuestion = function (page) {
+    var fieldName = 'quiz_q' + page.questionIndex;
+    var html = '';
+    html += '<div class="quiz-progress">Question ' + page.questionIndex + ' of ' + page.totalQuestions + '</div>';
+    html += '<div class="quiz-question-prompt">' + esc(page.prompt) + '</div>';
+    html += '<div class="option-list">';
+    // Preserve any previously selected answer (e.g., after validation fail, though uncommon here)
+    var priorRecord = this.quizResponses[page.questionIndex - 1];
+    var priorValue = priorRecord ? priorRecord.selected : null;
+    (page.options || []).forEach(function (opt) {
+      var val = typeof opt === 'object' ? opt.value : opt;
+      var label = typeof opt === 'object' ? opt.label : opt;
+      var selAttr = (priorValue !== null && priorValue === val) ? ' checked' : '';
+      var selClass = selAttr ? ' selected' : '';
+      html += '<div class="option-card' + selClass + '"><input type="radio" name="' + fieldName + '" value="' + esc(val) + '"' + selAttr + '><span class="option-label">' + esc(label) + '</span></div>';
+    });
+    html += '</div>';
+    html += '<div class="field-error" id="error_' + fieldName + '"></div>';
+    return html;
+  };
+
+  // ── Quiz Fail (offer retake or exit) ───────────────────────────────────
+  SurveyEngine.prototype.renderQuizFail = function (page) {
+    var self = this;
+    var numCorrect = this.quizResponses.filter(function (r) { return r && r.correct; }).length;
+    var total = this.quizResponses.length || 10;
+    var html = '<h1 class="page-title">' + (page.title || 'Almost There') + '</h1>';
+    html += '<div class="quiz-fail-score">' + numCorrect + '<span class="quiz-fail-score-denom"> / ' + total + '</span></div>';
+    html += '<p style="text-align:center; font-size:16px;">You got <strong>' + numCorrect + ' out of ' + total + '</strong> correct. The passing grade is <strong>9 of 10</strong>.</p>';
+    html += '<p style="text-align:center; color:#475569;">No worries -- the instructions are detailed. Take another pass through and try again.</p>';
+    html += '<div class="quiz-fail-buttons">';
+    html += '<button type="button" class="btn btn-primary" id="quiz_retake">' + esc(page.retakeText || 'Retake instructions') + '</button>';
+    html += '<button type="button" class="btn btn-secondary" id="quiz_exit">' + esc(page.exitText || 'Exit without retake') + '</button>';
+    html += '</div>';
+
+    // Wire buttons after the HTML is injected
+    setTimeout(function () {
+      var retakeBtn = document.getElementById('quiz_retake');
+      var exitBtn = document.getElementById('quiz_exit');
+      if (retakeBtn) retakeBtn.addEventListener('click', function () { self.retakeQuiz(); });
+      if (exitBtn) exitBtn.addEventListener('click', function () { self.exitQuizNoRetake(); });
+    }, 0);
+
+    return html;
+  };
+
+  // ── Fail Completion (FAIL1SN code) ─────────────────────────────────────
+  SurveyEngine.prototype.renderFailCompletion = function (page) {
+    var self = this;
+    var codes = this.config.prolific ? this.config.prolific.completionCodes : {};
+    var urls = this.config.prolific ? this.config.prolific.completionUrls : {};
+    var code = codes.fail1 || 'XXXXXX';
+    var failUrl = urls.fail1 || '';
+
+    var html = '<h1 class="page-title">' + (page.title || 'Part 1 Complete') + '</h1>';
+    html += '<div class="page-body">' +
+            '<p>Thank you for your time. You will still be paid for completing this part.</p>' +
+            '<p>You are not eligible for Part 2 of this study.</p>' +
+            '</div>';
+    html += '<p style="margin-top:24px;">Your completion code:</p>';
+    html += '<div class="completion-code">' + esc(code) + '</div>';
+    if (failUrl) {
+      html += '<p style="margin-top:16px;text-align:center;"><a href="' + esc(failUrl) + '" class="btn btn-primary" style="display:inline-block;margin-top:8px;text-decoration:none;">Return to Prolific</a></p>';
+    }
+    html += '<div id="submit_status" class="alert alert-info" style="margin-top:24px;">Submitting your responses... <span class="spinner"></span></div>';
+
+    this.config.completionUrl = failUrl;
+    setTimeout(function () { self.submitted = false; self.submitData(); }, 500);
     return html;
   };
 
