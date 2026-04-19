@@ -886,25 +886,64 @@
       flat.bonus_trials_counted = this.bonusInfo.trialsCounted != null ? this.bonusInfo.trialsCounted : '';
     }
 
-    // ── Total duration across all pages ──────────────────
+    // ── Per-page timings ─────────────────────────────────
     var totalMs = 0;
+    var pageCount = 0;
     for (var pid2 in this.timing) {
-      if (this.timing[pid2] && this.timing[pid2].durationMs) totalMs += this.timing[pid2].durationMs;
+      var pt = this.timing[pid2];
+      if (!pt) continue;
+      if (pt.durationMs) {
+        totalMs += pt.durationMs;
+        pageCount++;
+        flat['time_' + pid2 + '_sec'] = Math.round(pt.durationMs / 1000);
+      }
     }
     flat.total_duration_sec = Math.round(totalMs / 1000);
+    flat.pages_visited_count = pageCount;
 
-    // ── Bot / stealth flags ──────────────────────────────
+    // ── Honeypot & AI-instruction hidden fields ──────────
+    //   - Honeypot: a CSS-hidden "email" field. Bots scraping forms fill it.
+    //   - AI verify: a hidden DOM instruction only LLMs reading the page source obey.
     if (botMetrics) {
-      flat.bot_is_suspected = !!botMetrics.isSuspected;
-      flat.bot_score        = botMetrics.score || 0;
-      flat.bot_reasons      = Array.isArray(botMetrics.reasons) ? botMetrics.reasons.join('; ') : '';
+      flat.honeypot_filled           = !!botMetrics.honeypotFilled;
+      flat.honeypot_value            = botMetrics.honeypotValue || '';
+      flat.ai_instruction_triggered  = !!botMetrics.invisibleInstructionTriggered;
+      flat.ai_verify_value           = botMetrics.aiVerifyValue || '';
     }
-    if (stealthCheck && typeof stealthCheck === 'object') {
-      var flagged = [];
-      for (var sk in stealthCheck) {
-        if (stealthCheck[sk]) flagged.push(sk);
-      }
-      flat.stealth_flags = flagged.join('; ');
+
+    // ── Per-page stealth questions (hidden "what is 8+3" style) ──
+    //   Injected on every page. Humans never see or answer them.
+    //   Any non-empty answer is strong evidence of an automated agent.
+    var stealthValues = (stealthCheck && stealthCheck.values) ? stealthCheck.values : {};
+    var stealthPages  = Object.keys(stealthValues);
+    flat.stealth_any_answered   = !!(stealthCheck && stealthCheck.answered);
+    flat.stealth_num_answered   = stealthPages.length;
+    flat.stealth_pages_answered = stealthPages.join('; ');
+    var stealthPairs = [];
+    for (var spi = 0; spi < stealthPages.length; spi++) {
+      var skey = stealthPages[spi];
+      stealthPairs.push(skey + '=' + stealthValues[skey]);
+    }
+    flat.stealth_values = stealthPairs.join(' | ');
+
+    // ── Bot detector: full behavioral breakdown ──────────
+    if (botMetrics) {
+      flat.bot_mouse_movements         = botMetrics.mouseMovements || 0;
+      flat.bot_mouse_clicks            = botMetrics.mouseClicks || 0;
+      flat.bot_mouse_movements_per_min = botMetrics.mouseMovementsPerMinute || 0;
+      flat.bot_mouse_position_samples  = botMetrics.mousePositionSamples || 0;
+      flat.bot_keyboard_events         = botMetrics.keyboardEvents || 0;
+      flat.bot_keystroke_interval_mean_ms = botMetrics.keystrokeIntervalMean != null ? botMetrics.keystrokeIntervalMean : '';
+      flat.bot_keystroke_interval_count   = botMetrics.keystrokeIntervalCount || 0;
+      flat.bot_scroll_events           = botMetrics.scrollEvents || 0;
+      flat.bot_tab_switches            = botMetrics.tabSwitches || 0;
+      flat.bot_total_blur_time_ms      = botMetrics.totalBlurTimeMs || 0;
+      var pasteEvents = Array.isArray(botMetrics.pasteEvents) ? botMetrics.pasteEvents : [];
+      flat.bot_paste_events_count = pasteEvents.length;
+      flat.bot_paste_fields = pasteEvents.map(function (p) { return p.field; }).join('; ');
+      flat.bot_tracking_duration_ms = botMetrics.trackingDurationMs || 0;
+      flat.bot_suspicious_flags = Array.isArray(botMetrics.suspiciousFlags) ? botMetrics.suspiciousFlags.join('; ') : '';
+      flat.bot_suspicious_flag_count = Array.isArray(botMetrics.suspiciousFlags) ? botMetrics.suspiciousFlags.length : 0;
     }
 
     // ── Browser ───────────────────────────────────────────

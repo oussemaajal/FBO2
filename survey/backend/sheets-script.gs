@@ -19,22 +19,30 @@
 
 function doPost(e) {
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
     var data = JSON.parse(e.postData.contents);
 
-    // Flatten nested objects for spreadsheet storage
-    var flat = flattenObject(data);
-
-    // Create headers on first row if sheet is empty
-    if (sheet.getLastRow() === 0) {
-      var headers = Object.keys(flat);
-      sheet.appendRow(headers);
+    // Separate forensics blob from the flat summary so the main sheet
+    // doesn't end up with a massive cell per row.
+    var rawJson = data.raw_json || "";
+    var summaryData = {};
+    for (var k in data) {
+      if (k !== "raw_json" && data.hasOwnProperty(k)) {
+        summaryData[k] = data[k];
+      }
     }
 
-    // Get existing headers (to ensure consistent column order)
+    // ── Main sheet: flat, human-readable summary ───────────
+    var sheet = ss.getActiveSheet();
+    var flat = flattenObject(summaryData);
+
+    if (sheet.getLastRow() === 0) {
+      var initHeaders = Object.keys(flat);
+      sheet.appendRow(initHeaders);
+    }
+
     var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
 
-    // Add any new keys as new columns
     var newKeys = Object.keys(flat).filter(function(k) {
       return headers.indexOf(k) === -1;
     });
@@ -45,7 +53,6 @@ function doPost(e) {
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
     }
 
-    // Build row in header order
     var row = headers.map(function(h) {
       var val = flat[h];
       if (val === undefined || val === null) return "";
@@ -55,14 +62,37 @@ function doPost(e) {
 
     sheet.appendRow(row);
 
-    // If Part 1 submission and participant passed comprehension,
-    // add their Prolific PID to the participant group for Part 2 access.
+    // ── "raw" sheet: full nested JSON per submission ───────
+    try {
+      var rawSheet = ss.getSheetByName("raw");
+      if (!rawSheet) {
+        rawSheet = ss.insertSheet("raw");
+        rawSheet.appendRow([
+          "submission_time_utc",
+          "prolific_pid",
+          "part",
+          "comprehension_failed",
+          "raw_json"
+        ]);
+      }
+      rawSheet.appendRow([
+        data.submission_time_utc || "",
+        data.prolific_pid || data.prolificPID || "",
+        data.part != null ? data.part : "",
+        data.comprehensionFailed === true,
+        rawJson
+      ]);
+    } catch (rawErr) {
+      Logger.log("Raw sheet write error: " + rawErr.toString());
+      // Don't fail the submission if the raw write fails.
+    }
+
+    // ── Part 1 → participant group gate for Part 2 ─────────
     if (data.part === 1 && data.comprehensionFailed === false && data.prolificPID) {
       try {
         addToParticipantGroup(data.prolificPID);
       } catch (groupErr) {
         Logger.log("Prolific group error: " + groupErr.toString());
-        // Don't fail the whole submission if group add fails
       }
     }
 
