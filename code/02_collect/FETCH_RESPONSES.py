@@ -74,6 +74,20 @@ def main():
     if payload.get("status") != "ok":
         raise SystemExit(f"Server error: {payload}")
 
+    # Disambiguate bad-token vs empty-sheet. A valid token always returns
+    # `rows` and `headers` keys (even if empty). The bad-token branch returns
+    # a generic ping with a `message` key instead.
+    if "rows" not in payload or "headers" not in payload:
+        raise SystemExit(
+            "Server returned the generic ping response, not sheet data.\n"
+            "This means the READ_TOKEN in the Apps Script Script Properties "
+            "does NOT match the token being sent by this script.\n"
+            f"  Token being sent (first 16 chars): {token[:16]}...\n"
+            "Open the Apps Script project -> Project Settings -> "
+            "Script Properties -> READ_TOKEN and make sure it matches "
+            "FBO2_SHEET_READ_TOKEN in your local .env byte-for-byte."
+        )
+
     if args.json:
         Path(args.json).write_text(json.dumps(payload, indent=2), encoding="utf-8")
         print(f"Wrote JSON -> {args.json}")
