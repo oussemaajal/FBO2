@@ -650,9 +650,9 @@ var SURVEY_CONFIG = {
           "and assign a <strong>probability</strong> that the firm is fraudulent." +
         "</p>" +
         "<p style='text-align:center; font-size:16px; color:#475569; margin-bottom:4px;'>" +
-          "Try the slider below to continue." +
+          "<strong>Try the slider:</strong> move it to any value <em>other than 50%</em> to continue." +
         "</p>",
-      hint: "The slider moves in 10% increments.",
+      hint: "The slider moves in 10% increments. You must move it away from 50% to continue.",
       minTimeSeconds: 4
     },
 

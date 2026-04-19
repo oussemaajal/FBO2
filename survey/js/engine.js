@@ -654,12 +654,18 @@
       }
     }
 
-    // Slider demo: require slider to be dragged
+    // Slider demo: require slider to actually MOVE to a different value
+    // (not just be clicked). Default value is 50, so anything !== 50 means
+    // the participant moved it.
     if (page.type === 'slider_demo') {
       var demoSlider = document.getElementById('demo_slider');
-      if (demoSlider && demoSlider.getAttribute('data-touched') !== 'true') {
-        this.showError('demo_slider', 'Please drag the slider to continue.');
-        valid = false;
+      if (demoSlider) {
+        var demoVal = parseInt(demoSlider.value);
+        var touched = demoSlider.getAttribute('data-touched') === 'true';
+        if (!touched || demoVal === 50) {
+          this.showError('demo_slider', 'Please move the slider to a value other than 50% to continue.');
+          valid = false;
+        }
       }
     }
 
