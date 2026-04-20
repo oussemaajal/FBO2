@@ -87,8 +87,8 @@ SURVEY_CONFIG = {
 
 EXPERIMENT_PARAMS = {
     # Payment (minor currency units; Prolific 'reward' field expects this)
-    # Account is GBP-denominated -- 120 = GBP 1.20, 150 = GBP 1.50.
-    'part1_reward_pence': 120,  # GBP 1.20
+    # Account is GBP-denominated -- 100 = GBP 1.00, 150 = GBP 1.50.
+    'part1_reward_pence': 100,  # GBP 1.00
     'part2_reward_pence': 150,  # GBP 1.50 base
     'bonus_max_pence': 100,     # GBP 1.00 max accuracy bonus
 
