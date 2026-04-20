@@ -50,7 +50,7 @@ var SURVEY_CONFIG = {
       fail1:  "https://app.prolific.com/submissions/complete?cc=FAIL1SN",
       comp2:  "https://app.prolific.com/submissions/complete?cc=COMP2SN"
     },
-    part2StudyUrl: "https://app.prolific.com/studies/69e54b9da22addc2568923d6/start"
+    part2StudyUrl: "https://app.prolific.com/studies/69e60b949a79a9b6ef7fb91f/start"
   },
 
   // -- Type Distributions ---------------------------------------------------
