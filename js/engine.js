@@ -364,16 +364,19 @@
       // All fraud-probability sliders use a 10-bucket range design:
       // slider value V in {0,10,20,...,90} represents the range V% to (V+10)%.
       // Display format: "X% to Y%" (e.g., "40% to 50%").
+      // A companion .slider-range-band div is positioned at left=V% to
+      // visualize the selected range as a moving highlighted band.
       var sliders = document.querySelectorAll('input[type="range"]');
       sliders.forEach(function (slider) {
         var displayId = slider.getAttribute('data-display');
         var display = displayId ? document.getElementById(displayId) : null;
-        if (display) {
-          slider.addEventListener('input', function () {
-            var val = parseFloat(slider.value);
-            var sliderMax = parseFloat(slider.max);
+        var bandId = slider.getAttribute('data-band');
+        var band = bandId ? document.getElementById(bandId) : null;
+        var updater = function () {
+          var val = parseFloat(slider.value);
+          var sliderMax = parseFloat(slider.max);
+          if (display) {
             if (sliderMax === 90) {
-              // Range-bucket slider: display lower and upper bounds of the bucket.
               var lo = Math.round(val);
               var hi = lo + 10;
               display.textContent = lo + '% to ' + hi + '%';
@@ -382,8 +385,16 @@
             } else {
               display.textContent = val.toFixed(1);
             }
-            slider.setAttribute('data-touched', 'true');
-          });
+          }
+          if (band && sliderMax === 90) {
+            band.style.left = val + '%';
+          }
+          slider.setAttribute('data-touched', 'true');
+        };
+        slider.addEventListener('input', updater);
+        // Normalize the band on first paint (e.g., restored progress).
+        if (band && parseFloat(slider.max) === 90) {
+          band.style.left = parseFloat(slider.value) + '%';
         }
       });
 
@@ -563,8 +574,8 @@
       this.responses[page.id].quizResponses = this.quizResponses.slice();
       this.responses[page.id].quizNumCorrect = numCorrect;
       this.responses[page.id].quizRetakeCount = this.quizRetakeCount;
-      // Passing threshold: 90% or above (11 of 12 = 91.7%)
-      if (numCorrect >= 11) {
+      // Passing threshold: 12 of 13 correct (allow 1 mistake, ~92.3%)
+      if (numCorrect >= 12) {
         this.goToPageId('p1_comprehension_result');
       } else {
         this.goToPageId('p1_quiz_fail');
@@ -826,7 +837,7 @@
       var numCorrect = this.quizResponses.filter(function (r) { return r && r.correct; }).length;
       flat.quiz_num_correct  = numCorrect;
       flat.quiz_total        = this.quizResponses.length;
-      flat.quiz_passed       = numCorrect >= 11;
+      flat.quiz_passed       = numCorrect >= 12;
       flat.quiz_retake_count = this.quizRetakeCount || 0;
       for (var qi = 0; qi < this.quizResponses.length; qi++) {
         var q = this.quizResponses[qi];
@@ -1125,8 +1136,8 @@
   // The Bayesian posterior is mapped into its own 10-percentage-point range.
   // Bonus = max(floor, maxBonus - perBucketPenalty * |userBucket - bayesBucket|).
   // With 10 buckets (0-10, 10-20, ..., 90-100) and the default parameters
-  // (maxBonus=$1.00, perBucketPenalty=$0.10), the participant can earn
-  // between $0.10 (9 buckets away) and $1.00 (exact match).
+  // (maxBonus=$2.00, perBucketPenalty=$0.20), the participant can earn
+  // between $0.20 (9 buckets away) and $2.00 (exact match).
   SurveyEngine.prototype.calculateBonus = function () {
     var bonusCfg = this.config.bonus;
     if (!bonusCfg || !bonusCfg.enabled) { this.bonusInfo = { enabled: false }; return; }
@@ -1141,8 +1152,8 @@
     var trial = this.trialResponses[selectedId];
 
     var bucketSize = bonusCfg.bucketSize || 10;
-    var maxBonus = bonusCfg.maxBonus || 1.00;
-    var perBucketPenalty = bonusCfg.perBucketPenalty || 0.10;
+    var maxBonus = bonusCfg.maxBonus || 2.00;
+    var perBucketPenalty = bonusCfg.perBucketPenalty || 0.20;
     var floor = bonusCfg.floor || 0;
     var numBuckets = Math.floor(100 / bucketSize); // 10 for bucketSize=10
 
@@ -1276,7 +1287,7 @@
     var total = this.quizResponses.length || 10;
     var html = '<h1 class="page-title">' + (page.title || 'Almost There') + '</h1>';
     html += '<div class="quiz-fail-score">' + numCorrect + '<span class="quiz-fail-score-denom"> / ' + total + '</span></div>';
-    html += '<p style="text-align:center; font-size:16px;">You got <strong>' + numCorrect + ' out of ' + total + '</strong> correct. The passing grade is <strong>11 of 12</strong>.</p>';
+    html += '<p style="text-align:center; font-size:16px;">You got <strong>' + numCorrect + ' out of ' + total + '</strong> correct. The passing grade is <strong>12 of 13</strong>.</p>';
     html += '<p style="text-align:center; color:#475569;">No worries -- the instructions are detailed. Take another pass through and try again.</p>';
     html += '<div class="quiz-fail-buttons">';
     html += '<button type="button" class="btn btn-primary" id="quiz_retake">' + esc(page.retakeText || 'Retake instructions') + '</button>';
@@ -1351,7 +1362,6 @@
   SurveyEngine.prototype.renderFraudTrial = function (page) {
     var trial = page.trial;
     var sizeLabel = this.getFirmSizeLabel(trial.N);
-    var badgeClass = this.getFirmSizeBadgeClass(trial.N);
     var html = '';
 
     // Two-column layout
@@ -1396,24 +1406,49 @@
     // RIGHT: Main trial content
     html += '<div class="trial-main-content">';
 
-    // Header Card -- firm size label
+    // Header Card -- trial counter only
     html += '<div class="trial-header-card">';
     html += '<div class="trial-header-firm">Firm ' + (page.trialIndex + 1) + ' of ' + page.totalTrials + '</div>';
-    html += '<div class="trial-header-stats">';
-    html += '<div class="trial-header-stat"><span class="trial-header-stat-label">' + sizeLabel + ' Firm</span><span class="trial-header-stat-value">' + trial.N + ' transactions<span class="firm-size-badge ' + badgeClass + '">' + sizeLabel + '</span></span></div>';
-    html += '</div></div>';
+    html += '</div>';
 
-    // Stimulus Display (list format with document icons)
+    // Firm Size Banner -- prominent, styled like the "Disclosed Transactions" banner
+    // so participants don't overlook the N (small / medium / large firm) cue.
+    var sizeModifier = 'firm-size-' + sizeLabel.toLowerCase();
+    html += '<div class="firm-size-banner ' + sizeModifier + '">';
+    html += '<div class="firm-size-banner-main">' + sizeLabel + ' Firm</div>';
+    html += '<div class="firm-size-banner-sub">' + trial.N + ' transactions total</div>';
+    html += '</div>';
+
+    // Build the disclosed-transactions array as individual cards and
+    // shuffle left-to-right using a PID + trial-id seed so each participant
+    // sees a reproducible but non-systematic order (prevents layout bias).
+    var cards = [];
+    for (var ni = 0; ni < trial.dN; ni++) { cards.push('normal'); }
+    for (var fi = 0; fi < trial.nFlagged; fi++) { cards.push('flagged'); }
+    var cardSeed = hashString((this.prolificPID || 'preview') + '_' + trial.id + '_cards');
+    cards = seededShuffle(cards, cardSeed);
+
+    // Stimulus Display -- big N/F cards laid out in a row (same visual
+    // language as the Part 1 example pages, upsized to fill the panel).
     html += '<div class="stimulus-display">';
-    html += '<div class="stimulus-title">Disclosed Transactions</div>';
-    html += '<div class="disclosed-list">';
-    html += '<div class="disclosed-list-item"><span class="doc-icon doc-icon-normal">N</span><span class="disclosed-list-label">Normal</span><span class="disclosed-list-count">' + trial.dN + '</span></div>';
-    html += '<div class="disclosed-list-item"><span class="doc-icon doc-icon-flagged">F</span><span class="disclosed-list-label">Flagged</span><span class="disclosed-list-count">' + trial.nFlagged + '</span></div>';
+    html += '<div class="stimulus-title">Disclosed Transactions (' + cards.length + ' shown)</div>';
+    html += '<div class="disclosed-cards">';
+    for (var ci2 = 0; ci2 < cards.length; ci2++) {
+      var kind = cards[ci2];
+      var letter = (kind === 'normal') ? 'N' : 'F';
+      html += '<div class="transaction-doc disclosed-card ' + kind + '">' + letter + '</div>';
+    }
+    html += '</div>';
+    html += '<div class="disclosed-legend">';
+    html += '<span class="disclosed-legend-item"><span class="transaction-doc-mini normal">N</span> Normal</span>';
+    html += '<span class="disclosed-legend-item"><span class="transaction-doc-mini flagged">F</span> Flagged</span>';
     html += '</div>';
     html += '</div>';
 
     // DV1: Fraud Probability Range Slider.
     // Slider value V in {0,10,...,90} encodes the chosen range [V%, (V+10)%).
+    // A colored band overlaid on the track visualizes the 10-pp range itself,
+    // so the participant sees a "moving range" rather than a single point.
     // Default position is 40 (range "40% to 50%").
     html += '<div class="dv-card">';
     html += '<div class="question-prompt">What is the probability that this firm is fraudulent?<span class="question-required">*</span></div>';
@@ -1424,10 +1459,13 @@
     html += '</div>';
     html += '<div class="slider-wrapper">';
     html += '<span class="slider-label">0%</span>';
-    html += '<input type="range" class="slider-input" id="fraud_prob" name="fraud_prob" min="0" max="90" step="10" value="40" data-touched="false" data-display="fraud_prob_display">';
+    html += '<div class="slider-range-wrap">';
+    html += '<div class="slider-range-band" id="fraud_prob_band" style="left:40%;"></div>';
+    html += '<input type="range" class="slider-input" id="fraud_prob" name="fraud_prob" min="0" max="90" step="10" value="40" data-touched="false" data-display="fraud_prob_display" data-band="fraud_prob_band">';
+    html += '</div>';
     html += '<span class="slider-label">100%</span>';
     html += '</div>';
-    html += '<div class="slider-hint">Drag the slider to select a 10-percentage-point range (e.g., 30% to 40%).</div>';
+    html += '<div class="slider-hint">Drag to select a 10-percentage-point range. The blue band shows your selected range.</div>';
     html += '<div class="field-error" id="error_fraud_prob"></div>';
     html += '</div>';
 
@@ -1609,12 +1647,15 @@
     html += '</div>';
     html += '<div class="slider-wrapper">';
     html += '<span class="slider-label">0%</span>';
+    html += '<div class="slider-range-wrap">';
+    html += '<div class="slider-range-band" id="demo_slider_band" style="left:40%;"></div>';
     html += '<input type="range" class="slider-input" id="demo_slider" name="demo_slider" ' +
-            'min="0" max="90" step="10" value="40" data-touched="false" data-display="demo_slider_display">';
+            'min="0" max="90" step="10" value="40" data-touched="false" data-display="demo_slider_display" data-band="demo_slider_band">';
+    html += '</div>';
     html += '<span class="slider-label">100%</span>';
     html += '</div>';
     html += '<div class="slider-hint">' +
-      (page.hint || 'Drag the slider. It snaps to 10-percentage-point ranges.') +
+      (page.hint || 'Drag the slider. The blue band shows the 10-percentage-point range you have selected.') +
       '</div>';
     html += '<div class="field-error" id="error_demo_slider"></div>';
     html += '</div>';

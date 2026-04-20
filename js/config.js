@@ -68,12 +68,12 @@ var SURVEY_CONFIG = {
   // 10-percentage-point range is compared to the range containing the
   // Bayesian posterior. Bonus = max(0, maxBonus - perBucketPenalty * |userBucket - bayesBucket|).
   // With 10 buckets (0-10%, 10-20%, ..., 90-100%), max distance is 9,
-  // so the worst-case bonus is maxBonus - 9 * perBucketPenalty = $0.10.
+  // so the worst-case bonus is maxBonus - 9 * perBucketPenalty = $0.20.
   bonus: {
     enabled: true,
     currency: "USD",
-    maxBonus: 1.00,
-    perBucketPenalty: 0.10,
+    maxBonus: 2.00,
+    perBucketPenalty: 0.20,
     bucketSize: 10,
     floor: 0.00,
     selectionMethod: "random_trial"
@@ -131,7 +131,7 @@ var SURVEY_CONFIG = {
       subtitle: "",
       body: "<p>Help us study decision-making under uncertainty.</p>" +
             "<p>Part 1 takes ~<strong>6 minutes</strong> for <strong>$1.00</strong>. " +
-            "Pass the quiz to unlock Part 2 (~10 min, <strong>$2.00</strong> + up to <strong>$1.00</strong> bonus).</p>",
+            "Pass the quiz to unlock Part 2 (~10 min, <strong>$2.00</strong> + up to <strong>$2.00</strong> accuracy bonus).</p>",
       buttonText: "Start"
     },
 
@@ -144,7 +144,7 @@ var SURVEY_CONFIG = {
             "<p><strong>What you will do:</strong> Learn the decision-making task and answer a short quiz.</p>" +
             "<p><strong>Time:</strong> ~6 minutes.</p>" +
             "<p><strong>Pay:</strong> $1.00 for this part. Pass the quiz and you will be invited " +
-            "to Part 2 (~10 min, $2.00 base + up to $1.00 accuracy bonus).</p>" +
+            "to Part 2 (~10 min, $2.00 base + up to $2.00 accuracy bonus).</p>" +
             "<p><strong>Risks:</strong> None beyond everyday life.</p>" +
             "<p><strong>Confidentiality:</strong> Anonymous. We collect your Prolific ID only for payment.</p>" +
             "<p><strong>Voluntary:</strong> You may withdraw at any time by closing this window.</p>",
@@ -606,43 +606,52 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 8
     },
 
-    // -- Page 13: Your Bonus (Auditor Incentive) --
+    // -- Page 13: Your Bonus (accuracy-based bucket scoring) --
     {
       id: "p1_inst_your_bonus",
       type: "instructions",
       title: "Your Bonus",
       body:
-        "<p style='text-align:center; font-size:18px; margin-bottom:12px;'>" +
-          "<strong>Your pay depends on how accurate your fraud probabilities are.</strong>" +
+        "<p style='text-align:center; font-size:18px; margin-bottom:8px;'>" +
+          "<strong>Your bonus depends on how close your probability range is to the truth.</strong>" +
         "</p>" +
-        "<p style='text-align:center; font-size:15px; color:#475569; margin-bottom:24px; max-width:640px; margin-left:auto; margin-right:auto;'>" +
-          "Each firm you review enters a lottery. The higher the fraud probability you assigned, " +
-          "the more likely that firm will actually be audited." +
+        "<p style='text-align:center; font-size:15px; color:#475569; margin-bottom:20px; max-width:680px; margin-left:auto; margin-right:auto;'>" +
+          "At the end, one of your 9 firms is picked at random. " +
+          "We compare the range you picked (e.g., 40% to 50%) to the range containing the " +
+          "firm's <em>actual</em> fraud probability." +
         "</p>" +
-        "<div class='auditor-outcomes'>" +
-          "<div class='auditor-outcome auditor-outcome-good'>" +
-            "<div class='auditor-outcome-badge'>&#10004;</div>" +
-            "<div class='auditor-outcome-title'>Audited firm is Fraudulent</div>" +
-            "<div class='auditor-outcome-body'>" +
-              "You called it right. " +
-              "<strong>You earn a bonus.</strong>" +
-            "</div>" +
+        "<div class='bonus-formula-card'>" +
+          "<div class='bonus-formula-line'>" +
+            "<strong>Start at $2.00.</strong> Lose $0.20 for every 10% range you are off." +
           "</div>" +
-          "<div class='auditor-outcome auditor-outcome-bad'>" +
-            "<div class='auditor-outcome-badge'>&#10060;</div>" +
-            "<div class='auditor-outcome-title'>Audited firm is Clean</div>" +
-            "<div class='auditor-outcome-body'>" +
-              "False alarm. " +
-              "<strong>You get a pay cut.</strong>" +
-            "</div>" +
+          "<div class='bonus-formula-table'>" +
+            "<div class='bonus-formula-row'><span>Exact range match</span><span class='bonus-formula-amt good'>$2.00</span></div>" +
+            "<div class='bonus-formula-row'><span>1 range off</span><span class='bonus-formula-amt'>$1.80</span></div>" +
+            "<div class='bonus-formula-row'><span>2 ranges off</span><span class='bonus-formula-amt'>$1.60</span></div>" +
+            "<div class='bonus-formula-row'><span>5 ranges off</span><span class='bonus-formula-amt'>$1.00</span></div>" +
+            "<div class='bonus-formula-row'><span>9 ranges off (worst)</span><span class='bonus-formula-amt bad'>$0.20</span></div>" +
           "</div>" +
         "</div>" +
-        "<div class='auditor-rule'>" +
+        "<div class='bonus-example-card'>" +
+          "<div class='bonus-example-title'>Example</div>" +
+          "<p style='margin:0 0 10px 0;'>" +
+            "You guess <strong>40% to 50%</strong>. The firm's actual probability of fraud is <strong>85%</strong> " +
+            "(which falls in the <strong>80% to 90%</strong> range)." +
+          "</p>" +
+          "<p style='margin:0 0 10px 0;'>" +
+            "Your range is <strong>4 ranges below</strong> the actual range " +
+            "(40&ndash;50 \u2192 50&ndash;60 \u2192 60&ndash;70 \u2192 70&ndash;80 \u2192 80&ndash;90)." +
+          "</p>" +
+          "<p style='margin:0;'>" +
+            "Bonus = $2.00 &minus; (4 \u00d7 $0.20) = <strong>$1.20</strong>." +
+          "</p>" +
+        "</div>" +
+        "<div class='auditor-rule' style='margin-top:16px;'>" +
           "<p style='margin:0;'><strong>Rule of thumb:</strong> " +
-          "Assign a high fraud probability <em>only</em> when you're confident the firm is fraudulent. " +
-          "Assign a low probability when the firm is likely clean.</p>" +
+          "Pick the range you <em>honestly believe</em> contains the true probability of fraud. " +
+          "Guessing too high when the firm is clean costs you just as much as guessing too low when the firm is fraudulent.</p>" +
         "</div>",
-      minTimeSeconds: 10
+      minTimeSeconds: 12
     },
 
     // -- Page 11: Your Job + Try the Slider --
@@ -740,12 +749,12 @@ var SURVEY_CONFIG = {
       title: "Before the Quiz",
       body:
         "<p style='text-align:center; font-size:18px;'>" +
-          "There is a <strong>12-question quiz</strong> ahead." +
+          "There is a <strong>13-question quiz</strong> ahead." +
         "</p>" +
         "<div class='quiz-gate-stats'>" +
           "<div class='quiz-gate-stat'>" +
             "<div class='quiz-gate-stat-label'>Questions</div>" +
-            "<div class='quiz-gate-stat-value'>12</div>" +
+            "<div class='quiz-gate-stat-value'>13</div>" +
           "</div>" +
           "<div class='quiz-gate-stat'>" +
             "<div class='quiz-gate-stat-label'>Format</div>" +
@@ -753,7 +762,7 @@ var SURVEY_CONFIG = {
           "</div>" +
           "<div class='quiz-gate-stat'>" +
             "<div class='quiz-gate-stat-label'>Passing grade</div>" +
-            "<div class='quiz-gate-stat-value'>11 of 12</div>" +
+            "<div class='quiz-gate-stat-value'>12 of 13</div>" +
           "</div>" +
         "</div>" +
         "<div class='quiz-gate-warning'>" +
@@ -769,7 +778,7 @@ var SURVEY_CONFIG = {
       id: "p1_quiz_q1",
       type: "quiz_question",
       questionIndex: 1,
-      totalQuestions: 12,
+      totalQuestions: 13,
       prompt: "For each firm, who decides which transactions you will see?",
       correct: "manager",
       options: [
@@ -785,7 +794,7 @@ var SURVEY_CONFIG = {
       id: "p1_quiz_q2",
       type: "quiz_question",
       questionIndex: 2,
-      totalQuestions: 12,
+      totalQuestions: 13,
       prompt: "The manager is more likely to earn a bonus when the auditor assigns a:",
       correct: "low",
       options: [
@@ -801,7 +810,7 @@ var SURVEY_CONFIG = {
       id: "p1_quiz_q3",
       type: "quiz_question",
       questionIndex: 3,
-      totalQuestions: 12,
+      totalQuestions: 13,
       prompt: "Out of every 100 firms you audit, about how many are fraudulent?",
       correct: "20",
       options: [
@@ -817,7 +826,7 @@ var SURVEY_CONFIG = {
       id: "p1_quiz_q4",
       type: "quiz_question",
       questionIndex: 4,
-      totalQuestions: 12,
+      totalQuestions: 13,
       prompt: "A clean firm has exactly 50% Normal and 50% Flagged transactions. A fraudulent firm has 40% Normal and 60% Flagged. Which of the following is true?",
       correct: "both",
       options: [
@@ -833,7 +842,7 @@ var SURVEY_CONFIG = {
       id: "p1_quiz_q5",
       type: "quiz_question",
       questionIndex: 5,
-      totalQuestions: 12,
+      totalQuestions: 13,
       prompt: "How many total transactions does a Small firm have?",
       correct: "10",
       options: [
@@ -850,7 +859,7 @@ var SURVEY_CONFIG = {
       id: "p1_quiz_q6",
       type: "quiz_question",
       questionIndex: 6,
-      totalQuestions: 12,
+      totalQuestions: 13,
       prompt: "How many transactions does the manager disclose to you?",
       correct: "4",
       options: [
@@ -866,7 +875,7 @@ var SURVEY_CONFIG = {
       id: "p1_quiz_q7",
       type: "quiz_question",
       questionIndex: 7,
-      totalQuestions: 12,
+      totalQuestions: 13,
       prompt: "In a clean firm, what percentage of its transactions are Flagged?",
       correct: "50",
       options: [
@@ -882,7 +891,7 @@ var SURVEY_CONFIG = {
       id: "p1_quiz_q8",
       type: "quiz_question",
       questionIndex: 8,
-      totalQuestions: 12,
+      totalQuestions: 13,
       prompt: "In a fraudulent firm, what percentage of its transactions are Flagged?",
       correct: "60",
       options: [
@@ -898,14 +907,14 @@ var SURVEY_CONFIG = {
       id: "p1_quiz_q9",
       type: "quiz_question",
       questionIndex: 9,
-      totalQuestions: 12,
-      prompt: "You assigned a high fraud probability to a firm. Later, that firm is audited and turns out to be fraudulent. What happens to your pay?",
-      correct: "bonus",
+      totalQuestions: 13,
+      prompt: "You said a firm has an 80% to 90% chance of fraud. The firm's actual probability of fraud is 85%. What happens to your bonus?",
+      correct: "big_bonus",
       options: [
-        { value: "paycut",       label: "You get a pay cut" },
-        { value: "bonus",        label: "You earn a bonus" },
-        { value: "nothing",      label: "Nothing changes" },
-        { value: "disqualified", label: "You are disqualified" }
+        { value: "small_bonus", label: "Your bonus is much smaller than the maximum" },
+        { value: "big_bonus",   label: "You earn a bonus close to the maximum" },
+        { value: "nothing",     label: "Nothing changes" },
+        { value: "disqualified",label: "You are disqualified" }
       ]
     },
 
@@ -914,13 +923,13 @@ var SURVEY_CONFIG = {
       id: "p1_quiz_q10",
       type: "quiz_question",
       questionIndex: 10,
-      totalQuestions: 12,
-      prompt: "You assigned a high fraud probability to a firm. Later, that firm is audited and turns out to be clean. What happens to your pay?",
-      correct: "paycut",
+      totalQuestions: 13,
+      prompt: "You said a firm has an 80% to 90% chance of fraud. The firm's actual probability of fraud is 10%. What happens to your bonus?",
+      correct: "small_bonus",
       options: [
         { value: "nothing",      label: "Nothing changes" },
-        { value: "bonus",        label: "You earn a bonus" },
-        { value: "paycut",       label: "You get a pay cut" },
+        { value: "big_bonus",    label: "You earn a bonus close to the maximum" },
+        { value: "small_bonus",  label: "Your bonus is much smaller than the maximum" },
         { value: "disqualified", label: "You are disqualified" }
       ]
     },
@@ -930,30 +939,48 @@ var SURVEY_CONFIG = {
       id: "p1_quiz_q11",
       type: "quiz_question",
       questionIndex: 11,
-      totalQuestions: 12,
-      prompt: "Suppose a firm's actual probability of fraud is 10%. Which fraud probability should you assign to earn the biggest bonus?",
+      totalQuestions: 13,
+      prompt: "Suppose a firm's actual probability of fraud is 10%. Which range should you pick to earn the biggest bonus?",
       correct: "10",
       options: [
-        { value: "30", label: "30%" },
-        { value: "50", label: "50%" },
-        { value: "70", label: "70%" },
-        { value: "10", label: "10%" }
+        { value: "30", label: "30% to 40%" },
+        { value: "50", label: "50% to 60%" },
+        { value: "70", label: "70% to 80%" },
+        { value: "10", label: "0% to 10%" }
       ]
     },
 
-    // -- Quiz Q12 (incentive alignment -- biggest pay cut; correct at A) --
+    // -- Quiz Q12 (incentive alignment -- smallest bonus; correct at A) --
     {
       id: "p1_quiz_q12",
       type: "quiz_question",
       questionIndex: 12,
-      totalQuestions: 12,
-      prompt: "Suppose a firm's actual probability of fraud is 10%. Which fraud probability would result in the biggest pay cut?",
+      totalQuestions: 13,
+      prompt: "Suppose a firm's actual probability of fraud is 10%. Which range would result in the smallest bonus?",
       correct: "70",
       options: [
-        { value: "70", label: "70%" },
-        { value: "30", label: "30%" },
-        { value: "50", label: "50%" },
-        { value: "10", label: "10%" }
+        { value: "70", label: "70% to 80%" },
+        { value: "30", label: "30% to 40%" },
+        { value: "50", label: "50% to 60%" },
+        { value: "10", label: "0% to 10%" }
+      ]
+    },
+
+    // -- Quiz Q13 (bonus formula applied with numbers; correct at C) --
+    // Your range 40-50%, actual 90-100%. Distance = |4 - 9| = 5 buckets.
+    // Bonus = $2.00 - 5 x $0.20 = $1.00.
+    {
+      id: "p1_quiz_q13",
+      type: "quiz_question",
+      questionIndex: 13,
+      totalQuestions: 13,
+      prompt: "You guess a firm has a <strong>40% to 50%</strong> chance of being fraudulent. It actually has a <strong>90% to 100%</strong> chance of being fraudulent. What is your bonus?",
+      correct: "1.00",
+      options: [
+        { value: "2.00", label: "About $2.00" },
+        { value: "1.60", label: "About $1.60" },
+        { value: "1.00", label: "About $1.00" },
+        { value: "0.20", label: "About $0.20" }
       ]
     },
 
@@ -964,7 +991,7 @@ var SURVEY_CONFIG = {
       title: "You Passed!",
       body: "<p>You understand the task. You have been <strong>invited to Part 2</strong>.</p>" +
             "<p><strong>Part 2</strong> is a separate Prolific study (~10 min, " +
-            "$2.00 base + up to $1.00 accuracy bonus based on accuracy).</p>" +
+            "$2.00 base + up to $2.00 accuracy bonus).</p>" +
             "<p style='margin-top:14px;'><strong>Two steps to get paid:</strong></p>" +
             "<ol style='margin-left:20px;'>" +
             "<li>Copy the completion code below and submit it on Prolific to get paid for Part 1.</li>" +
@@ -1005,7 +1032,7 @@ var SURVEY_CONFIG = {
       body: "<p>This part takes about <strong>10 minutes</strong>. " +
             "As a government auditor, you will review <strong>9 firms</strong> " +
             "and assign each a probability of fraud.</p>" +
-            "<p>Pay: <strong>$2.00</strong> base + up to <strong>$1.00</strong> " +
+            "<p>Pay: <strong>$2.00</strong> base + up to <strong>$2.00</strong> " +
             "based on how <strong>accurate</strong> your probabilities are.</p>",
       buttonText: "Continue"
     },
@@ -1176,7 +1203,7 @@ var SURVEY_CONFIG = {
       subtitle: "Decision Making Study",
       body: "<p>Help us study decision-making under uncertainty. " +
             "This takes about <strong>10 minutes</strong>.</p>" +
-            "<p>Pay: <strong>$2.00</strong> base + up to <strong>$1.00</strong> accuracy bonus.</p>" +
+            "<p>Pay: <strong>$2.00</strong> base + up to <strong>$2.00</strong> accuracy bonus.</p>" +
             "<p>Please use a <strong>desktop or laptop</strong> for the best experience.</p>",
       buttonText: "Begin"
     },
@@ -1190,7 +1217,7 @@ var SURVEY_CONFIG = {
             "<p><strong>What you will do:</strong> Learn the decision-making task, pass a quiz, " +
             "then evaluate 9 firms.</p>" +
             "<p><strong>Time:</strong> ~10 minutes.</p>" +
-            "<p><strong>Pay:</strong> $2.00 base + up to $1.00 accuracy bonus.</p>" +
+            "<p><strong>Pay:</strong> $2.00 base + up to $2.00 accuracy bonus.</p>" +
             "<p><strong>Risks:</strong> None beyond everyday life.</p>" +
             "<p><strong>Confidentiality:</strong> Anonymous. Prolific ID collected only for payment.</p>" +
             "<p><strong>Voluntary:</strong> Withdraw at any time by closing this window.</p>",
