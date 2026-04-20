@@ -97,7 +97,9 @@
     }
     this.studyID = params.get('STUDY_ID') || params.get('study_id') || '';
     this.sessionID = params.get('SESSION_ID') || params.get('session_id') || '';
-    this.part = parseInt(params.get('part')) || 0;
+    // Accept either case to be forgiving of hand-rolled test URLs.
+    // (Prolific-facing URLs built by RUN_PROLIFIC_STUDY.py use lowercase.)
+    this.part = parseInt(params.get('part') || params.get('PART')) || 0;
 
     // Select pages based on part
     if (this.part === 1 && this.config.part1Pages) {
@@ -358,7 +360,10 @@
       self.attachOptionCardHandlers();
       self.attachConsentHandler();
 
-      // Attach slider event listeners
+      // Attach slider event listeners.
+      // All fraud-probability sliders use a 10-bucket range design:
+      // slider value V in {0,10,20,...,90} represents the range V% to (V+10)%.
+      // Display format: "X% to Y%" (e.g., "40% to 50%").
       var sliders = document.querySelectorAll('input[type="range"]');
       sliders.forEach(function (slider) {
         var displayId = slider.getAttribute('data-display');
@@ -366,7 +371,13 @@
         if (display) {
           slider.addEventListener('input', function () {
             var val = parseFloat(slider.value);
-            if (parseFloat(slider.max) === 100) {
+            var sliderMax = parseFloat(slider.max);
+            if (sliderMax === 90) {
+              // Range-bucket slider: display lower and upper bounds of the bucket.
+              var lo = Math.round(val);
+              var hi = lo + 10;
+              display.textContent = lo + '% to ' + hi + '%';
+            } else if (sliderMax === 100) {
               display.textContent = Math.round(val) + '%';
             } else {
               display.textContent = val.toFixed(1);
@@ -654,16 +665,15 @@
       }
     }
 
-    // Slider demo: require slider to actually MOVE to a different value
-    // (not just be clicked). Default value is 50, so anything !== 50 means
-    // the participant moved it.
+    // Slider demo: require participant to actually interact with the slider.
+    // We only check the 'touched' flag (set on any input event); any range is
+    // valid, since the range-bucket design has no "neutral" default value.
     if (page.type === 'slider_demo') {
       var demoSlider = document.getElementById('demo_slider');
       if (demoSlider) {
-        var demoVal = parseInt(demoSlider.value);
         var touched = demoSlider.getAttribute('data-touched') === 'true';
-        if (!touched || demoVal === 50) {
-          this.showError('demo_slider', 'Please move the slider to a value other than 50% to continue.');
+        if (!touched) {
+          this.showError('demo_slider', 'Please drag the slider to select a range.');
           valid = false;
         }
       }
@@ -888,11 +898,18 @@
     flat.comprehension_attempts = this.comprehensionAttempts || 0;
 
     // ── Bonus (Part 2) ────────────────────────────────────
+    // Range-bucket scoring: see calculateBonus() for field semantics.
     if (this.bonusInfo) {
-      flat.bonus_amount_usd     = this.bonusInfo.amountUsd     != null ? this.bonusInfo.amountUsd     : '';
-      flat.bonus_amount_cents   = this.bonusInfo.amountCents   != null ? this.bonusInfo.amountCents   : '';
-      flat.bonus_mean_abs_error = this.bonusInfo.meanAbsError  != null ? this.bonusInfo.meanAbsError  : '';
-      flat.bonus_trials_counted = this.bonusInfo.trialsCounted != null ? this.bonusInfo.trialsCounted : '';
+      flat.bonus_amount         = this.bonusInfo.amount          != null ? this.bonusInfo.amount          : '';
+      flat.bonus_currency       = this.bonusInfo.currency        || '';
+      flat.bonus_selected_trial = this.bonusInfo.selectedTrialId || '';
+      flat.bonus_user_bucket    = this.bonusInfo.userBucket      != null ? this.bonusInfo.userBucket      : '';
+      flat.bonus_bayes_bucket   = this.bonusInfo.bayesBucket     != null ? this.bonusInfo.bayesBucket     : '';
+      flat.bonus_bucket_dist    = this.bonusInfo.bucketDistance  != null ? this.bonusInfo.bucketDistance  : '';
+      flat.bonus_user_range     = this.bonusInfo.userRangeLabel  || '';
+      flat.bonus_bayes_range    = this.bonusInfo.bayesRangeLabel || '';
+      flat.bonus_user_fraud_prob = this.bonusInfo.fraudProb      != null ? this.bonusInfo.fraudProb      : '';
+      flat.bonus_bayes_posterior = this.bonusInfo.bayesPosterior != null ? this.bonusInfo.bayesPosterior : '';
     }
 
     // ── Per-page timings ─────────────────────────────────
@@ -1103,6 +1120,13 @@
   };
 
   // ── Bonus Calculation ──────────────────────────────────────────────────
+  // Range-bucket scoring. One random trial is drawn (deterministic in the
+  // PID). The participant's slider value V encodes the chosen range [V, V+10).
+  // The Bayesian posterior is mapped into its own 10-percentage-point range.
+  // Bonus = max(floor, maxBonus - perBucketPenalty * |userBucket - bayesBucket|).
+  // With 10 buckets (0-10, 10-20, ..., 90-100) and the default parameters
+  // (maxBonus=$1.00, perBucketPenalty=$0.10), the participant can earn
+  // between $0.10 (9 buckets away) and $1.00 (exact match).
   SurveyEngine.prototype.calculateBonus = function () {
     var bonusCfg = this.config.bonus;
     if (!bonusCfg || !bonusCfg.enabled) { this.bonusInfo = { enabled: false }; return; }
@@ -1116,23 +1140,36 @@
     var selectedId = trialIds[selectedIdx];
     var trial = this.trialResponses[selectedId];
 
-    var guess = trial.fraudProb / 100;
-    var truth = trial.bayesPosterior;
-
-    var baseAmount = bonusCfg.baseAmount || 1.50;
-    var penalty = bonusCfg.penaltyMultiplier || 3.00;
+    var bucketSize = bonusCfg.bucketSize || 10;
+    var maxBonus = bonusCfg.maxBonus || 1.00;
+    var perBucketPenalty = bonusCfg.perBucketPenalty || 0.10;
     var floor = bonusCfg.floor || 0;
+    var numBuckets = Math.floor(100 / bucketSize); // 10 for bucketSize=10
 
-    var error = Math.abs(guess - truth);
-    var amount = Math.max(floor, baseAmount - penalty * error);
+    // User's slider value is the lower bound of the chosen range (0, 10, ..., 90).
+    var userBucket = Math.floor(trial.fraudProb / bucketSize);
+    // Bayes posterior in [0,1] -> percentage -> bucket index, clamped to [0, numBuckets-1].
+    var bayesPercent = trial.bayesPosterior * 100;
+    var bayesBucket = Math.min(numBuckets - 1, Math.floor(bayesPercent / bucketSize));
+
+    var distance = Math.abs(userBucket - bayesBucket);
+    var amount = Math.max(floor, maxBonus - perBucketPenalty * distance);
     amount = Math.round(amount * 100) / 100;
+
+    // Human-readable range labels for the debrief page.
+    var userRangeLabel = (userBucket * bucketSize) + '% to ' + ((userBucket + 1) * bucketSize) + '%';
+    var bayesRangeLabel = (bayesBucket * bucketSize) + '% to ' + ((bayesBucket + 1) * bucketSize) + '%';
 
     this.bonusInfo = {
       enabled: true,
       selectedTrialId: selectedId,
       fraudProb: trial.fraudProb,
-      bayesPosterior: truth,
-      errorPp: Math.round(error * 10000) / 100,
+      bayesPosterior: trial.bayesPosterior,
+      userBucket: userBucket,
+      bayesBucket: bayesBucket,
+      userRangeLabel: userRangeLabel,
+      bayesRangeLabel: bayesRangeLabel,
+      bucketDistance: distance,
       amount: amount,
       currency: bonusCfg.currency || 'USD'
     };
@@ -1375,20 +1412,22 @@
     html += '</div>';
     html += '</div>';
 
-    // DV1: Fraud Probability Slider (default 20%, 10% increments)
+    // DV1: Fraud Probability Range Slider.
+    // Slider value V in {0,10,...,90} encodes the chosen range [V%, (V+10)%).
+    // Default position is 40 (range "40% to 50%").
     html += '<div class="dv-card">';
     html += '<div class="question-prompt">What is the probability that this firm is fraudulent?<span class="question-required">*</span></div>';
-    html += '<div class="slider-sentence">This firm is <span class="slider-sentence-value" id="fraud_prob_display">20%</span> likely to be fraudulent.</div>';
+    html += '<div class="slider-sentence">This firm has a <span class="slider-sentence-value" id="fraud_prob_display">40% to 50%</span> probability of being fraudulent.</div>';
     html += '<div class="slider-endpoint-labels">';
     html += '<span class="slider-endpoint-label clean">Certainly clean</span>';
     html += '<span class="slider-endpoint-label fraud">Certainly fraudulent</span>';
     html += '</div>';
     html += '<div class="slider-wrapper">';
     html += '<span class="slider-label">0%</span>';
-    html += '<input type="range" class="slider-input" id="fraud_prob" name="fraud_prob" min="0" max="100" step="10" value="20" data-touched="false" data-display="fraud_prob_display">';
+    html += '<input type="range" class="slider-input" id="fraud_prob" name="fraud_prob" min="0" max="90" step="10" value="40" data-touched="false" data-display="fraud_prob_display">';
     html += '<span class="slider-label">100%</span>';
     html += '</div>';
-    html += '<div class="slider-hint">Drag the slider to set your estimate (10% increments)</div>';
+    html += '<div class="slider-hint">Drag the slider to select a 10-percentage-point range (e.g., 30% to 40%).</div>';
     html += '<div class="field-error" id="error_fraud_prob"></div>';
     html += '</div>';
 
@@ -1563,7 +1602,7 @@
     var html = '<h1 class="page-title">' + (page.title || 'Try the Slider') + '</h1>';
     html += '<div class="page-body">' + (page.body || '') + '</div>';
     html += '<div class="dv-card" style="max-width:620px; margin:0 auto;">';
-    html += '<div class="slider-sentence">This firm is <span class="slider-sentence-value" id="demo_slider_display">50%</span> likely to be fraudulent.</div>';
+    html += '<div class="slider-sentence">This firm has a <span class="slider-sentence-value" id="demo_slider_display">40% to 50%</span> probability of being fraudulent.</div>';
     html += '<div class="slider-endpoint-labels">';
     html += '<span class="slider-endpoint-label clean">Certainly clean</span>';
     html += '<span class="slider-endpoint-label fraud">Certainly fraudulent</span>';
@@ -1571,28 +1610,29 @@
     html += '<div class="slider-wrapper">';
     html += '<span class="slider-label">0%</span>';
     html += '<input type="range" class="slider-input" id="demo_slider" name="demo_slider" ' +
-            'min="0" max="100" step="10" value="50" data-touched="false" data-display="demo_slider_display">';
+            'min="0" max="90" step="10" value="40" data-touched="false" data-display="demo_slider_display">';
     html += '<span class="slider-label">100%</span>';
     html += '</div>';
     html += '<div class="slider-hint">' +
-      (page.hint || 'Drag the slider. It moves in 10% increments.') +
+      (page.hint || 'Drag the slider. It snaps to 10-percentage-point ranges.') +
       '</div>';
     html += '<div class="field-error" id="error_demo_slider"></div>';
     html += '</div>';
     return html;
   };
 
-  // ── Slider Tutorial ────────────────────────────────────────────────────
+  // ── Slider Tutorial (currently unused — kept for future reintroduction) ─
+  // Uses the same 10-bucket range design as renderFraudTrial/renderSliderDemo.
   SurveyEngine.prototype.renderSliderTutorial = function (page) {
     var html = '<h1 class="page-title">' + (page.title || 'How to Answer') + '</h1>';
     html += '<div class="page-body">' + (page.body || '') + '</div>';
     html += '<div class="tutorial-slider-section">';
-    html += '<p class="tutorial-prompt">Try it now! Move the slider to <strong>' + (page.targetValue || '75') + '%</strong>:</p>';
-    html += '<div class="slider-value-display" id="tutorial_slider_value">50%</div>';
+    html += '<p class="tutorial-prompt">Try it now! Drag the slider to any range:</p>';
+    html += '<div class="slider-value-display" id="tutorial_slider_value">40% to 50%</div>';
     html += '<div class="slider-wrapper"><span class="slider-label">0%</span>';
-    html += '<input type="range" class="slider-input" id="tutorial_slider" min="0" max="100" step="10" value="50" data-touched="false" data-display="tutorial_slider_value">';
+    html += '<input type="range" class="slider-input" id="tutorial_slider" min="0" max="90" step="10" value="40" data-touched="false" data-display="tutorial_slider_value">';
     html += '<span class="slider-label">100%</span></div>';
-    html += '<div class="slider-hint">Drag the slider left or right</div></div>';
+    html += '<div class="slider-hint">The slider snaps to 10-percentage-point ranges.</div></div>';
     return html;
   };
 
@@ -1658,10 +1698,16 @@
     html += '<div class="page-body">' + (page.body || '') + '</div>';
 
     if (page.showBonus && this.bonusInfo && this.bonusInfo.enabled && this.bonusInfo.amount !== undefined) {
+      var bucketDist = this.bonusInfo.bucketDistance;
+      var distLabel = (bucketDist === 0)
+          ? 'exact range match'
+          : (bucketDist + ' range' + (bucketDist === 1 ? '' : 's') + ' away');
       html += '<div class="bonus-display">';
       html += '<div class="bonus-amount">' + this.bonusInfo.currency + ' ' + this.bonusInfo.amount.toFixed(2) + '</div>';
       html += '<div class="bonus-detail">Your bonus based on trial ' + this.bonusInfo.selectedTrialId + '</div>';
-      html += '<div class="bonus-detail">Your estimate: ' + this.bonusInfo.fraudProb + '% | Benchmark: ' + (this.bonusInfo.bayesPosterior * 100).toFixed(1) + '% | Error: ' + this.bonusInfo.errorPp.toFixed(1) + ' pp</div>';
+      html += '<div class="bonus-detail">Your range: ' + this.bonusInfo.userRangeLabel +
+              ' | Benchmark range: ' + this.bonusInfo.bayesRangeLabel +
+              ' | ' + distLabel + '</div>';
       html += '</div>';
     }
 
