@@ -89,22 +89,22 @@ def ensure_dirs():
 def get_recommended_filters(loose: bool = False) -> list:
     """Return the recommended pre-screen filters for FBO 2.
 
-    Baseline (always on, unless --loose):
-      Quality and language
+    Current baseline (as of 2026-04-20 pilot edit by Oussema):
+      Quality
       - Approval rate 95%+
       - 100+ prior approved submissions (experience)
-      - English first language AND fluent in English
-      - Residence in English-native country (UK/US/CA/AU/IE/NZ)
       - Age 18+
+      Ability
+      - English as FIRST language (stricter than fluency)
+      - Reasoning Exam Score 70+ (top ~30% of reasoners)
 
-      Background and ability (Oussema's requirements):
-      - Bachelor's degree or higher (reasoning / literacy proxy)
-      - Subject of study: Accounting / Business / Economics / Finance /
-        Mathematics or statistics (setting familiarity)
+    Dropped from earlier baseline: fluent-languages (replaced by stricter
+    first-language), highest-education-level-completed, subject. Country
+    filter is also not used -- first-language is a stronger proxy.
 
-    --loose drops the background+ability filters (keeps only quality and
-    language). Use if recruitment is too slow or for a much larger sample
-    where generalizability is a stronger concern.
+    --loose drops the two ability filters (first-language + reasoning),
+    keeping only the three quality filters. Use for larger samples where
+    generalizability matters more than tight selection.
 
     For bot / AI mitigation: handled inside the survey (honeypot, AI trap,
     BotDetector). The approval rate + 100-submission threshold already weeds
@@ -112,57 +112,31 @@ def get_recommended_filters(loose: bool = False) -> list:
     filter explicitly.
     """
     filters = [
-        # ── Quality and language (always on) ──
+        # ── Quality (always on) ──
         # Approval rate 95-100%
         {"filter_id": "approval_rate", "selected_range": {"lower": 95, "upper": 100}},
 
         # At least 100 prior approved submissions (experience)
         {"filter_id": "approval_numbers", "selected_range": {"lower": 100, "upper": 100000}},
 
-        # Fluent in English (dropped first-language=English per Oussema:
-        # fluency is sufficient, no need to require English as first language)
-        {"filter_id": "fluent-languages", "selected_values": ["English"]},
-
-        # Country filter dropped per Oussema: fluency is sufficient,
-        # don't restrict residence. (Dropped "current-country-of-residence".)
-
         # Age 18+ (Prolific's default minimum; explicit here for clarity)
         {"filter_id": "age", "selected_range": {"lower": 18, "upper": 100}},
     ]
 
     if not loose:
-        # ── Background and ability (default on, dropped by --loose) ──
-        # Bachelor's or above -- reasoning / literacy / numeracy proxy
+        # ── Ability (default on, dropped by --loose) ──
+        # English as first language -- native-level reading comprehension
+        # for the instructions and scenario text.
         filters.append({
-            "filter_id": "highest-education-level-completed",
-            "selected_values": [
-                "Undergraduate degree (BA/BSc/other)",
-                "Graduate degree (MA/MSc/MPhil/other)",
-                "Doctorate degree (PhD/other)",
-            ],
+            "filter_id": "first-language",
+            "selected_values": ["English"],
         })
 
-        # Subject of study -- finance/accounting/econ/math adjacent.
-        # Labels must exactly match Prolific's. Auto-discovered list
-        # includes: Accounting, Business, Economics, Finance, Management,
-        # Marketing, Mathematics, etc.
-        filters.append({
-            "filter_id": "subject",
-            "selected_values": [
-                "Accounting",
-                "Business",
-                "Economics",
-                "Finance",
-                "Mathematics",
-            ],
-        })
-
-        # Reasoning ability -- Prolific's "Reasoning Exam Score" pre-screen
-        # (range 0-100). Participants take a standardized reasoning test;
-        # 60+ filters for the top ~40% of reasoners.
+        # Reasoning Exam Score 70+ (top ~30% of reasoners).
+        # Range is 0-100; participants take a standardized reasoning test.
         filters.append({
             "filter_id": "reasoning-exam-score",
-            "selected_range": {"lower": 60, "upper": 100},
+            "selected_range": {"lower": 70, "upper": 100},
         })
 
     return filters
@@ -191,7 +165,7 @@ def cmd_create_two_part(args):
         print("Screeners: OFF (--no-screeners)")
     else:
         screeners = get_recommended_filters(loose=args.loose)
-        label = "LOOSE (quality + language only)" if args.loose else "baseline (quality + language + background)"
+        label = "LOOSE (quality only)" if args.loose else "baseline (quality + ability)"
         print(f"Screeners: {label} ({len(screeners)} filters)")
         for f in screeners:
             fid = f.get('filter_id', '?')

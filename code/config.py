@@ -87,13 +87,13 @@ SURVEY_CONFIG = {
 
 EXPERIMENT_PARAMS = {
     # Payment (minor currency units; Prolific 'reward' field expects this)
-    # Account is GBP-denominated -- 100 = GBP 1.00, 150 = GBP 1.50.
-    'part1_reward_pence': 100,  # GBP 1.00
+    # Account is GBP-denominated -- 120 = GBP 1.20, 150 = GBP 1.50.
+    'part1_reward_pence': 120,  # GBP 1.20
     'part2_reward_pence': 150,  # GBP 1.50 base
     'bonus_max_pence': 100,     # GBP 1.00 max accuracy bonus
 
     # Estimated completion times (minutes) -- shown to participants on Prolific
-    'estimated_time_part1_min': 5,
+    'estimated_time_part1_min': 6,
     'estimated_time_part2_min': 10,
 
     # Default participant counts (within-subject design; no between-subject cells)
