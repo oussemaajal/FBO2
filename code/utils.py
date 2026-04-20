@@ -1,5 +1,5 @@
 """
-Utility functions for FBO (Fooled by Omission) project.
+Utility functions for FBO 2 (Selection Neglect and Strategic Non-Disclosure).
 
 Provides:
 - Prolific API client (create study, publish, monitor, approve, pay bonuses)
@@ -115,6 +115,8 @@ class ProlificClient:
         eligibility_requirements: list = None,
         participant_group_id: str = None,
         filters: list = None,
+        device_compatibility: list = None,
+        study_labels: list = None,
     ) -> dict:
         """Create a new Prolific study. Returns study dict with 'id'.
 
@@ -125,9 +127,25 @@ class ProlificClient:
             participant_group_id: Restrict to members of this group (allowlist).
             filters: Additional new-style filter dicts merged with the group
                 allowlist (country, approval rate, etc.).
+            device_compatibility: List of allowed devices. Accepted values:
+                "desktop", "tablet", "mobile". Defaults to ["desktop"] so
+                participants cannot take the study on phones/tablets.
+            study_labels: List of Prolific study-type tags. Defaults to
+                ["decision_making_task"] so the study shows up on participants'
+                dashboards under the decision-making category. Other valid
+                values: survey, writing_task, annotation, interview, other,
+                ai_annotation, ai_evaluation, ai_reasoning, ai_fact_checking,
+                ai_safety, ai_data_creation_text/audio/video/images, ai_other.
         """
+        if device_compatibility is None:
+            device_compatibility = ["desktop"]
+        if study_labels is None:
+            study_labels = ["decision_making_task"]
+
         if DRY_RUN:
             print(f"[DRY-RUN] Would create Prolific study: {name}")
+            print(f"    Devices: {device_compatibility}")
+            print(f"    Labels:  {study_labels}")
             if filters:
                 print(f"    Filters: {len(filters)} screener(s)")
             return {'id': 'dry-run-study-id', 'name': name, 'status': 'UNPUBLISHED'}
@@ -140,6 +158,8 @@ class ProlificClient:
             'total_available_places': total_available_places,
             'reward': reward,
             'estimated_completion_time': estimated_completion_time,
+            'device_compatibility': device_compatibility,
+            'study_labels': study_labels,
         }
 
         # Only include project if your account uses workspaces/projects

@@ -14,11 +14,15 @@ Usage:
     python RUN_PROLIFIC_STUDY.py list                      # List all studies
 
 Options:
-    --pilot       Use pilot sample sizes (20 per cell = 300 total)
+    --pilot       Use pilot sample size (EXPERIMENT_PARAMS['default_n_pilot'])
+    --n N         Override the default with an explicit participant count
+    --loose       Drop background screeners (education + subject)
+    --no-screeners Disable all pre-screens
     --dry-run     Preview without API calls
 """
 
 import sys
+import re
 import json
 import argparse
 from pathlib import Path
@@ -26,6 +30,44 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from config import PATHS, EXPERIMENT_PARAMS, PROLIFIC_CONFIG, SURVEY_CONFIG
 from utils import ProlificClient, set_dry_run
+
+
+def patch_part2_study_url(study2_id: str) -> bool:
+    """Rewrite `part2StudyUrl` in survey/js/config.js to match the given
+    Part 2 study ID. Returns True if the file was modified.
+
+    This eliminates the historical footgun where re-running create-two-part
+    left the browser pointing at a stale (deleted) study ID. See
+    code/02_collect/CLAUDE.md 'Environment Lessons' #4.
+    """
+    config_js = PATHS['survey'] / 'js' / 'config.js'
+    if not config_js.exists():
+        print(f"  [patch-url] survey/js/config.js not found at {config_js} -- skipping.")
+        return False
+
+    new_url = f"https://app.prolific.com/studies/{study2_id}/start"
+    text = config_js.read_text(encoding='utf-8')
+
+    # Match: part2StudyUrl: "https://app.prolific.com/studies/<ANY>/start"
+    # Preserve whatever quote style and trailing comma / whitespace is there.
+    pattern = re.compile(
+        r'(part2StudyUrl\s*:\s*["\'])([^"\']*)(["\'])'
+    )
+    match = pattern.search(text)
+    if not match:
+        print(f"  [patch-url] Could not locate `part2StudyUrl` in {config_js.name}.")
+        print(f"             Patch in manually: {new_url}")
+        return False
+
+    if match.group(2) == new_url:
+        print(f"  [patch-url] {config_js.name} already points at study {study2_id} -- no change.")
+        return False
+
+    new_text = pattern.sub(lambda m: f'{m.group(1)}{new_url}{m.group(3)}', text, count=1)
+    config_js.write_text(new_text, encoding='utf-8')
+    print(f"  [patch-url] Updated survey/js/config.js -> part2StudyUrl = {new_url}")
+    print(f"             Commit + push (main and gh-pages) to deploy.")
+    return True
 
 
 def ensure_dirs():
@@ -43,11 +85,6 @@ def ensure_dirs():
 #   https://docs.prolific.com/docs/api-docs/public/#tag/Studies/operation/CreateStudy
 # When a filter_id isn't recognized by Prolific the API throws 400 -- easy
 # to diagnose from the response body.
-
-# English-native countries (ISO codes that Prolific accepts as selected_values)
-ENGLISH_NATIVE_COUNTRIES = ["United Kingdom", "United States", "Canada",
-                            "Australia", "Ireland", "New Zealand"]
-
 
 def get_recommended_filters(loose: bool = False) -> list:
     """Return the recommended pre-screen filters for FBO 2.
@@ -248,6 +285,12 @@ def cmd_create_two_part(args):
     study2_id = study2.get('id', 'unknown')
     print(f"  Part 2 created: {study2_id}")
 
+    # Auto-patch survey/js/config.js with the new Part 2 study URL.
+    # Skipped in dry-run (study2_id is the placeholder 'dry-run-study-id').
+    if not args.dry_run and study2_id and study2_id != 'unknown':
+        print(f"\nStep 3b: Syncing Part 2 URL into survey/js/config.js...")
+        patch_part2_study_url(study2_id)
+
     # Save all IDs
     setup = {
         'mode': mode,
@@ -269,7 +312,8 @@ def cmd_create_two_part(args):
     print(f"  Setup saved:   {info_path}")
     print(f"\nNEXT STEPS:")
     print(f"  1. Set PROLIFIC_GROUP_ID = {group_id} in Google Apps Script properties")
-    print(f"  2. Deploy survey to GitHub Pages")
+    print(f"  2. survey/js/config.js was auto-patched with the new Part 2 URL.")
+    print(f"     Commit + push to main AND gh-pages, bump ?v= cache-buster in index.html.")
     print(f"  3. Publish Part 2 first, then Part 1:")
     print(f"     python RUN_PROLIFIC_STUDY.py publish {study2_id}")
     print(f"     python RUN_PROLIFIC_STUDY.py publish {study1_id}")

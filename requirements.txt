@@ -1,0 +1,24 @@
+# FBO 2 -- Selection Neglect and Strategic Non-Disclosure
+# Python package requirements for the Prolific orchestration + response
+# fetching code in code/.
+#
+# Generated 2026-04-20 from the versions installed on Oussema's machine.
+# Use >= rather than pinned == so reviewers on newer versions are not blocked.
+# If you need strict reproducibility, regenerate with `pip freeze` and pin.
+#
+# The survey itself (survey/js/) is browser-side JavaScript and has no
+# Python dependency.
+
+# Prolific REST client + Google Apps Script doGet reads
+requests>=2.31
+
+# Bonus payment CSV flow + response post-processing
+pandas>=2.0
+numpy>=1.24
+
+# Power-analysis scratchpad scripts (code/scratchpad/)
+scipy>=1.11
+matplotlib>=3.7
+
+# Large-CSV helpers in utils.py (query_csv / query_parquet)
+duckdb>=1.0

@@ -71,38 +71,28 @@ SURVEY_CONFIG = {
 
 # =============================================================================
 # EXPERIMENT PARAMETERS
+#
+# The live experiment is a WITHIN-subject, 9-trial, binary-design study.
+# Stimuli, trial compositions, and any per-trial calculations live in
+# survey/js/config.js (SURVEY_CONFIG) -- that is the single source of
+# truth for the browser-side experiment. This file only keeps the
+# Prolific-side parameters that the Python orchestration code uses.
+#
+# If you are looking for the old 15-cell / 3-type / 10-trial design
+# (SCALE_CONDITIONS, FORMAT_CONDITIONS, TYPE_DISTRIBUTIONS,
+#  TRIAL_PROPORTIONS, get_stimuli_for_scale), it was removed 2026-04-20
+# in favor of the binary design. See code/scratchpad/_archive_pre_binary/
+# for the retired power/stimulus analyses.
 # =============================================================================
 
-# Between-subject conditions: 5 scales x 3 formats = 15 cells
-SCALE_CONDITIONS = {
-    'small_low':    {'k': 3,   'N': 10,   'label': '(k=3, N=10)'},
-    'small_high':   {'k': 3,   'N': 100,  'label': '(k=3, N=100)'},
-    'small_vhigh':  {'k': 3,   'N': 1000, 'label': '(k=3, N=1000)'},
-    'large_high':   {'k': 30,  'N': 100,  'label': '(k=30, N=100)'},
-    'large_vhigh':  {'k': 300, 'N': 1000, 'label': '(k=300, N=1000)'},
-}
-
-FORMAT_CONDITIONS = ['list', 'chart_disclosed', 'chart_full']
-
 EXPERIMENT_PARAMS = {
-    'n_scale_conditions': 5,
-    'n_format_conditions': 3,
-    'n_cells': 15,
-    'n_trials_per_participant': 10,
-    'trial_attention_checks': 3,
+    # Payment (minor currency units; Prolific 'reward' field expects this)
+    # Account is GBP-denominated -- 100 = GBP 1.00, 150 = GBP 1.50.
+    'part1_reward_pence': 100,  # GBP 1.00
+    'part2_reward_pence': 150,  # GBP 1.50 base
+    'bonus_max_pence': 100,     # GBP 1.00 max accuracy bonus
 
-    # Sample sizes
-    'participants_per_cell_pilot': 20,
-    'participants_per_cell_full': 60,
-    'total_pilot': 300,   # 15 cells x 20
-    'total_full': 900,    # 15 cells x 60
-
-    # Payment (USD cents) -- matches current survey copy (v4.1)
-    # Prolific 'reward' field is in minor currency units; if the Prolific
-    # account is USD-denominated, 100 = $1.00. If GBP, 100 = 1.00 GBP.
-    'part1_reward_pence': 100,  # $1.00
-    'part2_reward_pence': 150,  # $1.50 base
-    'bonus_max_pence': 100,     # $1.00 max accuracy bonus
+    # Estimated completion times (minutes) -- shown to participants on Prolific
     'estimated_time_part1_min': 5,
     'estimated_time_part2_min': 10,
 
@@ -110,60 +100,9 @@ EXPERIMENT_PARAMS = {
     'default_n_pilot': 20,
     'default_n_full': 250,
 
-    # Completion codes
+    # Completion codes -- must match survey/js/config.js::SURVEY_CONFIG.prolific
+    # and RUN_PROLIFIC_STUDY.py's create_study() completion_codes argument.
     'pass_code_part1': 'PASS1SN',
     'fail_code_part1': 'FAIL1SN',
     'completion_code_part2': 'COMP2SN',
 }
-
-# =============================================================================
-# STIMULI: Transaction type distributions
-# =============================================================================
-
-TYPE_DISTRIBUTIONS = {
-    'non_fraud': {'Normal': 0.60, 'Unusual': 0.30, 'Highly_Unusual': 0.10},
-    'fraud':     {'Normal': 0.40, 'Unusual': 0.30, 'Highly_Unusual': 0.30},
-}
-
-PRIOR_FRAUD = 0.50
-
-# =============================================================================
-# TRIAL COMPOSITIONS (proportional, same across all scale conditions)
-# Naive P(F) computed from multinomial likelihood ratio
-# =============================================================================
-
-# Proportional compositions (fractions of k)
-TRIAL_PROPORTIONS = [
-    {'id': 't1',  'pN': 1.00, 'pU': 0.00, 'pHU': 0.00, 'naive_pf': 0.229},
-    {'id': 't2',  'pN': 0.67, 'pU': 0.33, 'pHU': 0.00, 'naive_pf': 0.308},
-    {'id': 't3',  'pN': 0.33, 'pU': 0.67, 'pHU': 0.00, 'naive_pf': 0.400},
-    {'id': 't4',  'pN': 0.00, 'pU': 1.00, 'pHU': 0.00, 'naive_pf': 0.500},
-    {'id': 't5',  'pN': 0.67, 'pU': 0.00, 'pHU': 0.33, 'naive_pf': 0.571},
-    {'id': 't6',  'pN': 0.33, 'pU': 0.33, 'pHU': 0.33, 'naive_pf': 0.667},
-    {'id': 't7',  'pN': 0.00, 'pU': 0.67, 'pHU': 0.33, 'naive_pf': 0.750},
-    {'id': 't8',  'pN': 0.33, 'pU': 0.00, 'pHU': 0.67, 'naive_pf': 0.857},
-    {'id': 't9',  'pN': 0.00, 'pU': 0.33, 'pHU': 0.67, 'naive_pf': 0.900},
-    {'id': 't10', 'pN': 0.00, 'pU': 0.00, 'pHU': 1.00, 'naive_pf': 0.964},
-]
-
-
-def get_stimuli_for_scale(scale_name):
-    """Generate the 10 trial stimuli for a given scale condition."""
-    params = SCALE_CONDITIONS[scale_name]
-    k, N = params['k'], params['N']
-    stimuli = []
-    for t in TRIAL_PROPORTIONS:
-        nN = round(t['pN'] * k)
-        nU = round(t['pU'] * k)
-        nHU = k - nN - nU  # ensure they sum to k
-        stimuli.append({
-            'id': t['id'],
-            'k': k,
-            'N': N,
-            'nNormal': nN,
-            'nUnusual': nU,
-            'nHU': nHU,
-            'hidden': N - k,
-            'naive_pf': t['naive_pf'],
-        })
-    return stimuli

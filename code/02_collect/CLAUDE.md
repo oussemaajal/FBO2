@@ -18,7 +18,7 @@ FBO 2/
     02_collect/
       CLAUDE.md                # ← this file
       RUN_PROLIFIC_STUDY.py    # CLI for create/publish/approve/bonus
-      FETCH_SURVEY_RESPONSES.py
+      FETCH_RESPONSES.py       # CLI to pull responses from Google Sheet (token-gated)
   survey/
     js/config.js               # Completion codes + part2StudyUrl
     backend/
