@@ -87,10 +87,11 @@ SURVEY_CONFIG = {
 
 EXPERIMENT_PARAMS = {
     # Payment (minor currency units; Prolific 'reward' field expects this)
-    # Account is GBP-denominated -- 100 = GBP 1.00, 150 = GBP 1.50.
+    # Account is GBP-denominated -- 100 = GBP 1.00, 200 = GBP 2.00.
     'part1_reward_pence': 100,  # GBP 1.00
-    'part2_reward_pence': 150,  # GBP 1.50 base
+    'part2_reward_pence': 200,  # GBP 2.00 base
     'bonus_max_pence': 100,     # GBP 1.00 max accuracy bonus
+    'bonus_per_range_penalty_pence': 10,  # GBP 0.10 off per bucket away from Bayesian range
 
     # Estimated completion times (minutes) -- shown to participants on Prolific
     'estimated_time_part1_min': 6,

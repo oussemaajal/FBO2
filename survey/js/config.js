@@ -50,7 +50,7 @@ var SURVEY_CONFIG = {
       fail1:  "https://app.prolific.com/submissions/complete?cc=FAIL1SN",
       comp2:  "https://app.prolific.com/submissions/complete?cc=COMP2SN"
     },
-    part2StudyUrl: "https://app.prolific.com/studies/69e60b949a79a9b6ef7fb91f/start"
+    part2StudyUrl: "https://app.prolific.com/studies/69e647e48ce23f02a648ffd6/start"
   },
 
   // -- Type Distributions ---------------------------------------------------
@@ -64,11 +64,17 @@ var SURVEY_CONFIG = {
   trialAttentionCheckCount: 3,
 
   // -- Bonus Parameters -----------------------------------------------------
+  // Range-bucket scoring: one random trial is selected; participant's chosen
+  // 10-percentage-point range is compared to the range containing the
+  // Bayesian posterior. Bonus = max(0, maxBonus - perBucketPenalty * |userBucket - bayesBucket|).
+  // With 10 buckets (0-10%, 10-20%, ..., 90-100%), max distance is 9,
+  // so the worst-case bonus is maxBonus - 9 * perBucketPenalty = $0.10.
   bonus: {
     enabled: true,
     currency: "USD",
-    baseAmount: 1.50,
-    penaltyMultiplier: 3.00,
+    maxBonus: 1.00,
+    perBucketPenalty: 0.10,
+    bucketSize: 10,
     floor: 0.00,
     selectionMethod: "random_trial"
   },
@@ -112,7 +118,7 @@ var SURVEY_CONFIG = {
 
 
   // ====================================================================
-  //  PART 1 PAGES -- Instructions + Comprehension (~5 min, USD 1.00)
+  //  PART 1 PAGES -- Instructions + Comprehension (~6 min, USD 1.00)
   // ====================================================================
 
   part1Pages: [
@@ -124,8 +130,8 @@ var SURVEY_CONFIG = {
       title: "Welcome",
       subtitle: "",
       body: "<p>Help us study decision-making under uncertainty.</p>" +
-            "<p>Part 1 takes ~<strong>5 minutes</strong> for <strong>$1.00</strong>. " +
-            "Pass the quiz to unlock Part 2 (~10 min, <strong>$1.50</strong> + up to <strong>$1.00</strong> bonus).</p>",
+            "<p>Part 1 takes ~<strong>6 minutes</strong> for <strong>$1.00</strong>. " +
+            "Pass the quiz to unlock Part 2 (~10 min, <strong>$2.00</strong> + up to <strong>$1.00</strong> bonus).</p>",
       buttonText: "Start"
     },
 
@@ -136,9 +142,9 @@ var SURVEY_CONFIG = {
       title: "Consent",
       body: "<p>You are being invited to participate in a research study about decision-making.</p>" +
             "<p><strong>What you will do:</strong> Learn the decision-making task and answer a short quiz.</p>" +
-            "<p><strong>Time:</strong> ~5 minutes.</p>" +
+            "<p><strong>Time:</strong> ~6 minutes.</p>" +
             "<p><strong>Pay:</strong> $1.00 for this part. Pass the quiz and you will be invited " +
-            "to Part 2 (~10 min, $1.50 base + up to $1.00 accuracy bonus).</p>" +
+            "to Part 2 (~10 min, $2.00 base + up to $1.00 accuracy bonus).</p>" +
             "<p><strong>Risks:</strong> None beyond everyday life.</p>" +
             "<p><strong>Confidentiality:</strong> Anonymous. We collect your Prolific ID only for payment.</p>" +
             "<p><strong>Voluntary:</strong> You may withdraw at any time by closing this window.</p>",
@@ -647,12 +653,12 @@ var SURVEY_CONFIG = {
       body:
         "<p style='text-align:center; font-size:18px; margin-bottom:8px;'>" +
           "For each firm, you will see <strong>4 transactions</strong> " +
-          "and assign a <strong>probability</strong> that the firm is fraudulent." +
+          "and assign a <strong>probability range</strong> that the firm is fraudulent." +
         "</p>" +
         "<p style='text-align:center; font-size:16px; color:#475569; margin-bottom:4px;'>" +
-          "<strong>Try the slider:</strong> move it to any value <em>other than 50%</em> to continue." +
+          "<strong>Try the slider:</strong> drag it to any range to continue." +
         "</p>",
-      hint: "The slider moves in 10% increments. You must move it away from 50% to continue.",
+      hint: "The slider snaps to 10-percentage-point ranges (e.g., 20% to 30%). Drag it to any range to continue.",
       minTimeSeconds: 4
     },
 
@@ -956,9 +962,14 @@ var SURVEY_CONFIG = {
       id: "p1_comprehension_result",
       type: "completion",
       title: "You Passed!",
-      body: "<p>You understand the task.</p>" +
+      body: "<p>You understand the task. You have been <strong>invited to Part 2</strong>.</p>" +
             "<p><strong>Part 2</strong> is a separate Prolific study (~10 min, " +
-            "$1.50 base + up to $1.00 accuracy bonus).</p>"
+            "$2.00 base + up to $1.00 accuracy bonus based on accuracy).</p>" +
+            "<p style='margin-top:14px;'><strong>Two steps to get paid:</strong></p>" +
+            "<ol style='margin-left:20px;'>" +
+            "<li>Copy the completion code below and submit it on Prolific to get paid for Part 1.</li>" +
+            "<li>Then click <strong>Continue to Part 2</strong> to start the second study right away.</li>" +
+            "</ol>"
     },
 
     // -- Quiz fail: offer retake or exit --
@@ -994,7 +1005,7 @@ var SURVEY_CONFIG = {
       body: "<p>This part takes about <strong>10 minutes</strong>. " +
             "As a government auditor, you will review <strong>9 firms</strong> " +
             "and assign each a probability of fraud.</p>" +
-            "<p>Pay: <strong>$1.50</strong> base + up to <strong>$1.00</strong> " +
+            "<p>Pay: <strong>$2.00</strong> base + up to <strong>$1.00</strong> " +
             "based on how <strong>accurate</strong> your probabilities are.</p>",
       buttonText: "Continue"
     },
@@ -1164,8 +1175,8 @@ var SURVEY_CONFIG = {
       title: "Welcome",
       subtitle: "Decision Making Study",
       body: "<p>Help us study decision-making under uncertainty. " +
-            "This takes about <strong>15 minutes</strong>.</p>" +
-            "<p>Pay: <strong>$2.50</strong> base + up to <strong>$1.00</strong> accuracy bonus.</p>" +
+            "This takes about <strong>10 minutes</strong>.</p>" +
+            "<p>Pay: <strong>$2.00</strong> base + up to <strong>$1.00</strong> accuracy bonus.</p>" +
             "<p>Please use a <strong>desktop or laptop</strong> for the best experience.</p>",
       buttonText: "Begin"
     },
@@ -1178,8 +1189,8 @@ var SURVEY_CONFIG = {
       body: "<p>You are being invited to participate in a research study about decision-making.</p>" +
             "<p><strong>What you will do:</strong> Learn the decision-making task, pass a quiz, " +
             "then evaluate 9 firms.</p>" +
-            "<p><strong>Time:</strong> ~15 minutes.</p>" +
-            "<p><strong>Pay:</strong> $2.50 base + up to $1.00 accuracy bonus.</p>" +
+            "<p><strong>Time:</strong> ~10 minutes.</p>" +
+            "<p><strong>Pay:</strong> $2.00 base + up to $1.00 accuracy bonus.</p>" +
             "<p><strong>Risks:</strong> None beyond everyday life.</p>" +
             "<p><strong>Confidentiality:</strong> Anonymous. Prolific ID collected only for payment.</p>" +
             "<p><strong>Voluntary:</strong> Withdraw at any time by closing this window.</p>",
@@ -1223,8 +1234,8 @@ var SURVEY_CONFIG = {
       type: "slider_demo",
       title: "Try the Slider",
       body: "<p>Here is how you will report your fraud estimate. " +
-            "Drag the slider to any value to continue.</p>",
-      hint: "The slider moves in 10% increments.",
+            "Drag the slider to any range to continue.</p>",
+      hint: "The slider snaps to 10-percentage-point ranges (e.g., 30% to 40%).",
       minTimeSeconds: 4
     },
 
