@@ -314,6 +314,7 @@ body {
 
 .slider-input {
   flex: 1;
+  width: 100%;
   -webkit-appearance: none;
   appearance: none;
   height: 8px;
@@ -321,6 +322,45 @@ body {
   background: var(--color-border);
   outline: none;
   cursor: pointer;
+}
+
+/* ----- Range-band overlay (visualizes the 10-pp bucket) ---------- */
+/* Wrapper reserves a 10% phantom gutter on the right so the band can
+   extend past the thumb's max position (90%) to the end of the track. */
+.slider-range-wrap {
+  position: relative;
+  flex: 1;
+  padding-right: 10%;
+  box-sizing: border-box;
+  /* Give the wrapper a defined height so the absolute band aligns
+     with the slider track regardless of surrounding layout. */
+  height: 28px;
+  display: flex;
+  align-items: center;
+}
+
+.slider-range-wrap .slider-input {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  width: 100%;
+}
+
+.slider-range-band {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 14px;
+  width: 10%;
+  background: linear-gradient(90deg,
+      rgba(67, 97, 238, 0.55) 0%,
+      rgba(67, 97, 238, 0.35) 100%);
+  border: 1px solid rgba(67, 97, 238, 0.55);
+  border-radius: 7px;
+  pointer-events: none;
+  transition: left 0.15s ease;
+  z-index: 1;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
 }
 
 .slider-input::-webkit-slider-runnable-track {
@@ -2770,5 +2810,195 @@ body {
 .quiz-fail-score-denom {
   color: #94a3b8;
   font-weight: 400;
+}
+
+/* ================================================================== */
+/*  FBO2 -- Trial redesign: firm-size banner + disclosed-transaction  */
+/*          card grid + bonus-formula explainer                        */
+/* ================================================================== */
+
+/* --- Firm size banner (prominent, sits above the transactions card) -- */
+.firm-size-banner {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 24px;
+  margin-bottom: 16px;
+  border-radius: var(--radius-md);
+  border: 2px solid #e2e8f0;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.firm-size-banner-main {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  color: #0f172a;
+}
+
+.firm-size-banner-sub {
+  font-size: 16px;
+  font-weight: 600;
+  color: #475569;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Size-specific accent border/fill so small vs. medium vs. large is
+   visually distinguishable at a glance (matches the Part 1 firm-size
+   badge palette). */
+.firm-size-banner.firm-size-small {
+  border-color: #38bdf8;
+  background: linear-gradient(90deg, #f0f9ff 0%, #ffffff 60%);
+}
+.firm-size-banner.firm-size-small .firm-size-banner-main { color: #0369a1; }
+
+.firm-size-banner.firm-size-medium {
+  border-color: #f59e0b;
+  background: linear-gradient(90deg, #fffbeb 0%, #ffffff 60%);
+}
+.firm-size-banner.firm-size-medium .firm-size-banner-main { color: #b45309; }
+
+.firm-size-banner.firm-size-large {
+  border-color: #ef4444;
+  background: linear-gradient(90deg, #fef2f2 0%, #ffffff 60%);
+}
+.firm-size-banner.firm-size-large .firm-size-banner-main { color: #b91c1c; }
+
+/* --- Disclosed-transactions card grid (row of N/F cards) ------------- */
+.disclosed-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  padding: 4px 0 10px;
+}
+
+/* Keep transaction-doc semantics but upsize the cards inside the trial
+   panel so they are visually prominent (roughly matches the "example"
+   grid in the Part 1 explanation pages). */
+.transaction-doc.disclosed-card {
+  width: 90px;
+  height: 112px;
+  font-size: 52px;
+  border-radius: 10px;
+  border-width: 4px;
+  flex-shrink: 0;
+}
+
+.disclosed-legend {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #e2e8f0;
+  font-size: 14px;
+  color: #475569;
+}
+
+.disclosed-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.transaction-doc-mini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 30px;
+  font-size: 14px;
+  font-weight: 800;
+  border-radius: 4px;
+  border: 2px solid #cbd5e1;
+}
+.transaction-doc-mini.normal {
+  border-color: #22c55e;
+  background: #f0fdf4;
+  color: #15803d;
+}
+.transaction-doc-mini.flagged {
+  border-color: #ef4444;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+/* Mobile / narrow viewports: shrink the cards so long trials (dN + nFlagged
+   up to 4 cards) still fit without wrapping strangely. */
+@media (max-width: 720px) {
+  .transaction-doc.disclosed-card {
+    width: 68px;
+    height: 86px;
+    font-size: 40px;
+  }
+  .disclosed-cards { gap: 10px; }
+  .firm-size-banner-main { font-size: 20px; }
+  .firm-size-banner-sub { font-size: 14px; }
+}
+
+/* --- Bonus-formula explainer (Part 1 "Your Bonus" page) -------------- */
+.bonus-formula-card {
+  max-width: 640px;
+  margin: 0 auto 18px;
+  padding: 18px 22px;
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  border-radius: var(--radius-md);
+}
+
+.bonus-formula-line {
+  text-align: center;
+  font-size: 16px;
+  color: #0f172a;
+  margin-bottom: 14px;
+}
+
+.bonus-formula-table {
+  display: grid;
+  gap: 6px;
+}
+
+.bonus-formula-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 8px 14px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+.bonus-formula-amt {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #0f172a;
+}
+.bonus-formula-amt.good { color: #15803d; }
+.bonus-formula-amt.bad  { color: #b91c1c; }
+
+.bonus-example-card {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px 22px;
+  background: #eff6ff;
+  border: 1.5px solid #93c5fd;
+  border-radius: var(--radius-md);
+  color: #1e3a8a;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.bonus-example-title {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #1e40af;
+  margin-bottom: 8px;
 }
 
