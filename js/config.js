@@ -1,32 +1,28 @@
 /* ==========================================================================
-   FBO 2 (Selection Neglect) -- Experiment Configuration v3.2
+   FBO 2 (Selection Neglect) -- Experiment Configuration v5.0
 
-   THIS IS THE ONLY FILE YOU NEED TO EDIT to configure your experiment.
-   Everything else (engine, styling, bot detection, storage) is generic.
+   Structure (matches docs/survey_script.md):
+     ACT I    -- Consent & Overview           (5 pages)
+     ACT II   -- How to Read a Company        (13 pages, incl. attention
+                                                 check after 50/50 anchor)
+     ACT III  -- The Manager                  (10 pages)
+     ACT IV   -- Stakes & Bonus               (11 pages, incl. interactive
+                                                 try-it pages)
+     ACT V    -- 13-question comprehension quiz
+     ACT VI   -- 30 scored trials in 2 blocks:
+                 Block 1: 15 companies (K=4, N in {10,20,30}, k in {0..4})
+                 Block 2: 15 companies (K=8, N in {10,20,30}, k in {0,1,4,7,8})
+                 [rule change between blocks: K=4 -> K=8]
+     ACT VII  -- Demographics + debrief
 
-   Design: Purely within-subject. Every participant sees all 9 trials.
-     9 trials = 3 (N) x 1 (D) x 3 (d_N condition)
-     N   = total transactions: {10, 20, 50}  (Small, Medium, Large firm)
-     D   = disclosed transactions: 4 (fixed)
-     d_N = Normal among disclosed: {0, D-1=3, D=4}
-
-   Transaction types (2 only):
-     Normal  (green doc)  -- more common in clean firms
-     Flagged (red doc)    -- more common in fraudulent firms
-
-   Type distributions:
-     Clean:      50% Normal, 50% Flagged
-     Fraudulent: 40% Normal, 60% Flagged
-
-   Prior: P(fraud) = 20%
-
-   Per trial DVs:
-     1. Fraud probability (0-100% slider)
-     2. Confidence (1-7 Likert)
-
-   Page types available:
-   - welcome, consent, instructions, comprehension, completion
-   - trial_block, transition, questionnaire, debrief
+   Bonus rule:
+     base = $3.00, guaranteed.
+     per company:
+       within 10 percentage points of truth  :  +10¢ answer  +  bet_cents (win bet)
+       outside                                :   0¢         -  bet_cents (lose bet)
+     bet in [0,10], default 0.  per company range: [-10¢, +20¢].
+     total bonus = sum over all 30 companies, floored at $0, capped at $6.00.
+     base pay NEVER reduced by lost bets.
    ========================================================================== */
 
 var SURVEY_CONFIG = {
@@ -34,317 +30,2234 @@ var SURVEY_CONFIG = {
   // -- Study Metadata -------------------------------------------------------
   study: {
     title: "Decision Making Study",
-    version: "4.2.0",
-    dataEndpoint: "https://script.google.com/macros/s/AKfycbzRoZbHXjC_M_bvjMVcqMl8jdSdE3_80qV4srsAFB-JPLrAvBUuBN8SXr-9Fn6TBPYSEg/exec"
+    version: "5.0.0",
+    dataEndpoint: "https://script.google.com/macros/s/AKfycbwUkl3FnttwsmkiQ0jRD_UOgyYSCwVERR2_2oTre_ib50bltFzTMk3TPuQdzefWy-OX/exec"
   },
 
   // -- Prolific Integration -------------------------------------------------
+  // Single-study design (v4.x). No more two-part + participant-group gate.
+  // Every participant who finishes the survey hits the same completion code
+  // and the same debrief page.
   prolific: {
-    completionCodes: {
-      pass1:  "PASS1SN",
-      fail1:  "FAIL1SN",
-      comp2:  "COMP2SN"
-    },
-    completionUrls: {
-      pass1:  "https://app.prolific.com/submissions/complete?cc=PASS1SN",
-      fail1:  "https://app.prolific.com/submissions/complete?cc=FAIL1SN",
-      comp2:  "https://app.prolific.com/submissions/complete?cc=COMP2SN"
-    },
-    part2StudyUrl: "https://app.prolific.com/studies/69e647e48ce23f02a648ffd6/start"
+    completionCode: "COMP2SN",
+    completionUrl: "https://app.prolific.com/submissions/complete?cc=COMP2SN"
   },
 
-  // -- Type Distributions ---------------------------------------------------
-  typeDistributions: {
-    clean:      { normal: 0.50, flagged: 0.50 },
-    fraudulent: { normal: 0.40, flagged: 0.60 },
-    prior: 0.20
-  },
-
-  // -- Trial Attention Checks -----------------------------------------------
+  // -- Attention check count during trials ---------------------------------
   trialAttentionCheckCount: 3,
 
-  // -- Bonus Parameters -----------------------------------------------------
-  // Range-bucket scoring: one random trial is selected; participant's chosen
-  // 10-percentage-point range is compared to the range containing the
-  // Bayesian posterior. Bonus = max(0, maxBonus - perBucketPenalty * |userBucket - bayesBucket|).
-  // With 10 buckets (0-10%, 10-20%, ..., 90-100%), max distance is 9,
-  // so the worst-case bonus is maxBonus - 9 * perBucketPenalty = $0.20.
+  // -- Bonus parameters -----------------------------------------------------
   bonus: {
     enabled: true,
     currency: "USD",
-    maxBonus: 2.00,
-    perBucketPenalty: 0.20,
-    bucketSize: 10,
-    floor: 0.00,
-    selectionMethod: "random_trial"
+    fixedBase: 3.00,          // guaranteed base pay (untouched by penalties)
+    answerCents: 10,          // 10¢ if estimate is within threshold
+    betMaxCents: 10,          // bet slider 0..10 cents
+    accuracyThreshold: 0.10,  // "within 10 percentage points"
+    maxBonus: 6.00,           // 30 trials × 20¢ max
+    floor: 0.00,              // total bonus floored at $0 (base untouched)
+    selectionMethod: "sum_all_trials"
   },
 
-  // -- Stimuli: 9 trials (3 N x 1 D x 3 d_N) -----------------------------
+  // -- Stimuli --------------------------------------------------------------
   //
-  // Each trial specifies:
-  //   N        = total transactions (10=Small, 20=Medium, 50=Large)
-  //   D        = number disclosed by manager (always 4)
-  //   dN       = number of Normal among disclosed
-  //   nFlagged = D - dN (number of Flagged among disclosed)
-  //   hidden   = N - D (undisclosed transactions)
+  // Each trial:
+  //   id, phase, K, k, N, nClean=K-k, hidden=N-K,
+  //   thetaTrue  = (k + N - K)/N       (payment target under unraveling)
+  //   thetaSN    = k / K               (selection-neglect prediction)
+  //   thetaNV    = (k + 0.5*(N-K))/N   (naive/mean-reverting prediction)
+  //   thetaRB    = thetaTrue           (rational benchmark)
   //
-  // Posteriors computed assuming strategic disclosure (manager shows
-  // best-looking transactions first):
-  //   bayesPosterior = Bayesian (accounts for selection + undisclosed)
-  //   snPosterior    = Selection Neglect (ignores undisclosed entirely)
-  //   mrPosterior    = Mean-Reverting (imputes unconditional mean for undisclosed)
+  // Legacy aliases kept for engine.js plumbing:
+  //   D = K, dN = K-k, nFlagged = k,
+  //   bayesPosterior = thetaRB, snPosterior = thetaSN, mrPosterior = thetaNV
   //
-  // d_N conditions:
-  //   0   = all disclosed are Flagged (worst case for manager)
-  //   D-1 = 3 Normal, 1 Flagged (intermediate)
-  //   D   = all disclosed are Normal (best case for manager)
-
+  // phase=1: K=4 (N in {10,20,30}, k in {0,1,2,3,4})         [15 trials]
+  // phase=2: K=8 (N in {10,20,30}, k in {0,1,4,7,8})         [15 trials]
+  // 5 disclosure compositions per K: all C, k-1 C & 1 S, half/half,
+  //   1 C & k-1 S, all S.
   stimuli: [
-    // ── N=10, D=4 ──────────────────────────────────────────────
-    { id: "t01", N: 10, D: 4, dN: 0, nFlagged: 4, hidden:  6, bayesPosterior: 0.6075, snPosterior: 0.3414, mrPosterior: 0.3250 },
-    { id: "t02", N: 10, D: 4, dN: 3, nFlagged: 1, hidden:  6, bayesPosterior: 0.3144, snPosterior: 0.1331, mrPosterior: 0.1249 },
-    { id: "t03", N: 10, D: 4, dN: 4, nFlagged: 0, hidden:  6, bayesPosterior: 0.1572, snPosterior: 0.0929, mrPosterior: 0.0869 },
+    // ── Phase 1: K=4, N in {10,20,30}, k in {0,1,2,3,4} ─────────
+    { id: "p1t01", phase: 1, K: 4, k: 0, N: 10, nClean: 4, hidden:  6, thetaTrue: 0.600, thetaSN: 0.000, thetaNV: 0.300, thetaRB: 0.600,
+      D: 4, dN: 4, nFlagged: 0, bayesPosterior: 0.600, snPosterior: 0.000, mrPosterior: 0.300 },
+    { id: "p1t02", phase: 1, K: 4, k: 1, N: 10, nClean: 3, hidden:  6, thetaTrue: 0.700, thetaSN: 0.250, thetaNV: 0.400, thetaRB: 0.700,
+      D: 4, dN: 3, nFlagged: 1, bayesPosterior: 0.700, snPosterior: 0.250, mrPosterior: 0.400 },
+    { id: "p1t03", phase: 1, K: 4, k: 2, N: 10, nClean: 2, hidden:  6, thetaTrue: 0.800, thetaSN: 0.500, thetaNV: 0.500, thetaRB: 0.800,
+      D: 4, dN: 2, nFlagged: 2, bayesPosterior: 0.800, snPosterior: 0.500, mrPosterior: 0.500 },
+    { id: "p1t04", phase: 1, K: 4, k: 3, N: 10, nClean: 1, hidden:  6, thetaTrue: 0.900, thetaSN: 0.750, thetaNV: 0.600, thetaRB: 0.900,
+      D: 4, dN: 1, nFlagged: 3, bayesPosterior: 0.900, snPosterior: 0.750, mrPosterior: 0.600 },
+    { id: "p1t05", phase: 1, K: 4, k: 4, N: 10, nClean: 0, hidden:  6, thetaTrue: 1.000, thetaSN: 1.000, thetaNV: 0.700, thetaRB: 1.000,
+      D: 4, dN: 0, nFlagged: 4, bayesPosterior: 1.000, snPosterior: 1.000, mrPosterior: 0.700 },
+    { id: "p1t06", phase: 1, K: 4, k: 0, N: 20, nClean: 4, hidden: 16, thetaTrue: 0.800, thetaSN: 0.000, thetaNV: 0.400, thetaRB: 0.800,
+      D: 4, dN: 4, nFlagged: 0, bayesPosterior: 0.800, snPosterior: 0.000, mrPosterior: 0.400 },
+    { id: "p1t07", phase: 1, K: 4, k: 1, N: 20, nClean: 3, hidden: 16, thetaTrue: 0.850, thetaSN: 0.250, thetaNV: 0.450, thetaRB: 0.850,
+      D: 4, dN: 3, nFlagged: 1, bayesPosterior: 0.850, snPosterior: 0.250, mrPosterior: 0.450 },
+    { id: "p1t08", phase: 1, K: 4, k: 2, N: 20, nClean: 2, hidden: 16, thetaTrue: 0.900, thetaSN: 0.500, thetaNV: 0.500, thetaRB: 0.900,
+      D: 4, dN: 2, nFlagged: 2, bayesPosterior: 0.900, snPosterior: 0.500, mrPosterior: 0.500 },
+    { id: "p1t09", phase: 1, K: 4, k: 3, N: 20, nClean: 1, hidden: 16, thetaTrue: 0.950, thetaSN: 0.750, thetaNV: 0.550, thetaRB: 0.950,
+      D: 4, dN: 1, nFlagged: 3, bayesPosterior: 0.950, snPosterior: 0.750, mrPosterior: 0.550 },
+    { id: "p1t10", phase: 1, K: 4, k: 4, N: 20, nClean: 0, hidden: 16, thetaTrue: 1.000, thetaSN: 1.000, thetaNV: 0.600, thetaRB: 1.000,
+      D: 4, dN: 0, nFlagged: 4, bayesPosterior: 1.000, snPosterior: 1.000, mrPosterior: 0.600 },
+    { id: "p1t11", phase: 1, K: 4, k: 0, N: 30, nClean: 4, hidden: 26, thetaTrue: 0.867, thetaSN: 0.000, thetaNV: 0.433, thetaRB: 0.867,
+      D: 4, dN: 4, nFlagged: 0, bayesPosterior: 0.867, snPosterior: 0.000, mrPosterior: 0.433 },
+    { id: "p1t12", phase: 1, K: 4, k: 1, N: 30, nClean: 3, hidden: 26, thetaTrue: 0.900, thetaSN: 0.250, thetaNV: 0.467, thetaRB: 0.900,
+      D: 4, dN: 3, nFlagged: 1, bayesPosterior: 0.900, snPosterior: 0.250, mrPosterior: 0.467 },
+    { id: "p1t13", phase: 1, K: 4, k: 2, N: 30, nClean: 2, hidden: 26, thetaTrue: 0.933, thetaSN: 0.500, thetaNV: 0.500, thetaRB: 0.933,
+      D: 4, dN: 2, nFlagged: 2, bayesPosterior: 0.933, snPosterior: 0.500, mrPosterior: 0.500 },
+    { id: "p1t14", phase: 1, K: 4, k: 3, N: 30, nClean: 1, hidden: 26, thetaTrue: 0.967, thetaSN: 0.750, thetaNV: 0.533, thetaRB: 0.967,
+      D: 4, dN: 1, nFlagged: 3, bayesPosterior: 0.967, snPosterior: 0.750, mrPosterior: 0.533 },
+    { id: "p1t15", phase: 1, K: 4, k: 4, N: 30, nClean: 0, hidden: 26, thetaTrue: 1.000, thetaSN: 1.000, thetaNV: 0.567, thetaRB: 1.000,
+      D: 4, dN: 0, nFlagged: 4, bayesPosterior: 1.000, snPosterior: 1.000, mrPosterior: 0.567 },
 
-    // ── N=20, D=4 ──────────────────────────────────────────────
-    { id: "t04", N: 20, D: 4, dN: 0, nFlagged: 4, hidden: 16, bayesPosterior: 0.9055, snPosterior: 0.3414, mrPosterior: 0.2986 },
-    { id: "t05", N: 20, D: 4, dN: 3, nFlagged: 1, hidden: 16, bayesPosterior: 0.7396, snPosterior: 0.1331, mrPosterior: 0.1120 },
-    { id: "t06", N: 20, D: 4, dN: 4, nFlagged: 0, hidden: 16, bayesPosterior: 0.1976, snPosterior: 0.0929, mrPosterior: 0.0776 },
-
-    // ── N=50, D=4 ──────────────────────────────────────────────
-    { id: "t07", N: 50, D: 4, dN: 0, nFlagged: 4, hidden: 46, bayesPosterior: 0.9996, snPosterior: 0.3414, mrPosterior: 0.2274 },
-    { id: "t08", N: 50, D: 4, dN: 3, nFlagged: 1, hidden: 46, bayesPosterior: 0.9985, snPosterior: 0.1331, mrPosterior: 0.0802 },
-    { id: "t09", N: 50, D: 4, dN: 4, nFlagged: 0, hidden: 46, bayesPosterior: 0.2000, snPosterior: 0.0929, mrPosterior: 0.0550 }
+    // ── Phase 2: K=8, N in {10,20,30}, k in {0,1,4,7,8} ─────────
+    { id: "p2t01", phase: 2, K: 8, k: 0, N: 10, nClean: 8, hidden:  2, thetaTrue: 0.200, thetaSN: 0.000, thetaNV: 0.100, thetaRB: 0.200,
+      D: 8, dN: 8, nFlagged: 0, bayesPosterior: 0.200, snPosterior: 0.000, mrPosterior: 0.100 },
+    { id: "p2t02", phase: 2, K: 8, k: 1, N: 10, nClean: 7, hidden:  2, thetaTrue: 0.300, thetaSN: 0.125, thetaNV: 0.200, thetaRB: 0.300,
+      D: 8, dN: 7, nFlagged: 1, bayesPosterior: 0.300, snPosterior: 0.125, mrPosterior: 0.200 },
+    { id: "p2t03", phase: 2, K: 8, k: 4, N: 10, nClean: 4, hidden:  2, thetaTrue: 0.600, thetaSN: 0.500, thetaNV: 0.500, thetaRB: 0.600,
+      D: 8, dN: 4, nFlagged: 4, bayesPosterior: 0.600, snPosterior: 0.500, mrPosterior: 0.500 },
+    { id: "p2t04", phase: 2, K: 8, k: 7, N: 10, nClean: 1, hidden:  2, thetaTrue: 0.900, thetaSN: 0.875, thetaNV: 0.800, thetaRB: 0.900,
+      D: 8, dN: 1, nFlagged: 7, bayesPosterior: 0.900, snPosterior: 0.875, mrPosterior: 0.800 },
+    { id: "p2t05", phase: 2, K: 8, k: 8, N: 10, nClean: 0, hidden:  2, thetaTrue: 1.000, thetaSN: 1.000, thetaNV: 0.900, thetaRB: 1.000,
+      D: 8, dN: 0, nFlagged: 8, bayesPosterior: 1.000, snPosterior: 1.000, mrPosterior: 0.900 },
+    { id: "p2t06", phase: 2, K: 8, k: 0, N: 20, nClean: 8, hidden: 12, thetaTrue: 0.600, thetaSN: 0.000, thetaNV: 0.300, thetaRB: 0.600,
+      D: 8, dN: 8, nFlagged: 0, bayesPosterior: 0.600, snPosterior: 0.000, mrPosterior: 0.300 },
+    { id: "p2t07", phase: 2, K: 8, k: 1, N: 20, nClean: 7, hidden: 12, thetaTrue: 0.650, thetaSN: 0.125, thetaNV: 0.350, thetaRB: 0.650,
+      D: 8, dN: 7, nFlagged: 1, bayesPosterior: 0.650, snPosterior: 0.125, mrPosterior: 0.350 },
+    { id: "p2t08", phase: 2, K: 8, k: 4, N: 20, nClean: 4, hidden: 12, thetaTrue: 0.800, thetaSN: 0.500, thetaNV: 0.500, thetaRB: 0.800,
+      D: 8, dN: 4, nFlagged: 4, bayesPosterior: 0.800, snPosterior: 0.500, mrPosterior: 0.500 },
+    { id: "p2t09", phase: 2, K: 8, k: 7, N: 20, nClean: 1, hidden: 12, thetaTrue: 0.950, thetaSN: 0.875, thetaNV: 0.650, thetaRB: 0.950,
+      D: 8, dN: 1, nFlagged: 7, bayesPosterior: 0.950, snPosterior: 0.875, mrPosterior: 0.650 },
+    { id: "p2t10", phase: 2, K: 8, k: 8, N: 20, nClean: 0, hidden: 12, thetaTrue: 1.000, thetaSN: 1.000, thetaNV: 0.700, thetaRB: 1.000,
+      D: 8, dN: 0, nFlagged: 8, bayesPosterior: 1.000, snPosterior: 1.000, mrPosterior: 0.700 },
+    { id: "p2t11", phase: 2, K: 8, k: 0, N: 30, nClean: 8, hidden: 22, thetaTrue: 0.733, thetaSN: 0.000, thetaNV: 0.367, thetaRB: 0.733,
+      D: 8, dN: 8, nFlagged: 0, bayesPosterior: 0.733, snPosterior: 0.000, mrPosterior: 0.367 },
+    { id: "p2t12", phase: 2, K: 8, k: 1, N: 30, nClean: 7, hidden: 22, thetaTrue: 0.767, thetaSN: 0.125, thetaNV: 0.400, thetaRB: 0.767,
+      D: 8, dN: 7, nFlagged: 1, bayesPosterior: 0.767, snPosterior: 0.125, mrPosterior: 0.400 },
+    { id: "p2t13", phase: 2, K: 8, k: 4, N: 30, nClean: 4, hidden: 22, thetaTrue: 0.867, thetaSN: 0.500, thetaNV: 0.500, thetaRB: 0.867,
+      D: 8, dN: 4, nFlagged: 4, bayesPosterior: 0.867, snPosterior: 0.500, mrPosterior: 0.500 },
+    { id: "p2t14", phase: 2, K: 8, k: 7, N: 30, nClean: 1, hidden: 22, thetaTrue: 0.967, thetaSN: 0.875, thetaNV: 0.600, thetaRB: 0.967,
+      D: 8, dN: 1, nFlagged: 7, bayesPosterior: 0.967, snPosterior: 0.875, mrPosterior: 0.600 },
+    { id: "p2t15", phase: 2, K: 8, k: 8, N: 30, nClean: 0, hidden: 22, thetaTrue: 1.000, thetaSN: 1.000, thetaNV: 0.633, thetaRB: 1.000,
+      D: 8, dN: 0, nFlagged: 8, bayesPosterior: 1.000, snPosterior: 1.000, mrPosterior: 0.633 }
   ],
 
-
   // ====================================================================
-  //  PART 1 PAGES -- Instructions + Comprehension (~6 min, USD 1.00)
+  //  PAGES (single flow, no Part 1 / Part 2 split)
   // ====================================================================
+  pages: [
 
-  part1Pages: [
+    // ==================================================================
+    //  ACT I -- CONSENT & OVERVIEW
+    // ==================================================================
 
-    // -- Page 1: Welcome --
+    // -- Page 1: Consent (decision-making framing) ----------------------
     {
-      id: "p1_welcome",
-      type: "welcome",
-      title: "Welcome",
-      subtitle: "",
-      body: "<p>Help us study decision-making under uncertainty.</p>" +
-            "<p>Part 1 takes ~<strong>6 minutes</strong> for <strong>$1.00</strong>. " +
-            "Pass the quiz to unlock Part 2 (~10 min, <strong>$2.00</strong> + up to <strong>$2.00</strong> accuracy bonus).</p>",
-      buttonText: "Start"
+      id: "p1_intro_decisions",
+      type: "instructions",
+      title: "Consent",
+      body:
+        "<p style='text-align:justify;'>This is a research study about " +
+        "<strong>decision-making</strong>. You'll face a series of " +
+        "<strong>hypothetical scenarios</strong>, but your decisions still " +
+        "count. <strong>The better your decisions, the more you earn.</strong></p>",
+      minTimeSeconds: 10
     },
 
-    // -- Page 2: Consent --
+    // -- Page 2: Consent (role + attention checks) ----------------------
+    {
+      id: "p1_intro_role",
+      type: "instructions",
+      title: "Consent",
+      body:
+        "<p style='text-align:justify;'>You'll play the role of a " +
+        "<strong>government auditor</strong> screening companies for fraud. No " +
+        "auditing background is needed. The scenario is simplified.</p>" +
+        "<p style='text-align:justify;'>What we ask is that you " +
+        "<strong>read the instructions carefully</strong>. Throughout the study " +
+        "you'll see short attention checks. You can try each one as many " +
+        "times as you need.</p>" +
+        "<p style='text-align:justify; margin-top:14px; padding:12px 14px; " +
+        "background:#fee2e2; border-left:4px solid #b91c1c; border-radius:4px;'>" +
+        "<strong style='color:#b91c1c; text-transform:uppercase; letter-spacing:0.5px;'>Important.</strong> " +
+        "Every wrong answer triggers a <strong>10-second pause</strong> before " +
+        "you can try again.</p>",
+      minTimeSeconds: 12
+    },
+
+    // -- Page 3: IRB consent (checkbox) ---------------------------------
     {
       id: "p1_consent",
       type: "consent",
       title: "Consent",
-      body: "<p>You are being invited to participate in a research study about decision-making.</p>" +
-            "<p><strong>What you will do:</strong> Learn the decision-making task and answer a short quiz.</p>" +
-            "<p><strong>Time:</strong> ~6 minutes.</p>" +
-            "<p><strong>Pay:</strong> $1.00 for this part. Pass the quiz and you will be invited " +
-            "to Part 2 (~10 min, $2.00 base + up to $2.00 accuracy bonus).</p>" +
-            "<p><strong>Risks:</strong> None beyond everyday life.</p>" +
-            "<p><strong>Confidentiality:</strong> Anonymous. We collect your Prolific ID only for payment.</p>" +
-            "<p><strong>Voluntary:</strong> You may withdraw at any time by closing this window.</p>",
+      body:
+        "<p style='text-align:justify;'><strong>What you'll do.</strong> Learn a simple " +
+        "auditing task, then go through 30 auditing rounds.</p>" +
+        "<p style='text-align:justify;'><strong>Time.</strong> About 20 minutes.</p>" +
+        "<p style='text-align:justify;'><strong>Pay.</strong> $3.00 base + up to $6.00 " +
+        "performance bonus. Base pay is <strong>guaranteed</strong>; no penalty can " +
+        "reduce it.</p>" +
+        "<p style='text-align:justify;'><strong>Risks.</strong> None beyond everyday life.</p>" +
+        "<p style='text-align:justify;'><strong>Confidentiality.</strong> Anonymous. We " +
+        "collect your Prolific ID only for payment.</p>" +
+        "<p style='text-align:justify;'><strong>Voluntary.</strong> You may withdraw at " +
+        "any time by closing this window.</p>",
       mustAgree: true,
       declineMessage: "You must agree to participate in order to continue.",
       minTimeSeconds: 15
     },
 
-    // -- Page 3: Your Mission --
+    // -- Page 4: Overview -----------------------------------------------
     {
-      id: "p1_inst_mission",
+      id: "p1_overview",
       type: "instructions",
-      title: "Your Mission",
+      title: "",
       body:
         "<div class='mission-badge'>" +
           "<svg viewBox='0 0 100 120' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
             "<defs>" +
-              "<linearGradient id='shieldGrad' x1='0%' y1='0%' x2='0%' y2='100%'>" +
+              "<linearGradient id='auditorMagMain' x1='0%' y1='0%' x2='0%' y2='100%'>" +
                 "<stop offset='0%' stop-color='#0ea5a0'/>" +
                 "<stop offset='100%' stop-color='#0f766e'/>" +
               "</linearGradient>" +
             "</defs>" +
-            "<path d='M50 5 L90 20 V55 C90 82 72 105 50 115 C28 105 10 82 10 55 V20 Z' " +
-                  "fill='url(#shieldGrad)' stroke='#0f766e' stroke-width='2'/>" +
-            "<path d='M32 58 L45 72 L70 42' stroke='#ffffff' stroke-width='7' " +
-                  "stroke-linecap='round' stroke-linejoin='round' fill='none'/>" +
+            "<rect x='16' y='18' width='54' height='72' rx='4' fill='#ffffff' stroke='#0f766e' stroke-width='2'/>" +
+            "<line x1='24' y1='32' x2='62' y2='32' stroke='#94a3b8' stroke-width='2' stroke-linecap='round'/>" +
+            "<line x1='24' y1='42' x2='58' y2='42' stroke='#94a3b8' stroke-width='2' stroke-linecap='round'/>" +
+            "<line x1='24' y1='52' x2='62' y2='52' stroke='#94a3b8' stroke-width='2' stroke-linecap='round'/>" +
+            "<line x1='24' y1='62' x2='50' y2='62' stroke='#94a3b8' stroke-width='2' stroke-linecap='round'/>" +
+            "<circle cx='66' cy='72' r='20' fill='none' stroke='url(#auditorMagMain)' stroke-width='7'/>" +
+            "<circle cx='66' cy='72' r='16' fill='#ccfbf1' opacity='0.5'/>" +
+            "<line x1='80' y1='86' x2='96' y2='104' stroke='url(#auditorMagMain)' stroke-width='8' stroke-linecap='round'/>" +
           "</svg>" +
-          "<div class='mission-badge-label'>AUDITOR</div>" +
+          "<div class='mission-badge-label'>GOVERNMENT AUDITOR</div>" +
         "</div>" +
-        "<p style='text-align:center; font-size:19px; max-width:560px; margin:0 auto;'>" +
-          "You are a <strong>government auditor</strong>. Your job is to detect " +
-          "<strong>fraudulent firms</strong>. For each firm you investigate, you will estimate " +
-          "the probability that it is fraudulent." +
+        "<p style='text-align:justify; font-size:18px; max-width:620px; margin:0 auto; line-height:1.65;'>" +
+          "You're a <strong>government auditor</strong>. For each company, you look at its " +
+          "transactions and assign it a <strong>fraud estimate</strong>." +
+        "</p>" +
+        "<p style='text-align:justify; font-size:18px; max-width:620px; margin:18px auto 0; line-height:1.65;'>" +
+          "At the end of the study, every company's <strong>actual fraud rate</strong> is revealed: the true percentage of its transactions that were suspicious. " +
+          "<strong>The closer your estimates were, the more you earn.</strong>" +
         "</p>",
-      minTimeSeconds: 6
+      minTimeSeconds: 10
     },
 
-    // -- Page 4: Firms -- Clean or Fraudulent --
+    // -- Page 5: Quick attention check ----------------------------------
     {
-      id: "p1_inst_firms",
+      id: "p1_overview_check",
       type: "instructions",
-      title: "Firms: Clean or Fraudulent",
+      title: "",
       body:
-        "<p style='text-align:center; font-size:18px; margin-bottom:20px;'>" +
-          "Firms come in two types:" +
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quick attention check" +
         "</p>" +
-        "<div class='firm-types-row'>" +
-          "<div class='firm-type-icon firm-type-clean'>" +
-            "<svg viewBox='0 0 80 90' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
-              "<rect x='10' y='25' width='60' height='60' rx='3' fill='#ccfbf1' stroke='#14b8a6' stroke-width='3'/>" +
-              "<rect x='20' y='35' width='10' height='10' fill='#14b8a6'/>" +
-              "<rect x='35' y='35' width='10' height='10' fill='#14b8a6'/>" +
-              "<rect x='50' y='35' width='10' height='10' fill='#14b8a6'/>" +
-              "<rect x='20' y='50' width='10' height='10' fill='#14b8a6'/>" +
-              "<rect x='35' y='50' width='10' height='10' fill='#14b8a6'/>" +
-              "<rect x='50' y='50' width='10' height='10' fill='#14b8a6'/>" +
-              "<rect x='32' y='65' width='16' height='20' fill='#0f766e'/>" +
-            "</svg>" +
-            "<div class='firm-type-label'>Clean Firm</div>" +
-          "</div>" +
-          "<div class='firm-type-icon firm-type-fraud'>" +
-            "<svg viewBox='0 0 80 90' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
-              "<rect x='10' y='25' width='60' height='60' rx='3' fill='#ede9fe' stroke='#7c3aed' stroke-width='3'/>" +
-              "<rect x='20' y='35' width='10' height='10' fill='#7c3aed'/>" +
-              "<rect x='35' y='35' width='10' height='10' fill='#7c3aed'/>" +
-              "<rect x='50' y='35' width='10' height='10' fill='#7c3aed'/>" +
-              "<rect x='20' y='50' width='10' height='10' fill='#7c3aed'/>" +
-              "<rect x='35' y='50' width='10' height='10' fill='#7c3aed'/>" +
-              "<rect x='50' y='50' width='10' height='10' fill='#7c3aed'/>" +
-              "<rect x='32' y='65' width='16' height='20' fill='#5b21b6'/>" +
-            "</svg>" +
-            "<div class='firm-type-label'>Fraudulent Firm</div>" +
-          "</div>" +
-        "</div>" +
-        "<p style='text-align:center; font-size:17px; margin:24px 0 12px; color:#475569;'>" +
-          "How common is each type?" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "In this study, what is your task?" +
         "</p>" +
-        "<div class='firm-prior-visual'>" +
-          "<div class='firm-prior-pie'></div>" +
-          "<div class='firm-prior-legend'>" +
-            "<div class='firm-prior-legend-item'>" +
-              "<span class='firm-prior-swatch' style='background:#14b8a6;'></span>" +
-              "<span><strong>80%</strong> Clean</span>" +
-            "</div>" +
-            "<div class='firm-prior-legend-item'>" +
-              "<span class='firm-prior-swatch' style='background:#7c3aed;'></span>" +
-              "<span><strong>20%</strong> Fraudulent</span>" +
-            "</div>" +
-          "</div>" +
+        "<div class='practice-buttons quiz-style' data-correct='audit' data-mode='retry' " +
+             "data-explain='You assign fraud estimates. The more accurate you are, the more you earn.'>" +
+          "<button type='button' class='practice-btn' data-val='sell'>Decide which company to sell products to.</button>" +
+          "<button type='button' class='practice-btn' data-val='audit'>Assign a fraud estimate to each company.</button>" +
+          "<button type='button' class='practice-btn' data-val='rate'>Give each company a customer-service score.</button>" +
         "</div>" +
-        "<p style='text-align:center; font-size:18px; margin-top:8px;'>" +
-          "Most firms are <strong>clean</strong>. About <strong>1 in 5</strong> is fraudulent." +
-        "</p>",
-      minTimeSeconds: 6
+        "<div class='practice-feedback'></div>",
+      minTimeSeconds: 10
     },
 
-    // -- Page 5: Every Firm Has Transactions --
+    // -- Page 6: Transition -- "now the details" ------------------------
     {
-      id: "p1_inst_has_transactions",
+      id: "p1_inst_mission",
       type: "instructions",
-      title: "How Do You Tell Them Apart?",
+      title: "",
       body:
-        "<p style='text-align:center; font-size:18px; margin-bottom:18px; color:#1e293b;'>" +
-          "As an auditor, you examine each firm's <strong>transactions</strong>." +
+        "<p style='text-align:justify; font-size:24px; max-width:620px; margin:0 auto 16px; font-weight:700;'>" +
+          "Now, the details." +
         "</p>" +
-        "<div class='firm-fanout-visual'>" +
-          "<svg viewBox='0 0 260 180' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
-            "<rect x='110' y='60' width='40' height='100' rx='2' fill='#e5e7eb' stroke='#475569' stroke-width='2'/>" +
-            "<rect x='118' y='70' width='8' height='8' fill='#94a3b8'/>" +
-            "<rect x='132' y='70' width='8' height='8' fill='#94a3b8'/>" +
-            "<rect x='118' y='84' width='8' height='8' fill='#94a3b8'/>" +
-            "<rect x='132' y='84' width='8' height='8' fill='#94a3b8'/>" +
-            "<rect x='118' y='98' width='8' height='8' fill='#94a3b8'/>" +
-            "<rect x='132' y='98' width='8' height='8' fill='#94a3b8'/>" +
-            "<rect x='123' y='130' width='14' height='30' fill='#475569'/>" +
-            "<g fill='#ffffff' stroke='#64748b' stroke-width='2'>" +
-              "<rect x='10'  y='30'  width='36' height='46' rx='3' transform='rotate(-18 28 53)'/>" +
-              "<rect x='40'  y='10'  width='36' height='46' rx='3' transform='rotate(-10 58 33)'/>" +
-              "<rect x='180' y='10'  width='36' height='46' rx='3' transform='rotate(10 198 33)'/>" +
-              "<rect x='210' y='30'  width='36' height='46' rx='3' transform='rotate(18 228 53)'/>" +
-              "<rect x='25'  y='115' width='36' height='46' rx='3' transform='rotate(-14 43 138)'/>" +
-              "<rect x='200' y='115' width='36' height='46' rx='3' transform='rotate(14 218 138)'/>" +
-            "</g>" +
-            "<g stroke='#cbd5e1' stroke-width='1' stroke-dasharray='3,3'>" +
-              "<line x1='110' y1='90' x2='45'  y2='55'/>" +
-              "<line x1='110' y1='85' x2='75'  y2='35'/>" +
-              "<line x1='150' y1='85' x2='185' y2='35'/>" +
-              "<line x1='150' y1='90' x2='215' y2='55'/>" +
-              "<line x1='110' y1='120' x2='60' y2='140'/>" +
-              "<line x1='150' y1='120' x2='200' y2='140'/>" +
-            "</g>" +
-          "</svg>" +
-        "</div>" +
-        "<p style='text-align:center; font-size:17px; max-width:560px; margin:0 auto; color:#475569;'>" +
-          "Each firm processes many transactions. These are your evidence for judging " +
-          "whether the firm is clean or fraudulent." +
+        "<p style='text-align:justify; font-size:17px; max-width:620px; margin:0 auto; line-height:1.6;'>" +
+          "Up next: the auditing process, what transactions look like, and how the " +
+          "bonus works." +
         "</p>",
-      minTimeSeconds: 6
+      minTimeSeconds: 5
     },
 
-    // -- Page 7: Two Types of Transactions --
+    // ==================================================================
+    //  ACT II -- HOW TO READ A FIRM
+    // ==================================================================
+
+    // -- Page 7: A transaction (neutral document icon) ------------------
     {
-      id: "p1_inst_two_types",
+      id: "p2_inst_transaction_intro",
       type: "instructions",
-      title: "Two Types of Transactions",
+      title: "",
       body:
+        "<p style='text-align:justify; font-size:24px; max-width:620px; margin:0 auto 8px; font-weight:600;'>" +
+          "How do you assess fraud?" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px;'>" +
+          "By looking at the company's <strong>transactions</strong>." +
+        "</p>" +
+        "<div style='display:flex; justify-content:center; margin:12px 0;'>" +
+          "<div class='transaction-doc neutral large'></div>" +
+        "</div>" +
+        "<p style='text-align:justify; font-size:17px; max-width:620px; margin:18px auto 0; line-height:1.6;'>" +
+          "This is one transaction. You won't need to read what's inside. Just " +
+          "know <strong>what kind</strong> it is." +
+        "</p>",
+      minTimeSeconds: 7
+    },
+
+    // -- Page 8: Clean transaction --------------------------------------
+    {
+      id: "p2_inst_transaction_clean",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:24px; margin:0 auto 28px; font-weight:600;'>" +
+          "Each transaction is one of two kinds." +
+        "</p>" +
         "<div class='two-types-row'>" +
           "<div class='transaction-doc-wrap'>" +
-            "<div class='transaction-doc large normal'>N</div>" +
-            "<div class='transaction-doc-caption' style='color:#15803d;'>Normal</div>" +
+            "<div class='transaction-doc large clean'>C</div>" +
+            "<div class='transaction-doc-caption' style='color:#15803d;'>Clean</div>" +
+          "</div>" +
+          "<div class='transaction-doc-wrap' style='visibility:hidden;' aria-hidden='true'>" +
+            "<div class='transaction-doc large'></div>" +
+            "<div class='transaction-doc-caption'>&nbsp;</div>" +
+          "</div>" +
+        "</div>",
+      minTimeSeconds: 5
+    },
+
+    // -- Page 9: Clean AND Suspicious transactions ----------------------
+    {
+      id: "p2_inst_transactions_both",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:24px; margin:0 auto 28px; font-weight:600;'>" +
+          "Each transaction is one of two kinds." +
+        "</p>" +
+        "<div class='two-types-row'>" +
+          "<div class='transaction-doc-wrap'>" +
+            "<div class='transaction-doc large clean'>C</div>" +
+            "<div class='transaction-doc-caption' style='color:#15803d;'>Clean</div>" +
           "</div>" +
           "<div class='transaction-doc-wrap'>" +
-            "<div class='transaction-doc large flagged'>F</div>" +
-            "<div class='transaction-doc-caption' style='color:#b91c1c;'>Flagged</div>" +
+            "<div class='transaction-doc large suspicious'>S</div>" +
+            "<div class='transaction-doc-caption' style='color:#b91c1c;'>Suspicious</div>" +
+          "</div>" +
+        "</div>",
+      minTimeSeconds: 5
+    },
+
+    // -- Page 10: 50/50 coin flip ---------------------------------------
+    {
+      id: "p2_inst_fifty_fifty",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:24px; margin:0 auto 22px; max-width:620px; font-weight:600;'>" +
+          "Any given transaction is a coin flip." +
+        "</p>" +
+        "<div class='two-types-row'>" +
+          "<div class='transaction-doc-wrap'>" +
+            "<div class='transaction-doc large clean'>C</div>" +
+            "<div class='transaction-doc-caption coin-flip-pct' style='color:#15803d;'>50%</div>" +
+          "</div>" +
+          "<div class='transaction-doc-wrap'>" +
+            "<div class='transaction-doc large suspicious'>S</div>" +
+            "<div class='transaction-doc-caption coin-flip-pct' style='color:#b91c1c;'>50%</div>" +
           "</div>" +
         "</div>" +
-        "<p style='text-align:center; font-size:18px; margin-top:8px;'>" +
-          "Every transaction is classified as either <strong>Normal</strong> or <strong>Flagged</strong>." +
+        "<p style='text-align:center; font-size:22px; max-width:620px; margin:28px auto 0; line-height:1.5; font-weight:700;'>" +
+          "Your job is to assess the <strong>proportion of a company's transactions that are suspicious</strong>." +
+        "</p>",
+      minTimeSeconds: 5
+    },
+
+    // -- Page 10b: Attention check -- prob(transaction is clean)? ------
+    // Placed immediately after the 50/50 coin-flip anchor so the idea is
+    // tested while it's fresh, not only in the end-of-instructions quiz.
+    {
+      id: "p2_attn_coin_flip",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quick attention check" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "What's the probability that any given transaction is <strong>clean</strong>?" +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='fifty' data-mode='retry' " +
+             "data-explain='Any given transaction is a coin flip: 50% clean, 50% suspicious.'>" +
+          "<button type='button' class='practice-btn' data-val='zero'>0%</button>" +
+          "<button type='button' class='practice-btn' data-val='twentyfive'>25%</button>" +
+          "<button type='button' class='practice-btn' data-val='fifty'>50%</button>" +
+          "<button type='button' class='practice-btn' data-val='hundred'>100%</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      minTimeSeconds: 6
+    },
+
+    // -- Page 11: Companies have many transactions (cluster) ----------------
+    {
+      id: "p2_inst_cluster",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:24px; margin:0 auto 22px; max-width:620px; font-weight:600;'>" +
+          "Companies have many transactions." +
+        "</p>" +
+        "<div class='doc-cluster'>" +
+          // 20 neutral document icons, positioned pseudo-randomly
+          "<div class='cluster-doc' style='top:10%; left:18%;'></div>" +
+          "<div class='cluster-doc' style='top:22%; left:32%;'></div>" +
+          "<div class='cluster-doc' style='top:7%;  left:48%;'></div>" +
+          "<div class='cluster-doc' style='top:28%; left:60%;'></div>" +
+          "<div class='cluster-doc' style='top:12%; left:72%;'></div>" +
+          "<div class='cluster-doc' style='top:38%; left:22%;'></div>" +
+          "<div class='cluster-doc' style='top:40%; left:40%;'></div>" +
+          "<div class='cluster-doc' style='top:46%; left:56%;'></div>" +
+          "<div class='cluster-doc' style='top:32%; left:78%;'></div>" +
+          "<div class='cluster-doc' style='top:56%; left:15%;'></div>" +
+          "<div class='cluster-doc' style='top:60%; left:34%;'></div>" +
+          "<div class='cluster-doc' style='top:54%; left:50%;'></div>" +
+          "<div class='cluster-doc' style='top:64%; left:66%;'></div>" +
+          "<div class='cluster-doc' style='top:58%; left:82%;'></div>" +
+          "<div class='cluster-doc' style='top:74%; left:24%;'></div>" +
+          "<div class='cluster-doc' style='top:78%; left:44%;'></div>" +
+          "<div class='cluster-doc' style='top:72%; left:58%;'></div>" +
+          "<div class='cluster-doc' style='top:82%; left:72%;'></div>" +
+          "<div class='cluster-doc' style='top:18%; left:88%;'></div>" +
+          "<div class='cluster-doc' style='top:70%; left:8%;'></div>" +
+        "</div>",
+      minTimeSeconds: 5
+    },
+
+    // -- Page 12: Different mixes ---------------------------------------
+    // Two cluster panels side by side, same transaction-cluster style as
+    // Page 11 but with C/S stamps. Left = mostly clean (18 C + 2 S),
+    // right = mostly suspicious (2 C + 18 S). Keeps the "companies have
+    // many transactions" visual metaphor consistent across pages.
+    {
+      id: "p2_inst_mixes",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:24px; margin:0 auto 22px; font-weight:600;'>" +
+          "Some companies are cleaner than others." +
+        "</p>" +
+        "<div class='company-mix-pair'>" +
+          "<div class='company-mix-panel'>" +
+            "<div class='company-mix-label mostly-clean'>Mostly clean</div>" +
+            "<div class='doc-cluster mini'>" +
+              // 18 clean + 2 suspicious, same 20 positions as Page 11 cluster.
+              "<div class='cluster-doc labeled clean' style='top:10%; left:18%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:22%; left:32%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:7%;  left:48%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:28%; left:60%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:12%; left:72%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:38%; left:22%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:40%; left:40%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:46%; left:56%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:32%; left:78%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:56%; left:15%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:60%; left:34%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:54%; left:50%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:64%; left:66%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:58%; left:82%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:74%; left:24%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:78%; left:44%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:72%; left:58%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:82%; left:72%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:18%; left:88%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:70%; left:8%;'></div>" +
+            "</div>" +
+          "</div>" +
+          "<div class='company-mix-panel'>" +
+            "<div class='company-mix-label mostly-suspicious'>Mostly suspicious</div>" +
+            "<div class='doc-cluster mini'>" +
+              // 2 clean + 18 suspicious, same 20 positions.
+              "<div class='cluster-doc labeled suspicious' style='top:10%; left:18%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:22%; left:32%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:7%;  left:48%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:28%; left:60%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:12%; left:72%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:38%; left:22%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:40%; left:40%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:46%; left:56%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:32%; left:78%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:56%; left:15%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:60%; left:34%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:54%; left:50%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:64%; left:66%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:58%; left:82%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:74%; left:24%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:78%; left:44%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:72%; left:58%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:82%; left:72%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:18%; left:88%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:70%; left:8%;'></div>" +
+            "</div>" +
+          "</div>" +
+        "</div>" +
+        "<p style='text-align:justify; font-size:19px; max-width:620px; margin:22px auto 0;'>" +
+          "Your job: tell them apart with a <strong>fraud estimate</strong>." +
+        "</p>",
+      minTimeSeconds: 12
+    },
+
+    // -- Page 13: Fraud estimate = share suspicious ---------------------
+    {
+      id: "p2_inst_rule",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 14px; font-weight:700;'>" +
+          "<strong>Fraud estimate</strong> <span style='color:var(--color-primary);'>=</span> " +
+          "share of suspicious transactions." +
+        "</p>" +
+        "<p style='text-align:justify; font-size:17px; max-width:620px; margin:0 auto 24px; line-height:1.6;'>" +
+          "Three example companies, every transaction shown:" +
+        "</p>" +
+        "<div style='max-width:620px; margin:0 auto; display:flex; flex-direction:column; gap:14px;'>" +
+          // 0 / 10
+          "<div class='rule-example-row rule-example-stack'>" +
+            "<div class='rule-example-cards'>" +
+              "<div class='transaction-doc clean rule-tiny'>C</div>" +
+              "<div class='transaction-doc clean rule-tiny'>C</div>" +
+              "<div class='transaction-doc clean rule-tiny'>C</div>" +
+              "<div class='transaction-doc clean rule-tiny'>C</div>" +
+              "<div class='transaction-doc clean rule-tiny'>C</div>" +
+              "<div class='transaction-doc clean rule-tiny'>C</div>" +
+              "<div class='transaction-doc clean rule-tiny'>C</div>" +
+              "<div class='transaction-doc clean rule-tiny'>C</div>" +
+              "<div class='transaction-doc clean rule-tiny'>C</div>" +
+              "<div class='transaction-doc clean rule-tiny'>C</div>" +
+            "</div>" +
+            "<div class='rule-example-summary'>" +
+              "<span class='rule-example-ratio'>0 / 10</span>" +
+              "<span class='rule-example-arrow'>&rarr;</span>" +
+              "<span class='rule-example-result' style='color:#15803d;'>0%</span>" +
+            "</div>" +
+          "</div>" +
+          // 3 / 10
+          "<div class='rule-example-row rule-example-stack'>" +
+            "<div class='rule-example-cards'>" +
+              "<div class='transaction-doc clean rule-tiny'>C</div>" +
+              "<div class='transaction-doc clean rule-tiny'>C</div>" +
+              "<div class='transaction-doc suspicious rule-tiny'>S</div>" +
+              "<div class='transaction-doc clean rule-tiny'>C</div>" +
+              "<div class='transaction-doc clean rule-tiny'>C</div>" +
+              "<div class='transaction-doc suspicious rule-tiny'>S</div>" +
+              "<div class='transaction-doc clean rule-tiny'>C</div>" +
+              "<div class='transaction-doc clean rule-tiny'>C</div>" +
+              "<div class='transaction-doc suspicious rule-tiny'>S</div>" +
+              "<div class='transaction-doc clean rule-tiny'>C</div>" +
+            "</div>" +
+            "<div class='rule-example-summary'>" +
+              "<span class='rule-example-ratio'>3 / 10</span>" +
+              "<span class='rule-example-arrow'>&rarr;</span>" +
+              "<span class='rule-example-result' style='color:#b45309;'>30%</span>" +
+            "</div>" +
+          "</div>" +
+          // 7 / 10
+          "<div class='rule-example-row rule-example-stack'>" +
+            "<div class='rule-example-cards'>" +
+              "<div class='transaction-doc suspicious rule-tiny'>S</div>" +
+              "<div class='transaction-doc suspicious rule-tiny'>S</div>" +
+              "<div class='transaction-doc clean rule-tiny'>C</div>" +
+              "<div class='transaction-doc suspicious rule-tiny'>S</div>" +
+              "<div class='transaction-doc suspicious rule-tiny'>S</div>" +
+              "<div class='transaction-doc clean rule-tiny'>C</div>" +
+              "<div class='transaction-doc suspicious rule-tiny'>S</div>" +
+              "<div class='transaction-doc clean rule-tiny'>C</div>" +
+              "<div class='transaction-doc suspicious rule-tiny'>S</div>" +
+              "<div class='transaction-doc suspicious rule-tiny'>S</div>" +
+            "</div>" +
+            "<div class='rule-example-summary'>" +
+              "<span class='rule-example-ratio'>7 / 10</span>" +
+              "<span class='rule-example-arrow'>&rarr;</span>" +
+              "<span class='rule-example-result' style='color:#b91c1c;'>70%</span>" +
+            "</div>" +
+          "</div>" +
+        "</div>",
+      minTimeSeconds: 10
+    },
+
+    // -- Page 13b: Attention check -- fraud estimate definition -------
+    {
+      id: "p2_check_definition",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quick attention check" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "The fraud estimate for a company is ..." +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='share' data-mode='retry' " +
+             "data-explain='The fraud estimate is the share of a company\\'s transactions that are suspicious, expressed as a percentage.'>" +
+          "<button type='button' class='practice-btn' data-val='gut'>Your gut feeling about the company, in percent.</button>" +
+          "<button type='button' class='practice-btn' data-val='count'>The number of suspicious transactions.</button>" +
+          "<button type='button' class='practice-btn' data-val='share'>The share of a company's transactions that are suspicious.</button>" +
+          "<button type='button' class='practice-btn' data-val='fifty'>Always 50%.</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      minTimeSeconds: 6
+    },
+
+    // -- Page 14: Lottery consequence chain -----------------------------
+    {
+      id: "p2_inst_consequence",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:left; font-size:22px; max-width:620px; margin:0 auto 14px; font-weight:700;'>" +
+          "What happens to companies after they receive an estimate?" +
+        "</p>" +
+        "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto; line-height:1.65; padding-left:22px;'>" +
+          "<li>Your estimates feed a <strong>lottery</strong>.</li>" +
+          "<li>A higher estimate means <strong>more lottery tickets</strong> for that company.</li>" +
+          "<li>Companies drawn in the lottery face a <strong>full audit</strong>, which is costly for them.</li>" +
+        "</ul>",
+      minTimeSeconds: 10
+    },
+
+    // -- Page 14b: The audit stakes (own page, more weight) -------------
+    {
+      id: "p2_inst_consequence_weight",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:24px; max-width:620px; margin:0 auto 16px; font-weight:700; line-height:1.35;'>" +
+          "The higher your estimate, the more likely a full audit." +
+        "</p>" +
+        "<p style='text-align:justify; font-size:19px; max-width:620px; margin:0 auto; line-height:1.65;'>" +
+          "A full audit reviews every transaction. It's costly for the company, " +
+          "regardless of whether any fraud actually turns up." +
+        "</p>",
+      minTimeSeconds: 7
+    },
+
+    // -- Page 15: Practice math #1 -- N=10 ------------------------------
+    {
+      id: "p2_inst_try_n10",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:24px; max-width:620px; margin:0 auto 12px; font-weight:600;'>" +
+          "Your turn. What's the fraud estimate?" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:16px; max-width:620px; margin:0 auto 16px; line-height:1.6;'>" +
+          "A company with <strong>10</strong> transactions, all shown." +
+        "</p>" +
+        "<div class='cards-grid-10'>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+        "</div>" +
+        "<div class='practice-buttons' data-correct='50' data-mode='directional' " +
+             "data-explain='5 of 13 transactions are suspicious &rarr; 5 / 10 = 50%.'>" +
+          "<button type='button' class='practice-btn' data-val='10'>10%</button>" +
+          "<button type='button' class='practice-btn' data-val='30'>30%</button>" +
+          "<button type='button' class='practice-btn' data-val='50'>50%</button>" +
+          "<button type='button' class='practice-btn' data-val='70'>70%</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      showCalculator: true,
+      minTimeSeconds: 5
+    },
+
+    // -- Page 16: Practice math #2 -- N=20 ------------------------------
+    {
+      id: "p2_inst_try_n20",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:24px; max-width:620px; margin:0 auto 12px; font-weight:600;'>" +
+          "Another one." +
+        "</p>" +
+        "<p style='text-align:justify; font-size:16px; max-width:620px; margin:0 auto 16px; line-height:1.6;'>" +
+          "A company with <strong>20</strong> transactions, all shown." +
+        "</p>" +
+        "<div class='cards-grid-10'>" +
+          // Row 1 (10): 8 C + 2 S
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          // Row 2 (10): 8 C + 2 S  (total: 16 C + 4 S = 20%)
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+        "</div>" +
+        "<div class='practice-buttons' data-correct='20' data-mode='directional' " +
+             "data-explain='4 of 20 transactions are suspicious &rarr; 4 / 20 = 20%.'>" +
+          "<button type='button' class='practice-btn' data-val='10'>10%</button>" +
+          "<button type='button' class='practice-btn' data-val='20'>20%</button>" +
+          "<button type='button' class='practice-btn' data-val='50'>50%</button>" +
+          "<button type='button' class='practice-btn' data-val='80'>80%</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      showCalculator: true,
+      minTimeSeconds: 5
+    },
+
+    // -- Page 17: Practice math #3 -- N=30 ------------------------------
+    {
+      id: "p2_inst_try_n30",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:24px; max-width:620px; margin:0 auto 12px; font-weight:600;'>" +
+          "Last one." +
+        "</p>" +
+        "<p style='text-align:justify; font-size:16px; max-width:620px; margin:0 auto 16px; line-height:1.6;'>" +
+          "A company with <strong>30</strong> transactions, all shown." +
+        "</p>" +
+        "<div class='cards-grid-10'>" +
+          // 24 S + 6 C spread across 3 rows of 13
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+        "</div>" +
+        "<div class='practice-buttons' data-correct='80' data-mode='directional' " +
+             "data-explain='24 of 30 transactions are suspicious &rarr; 24 / 30 = 80%.'>" +
+          "<button type='button' class='practice-btn' data-val='40'>40%</button>" +
+          "<button type='button' class='practice-btn' data-val='60'>60%</button>" +
+          "<button type='button' class='practice-btn' data-val='80'>80%</button>" +
+          "<button type='button' class='practice-btn' data-val='90'>90%</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      showCalculator: true,
+      minTimeSeconds: 5
+    },
+
+    // -- Page 18: Attention check -- high estimate means what? ----------
+    {
+      id: "p2_check_audit",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quick attention check" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "What happens when you rate a company <strong>high</strong>?" +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='likely' data-mode='retry' " +
+             "data-explain='A higher estimate means more lottery tickets, and a higher chance of a full audit, though not a guarantee.'>" +
+          "<button type='button' class='practice-btn' data-val='never'>They never get audited.</button>" +
+          "<button type='button' class='practice-btn' data-val='always'>They get audited for sure.</button>" +
+          "<button type='button' class='practice-btn' data-val='likely'>They're more likely to be picked for a full audit.</button>" +
+          "<button type='button' class='practice-btn' data-val='random'>It's random. Your estimate doesn't matter.</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      minTimeSeconds: 5
+    },
+
+    // ==================================================================
+    //  ACT III -- THE MANAGER AND THE TWIST
+    // ==================================================================
+
+    // -- Page 19: Law requires exactly 4 (cluster + 4 highlighted) -----
+    {
+      id: "p3_inst_law_4",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:22px; max-width:620px; margin:0 auto 12px;'>" +
+          "Here's the catch." +
+        "</p>" +
+        "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 18px; font-weight:700;'>" +
+          "A company has many transactions, but the law lets it send you only " +
+          "<strong style='color:#b91c1c; font-size:44px; line-height:1; padding:0 4px;'>4</strong>." +
+        "</p>" +
+        "<div class='doc-cluster'>" +
+          // Same 20 positions as before, but 4 are highlighted
+          "<div class='cluster-doc highlighted' style='top:22%; left:32%;'></div>" +
+          "<div class='cluster-doc' style='top:10%; left:18%;'></div>" +
+          "<div class='cluster-doc' style='top:7%;  left:48%;'></div>" +
+          "<div class='cluster-doc' style='top:28%; left:60%;'></div>" +
+          "<div class='cluster-doc' style='top:12%; left:72%;'></div>" +
+          "<div class='cluster-doc highlighted' style='top:38%; left:22%;'></div>" +
+          "<div class='cluster-doc' style='top:40%; left:40%;'></div>" +
+          "<div class='cluster-doc' style='top:46%; left:56%;'></div>" +
+          "<div class='cluster-doc' style='top:32%; left:78%;'></div>" +
+          "<div class='cluster-doc' style='top:56%; left:15%;'></div>" +
+          "<div class='cluster-doc' style='top:60%; left:34%;'></div>" +
+          "<div class='cluster-doc highlighted' style='top:54%; left:50%;'></div>" +
+          "<div class='cluster-doc' style='top:64%; left:66%;'></div>" +
+          "<div class='cluster-doc' style='top:58%; left:82%;'></div>" +
+          "<div class='cluster-doc' style='top:74%; left:24%;'></div>" +
+          "<div class='cluster-doc highlighted' style='top:78%; left:44%;'></div>" +
+          "<div class='cluster-doc' style='top:72%; left:58%;'></div>" +
+          "<div class='cluster-doc' style='top:82%; left:72%;'></div>" +
+          "<div class='cluster-doc' style='top:18%; left:88%;'></div>" +
+          "<div class='cluster-doc' style='top:70%; left:8%;'></div>" +
+        "</div>",
+      minTimeSeconds: 5
+    },
+
+    // -- Page 20: You only see the nature of those 4 -------------------
+    {
+      id: "p3_inst_law_4_nature",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 18px; font-weight:700;'>" +
+          "You only learn the nature (clean or suspicious) of those " +
+          "<strong>4</strong>." +
+        "</p>" +
+        "<div class='doc-cluster'>" +
+          // 4 highlighted with C/S labels, the rest with ? marks
+          "<div class='cluster-doc highlighted labeled clean' style='top:22%; left:32%;'>C</div>" +
+          "<div class='cluster-doc hidden-q' style='top:10%; left:18%;'>?</div>" +
+          "<div class='cluster-doc hidden-q' style='top:7%;  left:48%;'>?</div>" +
+          "<div class='cluster-doc hidden-q' style='top:28%; left:60%;'>?</div>" +
+          "<div class='cluster-doc hidden-q' style='top:12%; left:72%;'>?</div>" +
+          "<div class='cluster-doc highlighted labeled clean' style='top:38%; left:22%;'>C</div>" +
+          "<div class='cluster-doc hidden-q' style='top:40%; left:40%;'>?</div>" +
+          "<div class='cluster-doc hidden-q' style='top:46%; left:56%;'>?</div>" +
+          "<div class='cluster-doc hidden-q' style='top:32%; left:78%;'>?</div>" +
+          "<div class='cluster-doc hidden-q' style='top:56%; left:15%;'>?</div>" +
+          "<div class='cluster-doc hidden-q' style='top:60%; left:34%;'>?</div>" +
+          "<div class='cluster-doc highlighted labeled suspicious' style='top:54%; left:50%;'>S</div>" +
+          "<div class='cluster-doc hidden-q' style='top:64%; left:66%;'>?</div>" +
+          "<div class='cluster-doc hidden-q' style='top:58%; left:82%;'>?</div>" +
+          "<div class='cluster-doc hidden-q' style='top:74%; left:24%;'>?</div>" +
+          "<div class='cluster-doc highlighted labeled clean' style='top:78%; left:44%;'>C</div>" +
+          "<div class='cluster-doc hidden-q' style='top:72%; left:58%;'>?</div>" +
+          "<div class='cluster-doc hidden-q' style='top:82%; left:72%;'>?</div>" +
+          "<div class='cluster-doc hidden-q' style='top:18%; left:88%;'>?</div>" +
+          "<div class='cluster-doc hidden-q' style='top:70%; left:8%;'>?</div>" +
+        "</div>" +
+        "<p style='text-align:center; font-size:24px; max-width:620px; margin:28px auto 0; line-height:1.5; font-weight:800;'>" +
+          "Your view of the company is always <strong>incomplete</strong>." +
+        "</p>",
+      minTimeSeconds: 5
+    },
+
+    // -- Page 21: Attention check -- do you see all? -------------------
+    {
+      id: "p3_check_all",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quick attention check" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:22px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "When you audit a company, do you see <strong>all</strong> of its transactions?" +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='no' data-mode='retry' " +
+             "data-explain='The law requires only 4 transactions per company.'>" +
+          "<button type='button' class='practice-btn' data-val='yes'>Yes, all of them.</button>" +
+          "<button type='button' class='practice-btn' data-val='no'>No, only 4.</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      minTimeSeconds: 5
+    },
+
+    // -- Page 22: Attention check -- who picks how many? ---------------
+    {
+      id: "p3_check_how_many",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quick attention check" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "Who decides <strong>how many</strong> transactions you see?" +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='law' data-mode='retry' " +
+             "data-explain='The law. Fixed at 4; no one can change it.'>" +
+          "<button type='button' class='practice-btn' data-val='law'>The law.</button>" +
+          "<button type='button' class='practice-btn' data-val='manager'>The manager.</button>" +
+          "<button type='button' class='practice-btn' data-val='auditor'>You.</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      minTimeSeconds: 5
+    },
+
+    // ==================================================================
+    //  INDEPENDENCE INTERLUDE -- 5 pages building intuition that one
+    //  random transaction doesn't tell you about the rest. Placed
+    //  IMMEDIATELY BEFORE the manager intro so the contrast is crisp:
+    //  "random picking tells you little" -> "but here it isn't random
+    //  -- someone with a conflict of interest picks what you see."
+    // ==================================================================
+
+    // -- Page 18b: Setup -- imagine grabbing one random transaction ----
+    {
+      id: "p2_inst_random_a",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:24px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "Now, a quick thought experiment." +
+        "</p>" +
+        "<p style='text-align:justify; font-size:22px; max-width:620px; margin:0 auto 26px; line-height:1.5;'>" +
+          "Imagine you could grab <strong>one random transaction</strong> from a company." +
+        "</p>" +
+        "<div class='random-single-slot'>" +
+          "<div class='transaction-doc large neutral' style='visibility:hidden;'>&nbsp;</div>" +
+          "<div class='random-single-caption' style='visibility:hidden;'>&nbsp;</div>" +
+        "</div>",
+      minTimeSeconds: 5
+    },
+
+    // -- Page 18c: Reveal -- it's suspicious ---------------------------
+    {
+      id: "p2_inst_random_b",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:24px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "Now, a quick thought experiment." +
+        "</p>" +
+        "<p style='text-align:justify; font-size:22px; max-width:620px; margin:0 auto 26px; line-height:1.5;'>" +
+          "Imagine you could grab <strong>one random transaction</strong> from a company." +
+        "</p>" +
+        "<div class='random-single-slot'>" +
+          "<div class='transaction-doc large suspicious'>S</div>" +
+        "</div>" +
+        "<p style='text-align:center; font-size:22px; font-weight:700; max-width:620px; margin:22px auto 0; color:#b91c1c;'>" +
+          "It turns out to be suspicious." +
+        "</p>",
+      minTimeSeconds: 5
+    },
+
+    // -- Page 18d: Pose the question -----------------------------------
+    {
+      id: "p2_inst_random_c",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 24px; font-weight:700;'>" +
+          "Does this mean most of the company's other transactions are also suspicious?" +
+        "</p>" +
+        "<div class='random-question-row'>" +
+          "<div class='transaction-doc large suspicious'>S</div>" +
+          "<div class='random-question-arrow'>&rarr;</div>" +
+          "<div class='random-question-unknowns'>" +
+            "<div class='transaction-doc-mini hidden-mini'>?</div>" +
+            "<div class='transaction-doc-mini hidden-mini'>?</div>" +
+            "<div class='transaction-doc-mini hidden-mini'>?</div>" +
+            "<div class='transaction-doc-mini hidden-mini'>?</div>" +
+            "<div class='transaction-doc-mini hidden-mini'>?</div>" +
+            "<div class='transaction-doc-mini hidden-mini'>?</div>" +
+            "<div class='transaction-doc-mini hidden-mini'>?</div>" +
+            "<div class='transaction-doc-mini hidden-mini'>?</div>" +
+            "<div class='transaction-doc-mini hidden-mini'>?</div>" +
+          "</div>" +
+        "</div>",
+      minTimeSeconds: 6
+    },
+
+    // -- Page 18e: Punchline -- no, it could be any of these -----------
+    {
+      id: "p2_inst_random_d",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 10px; font-weight:700;'>" +
+          "No. It could be <strong>any</strong> of these companies." +
+        "</p>" +
+        "<p style='text-align:justify; font-size:17px; max-width:620px; margin:0 auto 18px; color:#475569; line-height:1.55;'>" +
+          "A single suspicious transaction is consistent with a mostly-clean company, a half-and-half company, or a mostly-suspicious company." +
+        "</p>" +
+        "<div class='company-triple'>" +
+          // Mostly clean (2 S, 18 C)
+          "<div class='company-mix-panel'>" +
+            "<div class='company-mix-label mostly-clean'>Mostly clean</div>" +
+            "<div class='doc-cluster micro'>" +
+              "<div class='cluster-doc labeled clean' style='top:10%; left:18%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:22%; left:32%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:7%;  left:48%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:28%; left:60%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:12%; left:72%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:38%; left:22%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:40%; left:40%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:46%; left:56%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:32%; left:78%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:56%; left:15%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:60%; left:34%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:54%; left:50%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:64%; left:66%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:58%; left:82%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:74%; left:24%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:78%; left:44%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:72%; left:58%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:82%; left:72%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:18%; left:88%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:70%; left:8%;'></div>" +
+            "</div>" +
+          "</div>" +
+          // Half-half (10 C + 10 S)
+          "<div class='company-mix-panel'>" +
+            "<div class='company-mix-label company-mix-label-half'>Half &amp; half</div>" +
+            "<div class='doc-cluster micro'>" +
+              "<div class='cluster-doc labeled suspicious' style='top:10%; left:18%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:22%; left:32%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:7%;  left:48%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:28%; left:60%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:12%; left:72%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:38%; left:22%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:40%; left:40%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:46%; left:56%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:32%; left:78%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:56%; left:15%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:60%; left:34%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:54%; left:50%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:64%; left:66%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:58%; left:82%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:74%; left:24%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:78%; left:44%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:72%; left:58%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:82%; left:72%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:18%; left:88%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:70%; left:8%;'></div>" +
+            "</div>" +
+          "</div>" +
+          // Mostly suspicious (18 S + 2 C)
+          "<div class='company-mix-panel'>" +
+            "<div class='company-mix-label mostly-suspicious'>Mostly suspicious</div>" +
+            "<div class='doc-cluster micro'>" +
+              "<div class='cluster-doc labeled suspicious' style='top:10%; left:18%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:22%; left:32%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:7%;  left:48%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:28%; left:60%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:12%; left:72%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:38%; left:22%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:40%; left:40%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:46%; left:56%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:32%; left:78%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:56%; left:15%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:60%; left:34%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:54%; left:50%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:64%; left:66%;'></div>" +
+              "<div class='cluster-doc labeled clean' style='top:58%; left:82%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:74%; left:24%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:78%; left:44%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:72%; left:58%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:82%; left:72%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:18%; left:88%;'></div>" +
+              "<div class='cluster-doc labeled suspicious' style='top:70%; left:8%;'></div>" +
+            "</div>" +
+          "</div>" +
+        "</div>" +
+        "<p style='text-align:center; font-size:22px; font-weight:800; max-width:620px; margin:22px auto 0; line-height:1.45;'>" +
+          "One random transaction doesn't tell you the rest." +
+        "</p>",
+      minTimeSeconds: 10
+    },
+
+    // -- Page 18f: Attention check -- flipped to clean -----------------
+    // Test that the participant internalized the lesson. The visible
+    // transaction is now CLEAN (opposite of the teaching example) so
+    // they can't just pattern-match on "suspicious -> nothing".
+    {
+      id: "p2_attn_random",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quick attention check" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 14px; font-weight:600; line-height:1.5;'>" +
+          "You grab one random transaction from a company. It's <strong>clean</strong>." +
+        "</p>" +
+        "<div class='random-single-slot' style='margin:10px auto 18px;'>" +
+          "<div class='transaction-doc large clean'>C</div>" +
+        "</div>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600; line-height:1.5;'>" +
+          "What does that tell you about the company's other transactions?" +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='nothing' data-mode='retry' " +
+             "data-explain='Right. A random transaction could come from a mostly-clean, half-and-half, or mostly-suspicious company. One doesn\\'t tell you the rest.'>" +
+          "<button type='button' class='practice-btn' data-val='mostly_clean'>Most of them are probably clean too.</button>" +
+          "<button type='button' class='practice-btn' data-val='mostly_susp'>Most of them are probably suspicious.</button>" +
+          "<button type='button' class='practice-btn' data-val='nothing'>Nothing. One random transaction doesn't tell you about the rest.</button>" +
+          "<button type='button' class='practice-btn' data-val='half'>Exactly half are clean.</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      minTimeSeconds: 6
+    },
+
+    // -- Page 22g: Bridge -- "but here they are NOT random" -----------
+    // Stands alone on its own page (no golden call-out box). Plain black
+    // text, centered, large. Lands the pivot before the manager is
+    // introduced on the next page.
+    {
+      id: "p3_inst_not_random",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:center; font-size:28px; line-height:1.4; max-width:620px; margin:80px auto 0; font-weight:700; color:#0f172a;'>" +
+          "However, in our setting, the 4 transactions you see about a company are " +
+          "<strong style='color:#b91c1c;'>not randomly picked from the lot</strong>." +
+        "</p>",
+      minTimeSeconds: 7
+    },
+
+    // -- Page 23: Meet the manager -------------------------------------
+    {
+      id: "p3_inst_meet_manager",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
+          "Meet the <strong>manager</strong> of the company you're auditing." +
+        "</p>" +
+        "<div class='manager-badge'>" +
+          "<svg viewBox='0 0 120 140' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
+            "<defs>" +
+              "<linearGradient id='mgrGrad' x1='0%' y1='0%' x2='0%' y2='100%'>" +
+                "<stop offset='0%' stop-color='#6366f1'/>" +
+                "<stop offset='100%' stop-color='#4338ca'/>" +
+              "</linearGradient>" +
+            "</defs>" +
+            "<rect x='4' y='4' width='112' height='132' rx='22' " +
+                  "fill='url(#mgrGrad)' stroke='#3730a3' stroke-width='2'/>" +
+            "<circle cx='60' cy='54' r='18' fill='#ffffff'/>" +
+            "<path d='M24 126 C24 96 40 80 60 80 C80 80 96 96 96 126 Z' fill='#ffffff'/>" +
+          "</svg>" +
+          "<div class='manager-badge-label'>MANAGER</div>" +
+        "</div>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto;'>" +
+          "The manager is the one sending the company's records to you." +
+        "</p>",
+      minTimeSeconds: 7
+    },
+
+    // -- Page 24: Manager knows all, picks 4 ---------------------------
+    {
+      id: "p3_inst_manager_knows_all",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:24px; line-height:1.35; max-width:620px; margin:0 auto 18px; font-weight:700;'>" +
+          "The manager knows <strong>all</strong> of the company's transactions, and " +
+          "decides <strong>which 4</strong> you see." +
+        "</p>" +
+        "<div class='manager-above-wrap'>" +
+          "<div class='manager-badge-mini'>" +
+            "<svg viewBox='0 0 120 140' xmlns='http://www.w3.org/2000/svg' aria-hidden='true' width='72'>" +
+              "<defs>" +
+                "<linearGradient id='mgrGradB' x1='0%' y1='0%' x2='0%' y2='100%'>" +
+                  "<stop offset='0%' stop-color='#6366f1'/>" +
+                  "<stop offset='100%' stop-color='#4338ca'/>" +
+                "</linearGradient>" +
+              "</defs>" +
+              "<rect x='4' y='4' width='112' height='132' rx='22' fill='url(#mgrGradB)' stroke='#3730a3' stroke-width='2'/>" +
+              "<circle cx='60' cy='54' r='18' fill='#ffffff'/>" +
+              "<path d='M24 126 C24 96 40 80 60 80 C80 80 96 96 96 126 Z' fill='#ffffff'/>" +
+            "</svg>" +
+            "<div class='manager-badge-caption'>Sees everything</div>" +
+          "</div>" +
+          "<div class='manager-cards-below'>" +
+            // 10 transactions: 6 C + 4 S, visually diverse so the
+            // "sees everything" framing lands.
+            "<div class='transaction-doc clean rule-small'>C</div>" +
+            "<div class='transaction-doc suspicious rule-small'>S</div>" +
+            "<div class='transaction-doc clean rule-small'>C</div>" +
+            "<div class='transaction-doc clean rule-small'>C</div>" +
+            "<div class='transaction-doc suspicious rule-small'>S</div>" +
+            "<div class='transaction-doc clean rule-small'>C</div>" +
+            "<div class='transaction-doc suspicious rule-small'>S</div>" +
+            "<div class='transaction-doc clean rule-small'>C</div>" +
+            "<div class='transaction-doc clean rule-small'>C</div>" +
+            "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "</div>" +
+        "</div>",
+      minTimeSeconds: 6
+    },
+
+    // -- Page 25: Split view -- manager picks 4, auditor sees 4 --------
+    {
+      id: "p3_inst_manager_picks",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:24px; line-height:1.35; max-width:620px; margin:0 auto 18px; font-weight:700;'>" +
+          "The manager picks the <strong>4</strong> you see." +
+        "</p>" +
+        "<div class='split-view'>" +
+          "<div class='split-side'>" +
+            "<div class='split-badge'>" +
+              "<svg viewBox='0 0 120 140' xmlns='http://www.w3.org/2000/svg' aria-hidden='true' width='56'>" +
+                "<defs>" +
+                  "<linearGradient id='mgrGradC' x1='0%' y1='0%' x2='0%' y2='100%'>" +
+                    "<stop offset='0%' stop-color='#6366f1'/>" +
+                    "<stop offset='100%' stop-color='#4338ca'/>" +
+                  "</linearGradient>" +
+                "</defs>" +
+                "<rect x='4' y='4' width='112' height='132' rx='22' fill='url(#mgrGradC)' stroke='#3730a3' stroke-width='2'/>" +
+                "<circle cx='60' cy='54' r='18' fill='#ffffff'/>" +
+                "<path d='M24 126 C24 96 40 80 60 80 C80 80 96 96 96 126 Z' fill='#ffffff'/>" +
+              "</svg>" +
+              "<div class='split-badge-label'>Manager</div>" +
+            "</div>" +
+            "<div class='split-cards'>" +
+              // 10 transactions: same 6 C + 4 S as Page 24, so the
+              // "manager sees all 10" visual carries over.
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc suspicious rule-small'>S</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc suspicious rule-small'>S</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc suspicious rule-small'>S</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc suspicious rule-small'>S</div>" +
+            "</div>" +
+            "<div class='split-caption'>Sees all 10</div>" +
+          "</div>" +
+          "<div class='split-arrow'>&rarr;</div>" +
+          "<div class='split-side'>" +
+            "<div class='split-badge'>" +
+              "<svg viewBox='0 0 100 120' xmlns='http://www.w3.org/2000/svg' aria-hidden='true' width='50'>" +
+                "<defs>" +
+                  "<linearGradient id='auditorMagSplit' x1='0%' y1='0%' x2='0%' y2='100%'>" +
+                    "<stop offset='0%' stop-color='#0ea5a0'/>" +
+                    "<stop offset='100%' stop-color='#0f766e'/>" +
+                  "</linearGradient>" +
+                "</defs>" +
+                "<rect x='16' y='18' width='54' height='72' rx='4' fill='#ffffff' stroke='#0f766e' stroke-width='2'/>" +
+                "<line x1='24' y1='32' x2='62' y2='32' stroke='#94a3b8' stroke-width='2' stroke-linecap='round'/>" +
+                "<line x1='24' y1='42' x2='58' y2='42' stroke='#94a3b8' stroke-width='2' stroke-linecap='round'/>" +
+                "<line x1='24' y1='52' x2='62' y2='52' stroke='#94a3b8' stroke-width='2' stroke-linecap='round'/>" +
+                "<line x1='24' y1='62' x2='50' y2='62' stroke='#94a3b8' stroke-width='2' stroke-linecap='round'/>" +
+                "<circle cx='66' cy='72' r='20' fill='none' stroke='url(#auditorMagSplit)' stroke-width='7'/>" +
+                "<circle cx='66' cy='72' r='16' fill='#ccfbf1' opacity='0.5'/>" +
+                "<line x1='80' y1='86' x2='96' y2='104' stroke='url(#auditorMagSplit)' stroke-width='8' stroke-linecap='round'/>" +
+              "</svg>" +
+              "<div class='split-badge-label'>You</div>" +
+            "</div>" +
+            "<div class='split-cards'>" +
+              // All 4 Clean: the manager strategically picked the
+              // cleanest-looking transactions. The auditor sees a
+              // company that looks spotless even though there were
+              // 4 suspicious transactions in the full set.
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+            "</div>" +
+            "<div class='split-caption'>Sees 4 (manager's pick)</div>" +
+          "</div>" +
+        "</div>",
+      minTimeSeconds: 6
+    },
+
+    // -- Page 26: Important -- big "4" (law) ----------------------------
+    {
+      id: "p3_inst_mandate",
+      type: "instructions",
+      title: "",
+      body:
+        "<div style='text-align:center; margin:14px 0 26px;'>" +
+          "<div style='font-size:110px; font-weight:800; line-height:1; letter-spacing:-0.05em; color:var(--color-primary);'>4</div>" +
+          "<div style='font-size:14px; text-transform:uppercase; letter-spacing:1.2px; font-weight:700; color:var(--color-text-slate); margin-top:8px;'>required by law</div>" +
+        "</div>" +
+        "<p style='text-align:justify; font-size:22px; max-width:620px; margin:0 auto 14px; font-weight:700;'>" +
+          "Two rules the manager <strong>cannot</strong> break:" +
+        "</p>" +
+        "<ol style='font-size:19px; max-width:620px; margin:0 auto 18px; line-height:1.6; padding-left:28px;'>" +
+          "<li style='margin-bottom:10px;'>Send <strong>exactly 4</strong> transactions. Not more, not fewer.</li>" +
+          "<li>Send them as they are. A suspicious transaction stays suspicious; a clean one stays clean.</li>" +
+        "</ol>" +
+        "<p style='text-align:justify; font-size:17px; max-width:620px; margin:0 auto; line-height:1.6;'>" +
+          "A manager who breaks either rule is flagged as fraudulent." +
         "</p>",
       minTimeSeconds: 6
     },
 
-    // -- Page 8: Firms Look Different --
+    // -- Page 27: Attention check -- who picks which? ------------------
     {
-      id: "p1_inst_mix_differs",
+      id: "p3_check_which",
       type: "instructions",
-      title: "Firms Look Different",
+      title: "",
       body:
-        "<div class='type-pie-row'>" +
-          "<div class='type-pie-card type-pie-clean'>" +
-            "<div class='type-pie-label'>Clean Firm</div>" +
-            "<div class='type-pie' style='background:conic-gradient(#22c55e 0deg 180deg, #ef4444 180deg 360deg);'></div>" +
-            "<div class='type-pie-legend'>" +
-              "<div class='type-pie-legend-item'><span class='doc-icon doc-icon-normal' style='width:18px; height:22px; font-size:10px;'>N</span><strong>50%</strong></div>" +
-              "<div class='type-pie-legend-item'><span class='doc-icon doc-icon-flagged' style='width:18px; height:22px; font-size:10px;'>F</span>50%</div>" +
-            "</div>" +
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quick attention check" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "Who picks <strong>which</strong> transactions you see?" +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='manager' data-mode='retry' " +
+             "data-explain='The law sets how many. The manager picks which ones.'>" +
+          "<button type='button' class='practice-btn' data-val='law'>The law.</button>" +
+          "<button type='button' class='practice-btn' data-val='random'>Random chance.</button>" +
+          "<button type='button' class='practice-btn' data-val='manager'>The manager.</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      minTimeSeconds: 5
+    },
+
+    // -- Page 28: Attention check -- can manager fake a transaction? ----
+    {
+      id: "p3_check_fake",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quick attention check" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "True or false: the manager can turn a suspicious transaction into a " +
+          "clean one." +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='false' data-mode='retry' " +
+             "data-explain='The manager can&apos;t fake transactions. They can only pick which ones get sent.'>" +
+          "<button type='button' class='practice-btn' data-val='true'>True.</button>" +
+          "<button type='button' class='practice-btn' data-val='false'>False.</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      minTimeSeconds: 5
+    },
+
+    // ==================================================================
+    //  ACT IV -- STAKES AND YOUR BONUS
+    // ==================================================================
+
+    // -- Page 29: Manager's stakes (the raise) --------------------------
+    {
+      id: "p4_inst_manager_stakes",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 14px; font-weight:700;'>" +
+          "What's at stake for the manager?" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:18px; max-width:620px; margin:0 auto 22px; line-height:1.6;'>" +
+          "A full audit is costly for the company. And if it happens, the manager " +
+          "<strong>loses their raise</strong>." +
+        "</p>" +
+        "<div class='scenario-pair'>" +
+          "<div class='scenario-line scenario-good'>" +
+            "<span class='scenario-tag'>You estimate 10%</span>" +
+            "<span class='scenario-arrow'>&rarr;</span>" +
+            "<span><strong>Full audit</strong> unlikely</span>" +
+            "<span class='scenario-arrow'>&rarr;</span>" +
+            "<span class='scenario-outcome'>Manager gets the raise</span>" +
           "</div>" +
-          "<div class='type-pie-card type-pie-fraud'>" +
-            "<div class='type-pie-label'>Fraudulent Firm</div>" +
-            "<div class='type-pie' style='background:conic-gradient(#22c55e 0deg 144deg, #ef4444 144deg 360deg);'></div>" +
-            "<div class='type-pie-legend'>" +
-              "<div class='type-pie-legend-item'><span class='doc-icon doc-icon-normal' style='width:18px; height:22px; font-size:10px;'>N</span>40%</div>" +
-              "<div class='type-pie-legend-item'><span class='doc-icon doc-icon-flagged' style='width:18px; height:22px; font-size:10px;'>F</span><strong>60%</strong></div>" +
-            "</div>" +
+          "<div class='scenario-line scenario-bad'>" +
+            "<span class='scenario-tag'>You estimate 80%</span>" +
+            "<span class='scenario-arrow'>&rarr;</span>" +
+            "<span><strong>Full audit</strong> likely</span>" +
+            "<span class='scenario-arrow'>&rarr;</span>" +
+            "<span class='scenario-outcome'>Manager loses the raise</span>" +
           "</div>" +
         "</div>" +
-        "<p style='text-align:center; font-size:17px; margin-top:8px;'>" +
-          "<strong>Clean</strong> firms have about half Normal and half Flagged. " +
-          "<strong>Fraudulent</strong> firms tilt toward <strong>Flagged</strong> -- about 60%." +
+        "<p style='text-align:justify; font-size:18px; max-width:620px; margin:22px auto 0; line-height:1.6;'>" +
+          "So the manager is better off when your estimate is <strong>low</strong>." +
+        "</p>",
+      minTimeSeconds: 6
+    },
+
+    // -- Page 29b: Attention check -- manager's incentive --------------
+    {
+      id: "p4_check_manager_incentive",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quick attention check" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "Why does the manager <strong>not</strong> want a high fraud estimate?" +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='raise' data-mode='retry' " +
+             "data-explain='A high estimate makes a full audit likely, and a full audit costs the manager their raise.'>" +
+          "<button type='button' class='practice-btn' data-val='fine'>A high estimate triggers a fine on the manager.</button>" +
+          "<button type='button' class='practice-btn' data-val='raise'>A high estimate makes a full audit likely, and a full audit costs the manager their raise.</button>" +
+          "<button type='button' class='practice-btn' data-val='bonus'>A high estimate lowers the government auditor's bonus.</button>" +
+          "<button type='button' class='practice-btn' data-val='indifferent'>The manager doesn't care about your estimate.</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      minTimeSeconds: 6
+    },
+
+    // -- Page 30: Your stakes -------------------------------------------
+    {
+      id: "p4_inst_auditor_stakes",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 16px; font-weight:700;'>" +
+          "What's at stake for <strong>you</strong>?" +
+        "</p>" +
+        "<ol style='text-align:left; font-size:19px; max-width:620px; margin:0 auto; line-height:1.6; padding-left:22px;'>" +
+          "<li>Your bonus rewards <strong>accuracy</strong> of your estimates across all 30 companies.</li>" +
+          "<li>Your bonus depends on <strong>your confidence</strong> in your estimates.</li>" +
+        "</ol>",
+      minTimeSeconds: 8
+    },
+
+    // -- Page 31a: Your task has two answers -- reveal Answer 1 --------
+    {
+      id: "p4_inst_two_answers_a",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 26px; font-weight:700;'>" +
+          "For each company, you give <strong>two</strong> answers." +
+        "</p>" +
+        "<div class='two-answers-row'>" +
+          "<div class='answer-card'>" +
+            "<div class='answer-num'>1</div>" +
+            "<div class='answer-title'>Fraud estimate</div>" +
+            "<div class='answer-sub'>Your best guess. Be as <strong>precise</strong> as you can.</div>" +
+          "</div>" +
+          "<div class='answer-card' style='visibility:hidden;' aria-hidden='true'>" +
+            "<div class='answer-num'>2</div>" +
+            "<div class='answer-title'>Bet</div>" +
+            "<div class='answer-sub'>&nbsp;</div>" +
+          "</div>" +
+        "</div>",
+      minTimeSeconds: 5
+    },
+
+    // -- Page 31b: Your task has two answers -- reveal Answer 2 --------
+    {
+      id: "p4_inst_two_answers_b",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 26px; font-weight:700;'>" +
+          "For each company, you give <strong>two</strong> answers." +
+        "</p>" +
+        "<div class='two-answers-row'>" +
+          "<div class='answer-card'>" +
+            "<div class='answer-num'>1</div>" +
+            "<div class='answer-title'>Fraud estimate</div>" +
+            "<div class='answer-sub'>Your best guess. Be as <strong>precise</strong> as you can.</div>" +
+          "</div>" +
+          "<div class='answer-card'>" +
+            "<div class='answer-num'>2</div>" +
+            "<div class='answer-title'>Bet</div>" +
+            "<div class='answer-sub'>How confident you are that your estimate is " +
+              "<strong>within 10 percentage points</strong> of the correct answer.</div>" +
+          "</div>" +
+        "</div>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:26px auto 0; font-weight:700;'>" +
+          "Each one earns its own bonus." +
         "</p>",
       minTimeSeconds: 8
     },
 
-    // -- Page 9: Firm Sizes --
+    // -- Page 32: Estimate bonus -- introduction ------------------------
     {
-      id: "p1_inst_sizes",
+      id: "p4_inst_estimate_intro",
       type: "instructions",
-      title: "Firm Sizes",
+      title: "",
       body:
-        "<div class='firm-size-row size-diff'>" +
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Answer 1: fraud estimate" +
+        "</p>" +
+        "<p style='text-align:left; font-size:24px; max-width:620px; margin:0 auto 16px; font-weight:700;'>" +
+          "The estimate bonus." +
+        "</p>" +
+        "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 18px; line-height:1.65; padding-left:22px;'>" +
+          "<li>If your estimate is <strong>within 10 percentage points</strong> of the correct answer, you earn <strong>+10&cent;</strong>.</li>" +
+          "<li>If your estimate is <strong>more than 10 percentage points</strong> away from the correct answer, you earn <strong>0&cent;</strong>.</li>" +
+        "</ul>" +
+        "<p style='text-align:left; font-size:17px; max-width:620px; margin:18px auto 0; line-height:1.6;'>" +
+          "Let's practice. For our example company, the correct answer is <strong>35%</strong>." +
+        "</p>",
+      minTimeSeconds: 8
+    },
+
+    // -- Page 33: Estimate practice -- move to 50% (wrong, 0¢) ----------
+    {
+      id: "p4_inst_estimate_try_50",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:left; font-size:22px; max-width:620px; margin:0 auto 14px; font-weight:700;'>" +
+          "Try it." +
+        "</p>" +
+        "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 18px; line-height:1.6; padding-left:22px;'>" +
+          "<li>The correct answer for this company is <strong>35%</strong>.</li>" +
+          "<li>Move your estimate to <strong>50%</strong>.</li>" +
+        "</ul>" +
+        "<div class='estimate-sim' data-truth='35' data-target='50' data-band-low='25' data-band-high='45'>" +
+          
+          "<div class='sim-slider-card'>" +
+            "<div class='sim-slider-header'>Your estimate: <span class='sim-slider-value' id='est35_val'>50%</span></div>" +
+            "<div class='slider-wrapper'>" +
+              "<span class='slider-label'>0%</span>" +
+              "<div class='slider-range-wrap'>" +
+                "<div class='slider-band' style='left:25%; right:55%;'></div>" +
+                "<div class='slider-coverage-band' id='est35_cov'></div>" +
+                "<input type='range' class='slider-input' id='est35_slider' min='0' max='100' step='1' value='50' data-display='est35_val' data-coverage-band='est35_cov'>" +
+              "</div>" +
+              "<span class='slider-label'>100%</span>" +
+            "</div>" +
+          "</div>" +
+          "<div class='sim-result'>" +
+            "<div class='sim-result-row'>Within 10 percentage points of the correct answer? <span id='est35_within' class='sim-flag-no'>No &#10008;</span></div>" +
+            "<div class='sim-result-total'>Estimate bonus: <span id='est35_bonus'>0&cent;</span></div>" +
+          "</div>" +
+        "</div>" +
+        "<p style='text-align:left; font-size:20px; max-width:620px; margin:22px auto 0; line-height:1.5; font-weight:700; color:#b91c1c;'>" +
+          "At 50%, you're 15 percentage points off the correct answer. You earn <strong>0&cent;</strong> on this company." +
+        "</p>",
+      showCalculator: true,
+      minTimeSeconds: 12
+    },
+
+    // -- Page 34: Estimate practice -- move to 30% (right, +10¢) --------
+    {
+      id: "p4_inst_estimate_try_30",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:left; font-size:22px; max-width:620px; margin:0 auto 14px; font-weight:700;'>" +
+          "Now try again." +
+        "</p>" +
+        "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 18px; line-height:1.6; padding-left:22px;'>" +
+          "<li>Same correct answer: <strong>35%</strong>.</li>" +
+          "<li>Move your estimate to <strong>30%</strong>.</li>" +
+        "</ul>" +
+        "<div class='estimate-sim' data-truth='35' data-target='30' data-band-low='25' data-band-high='45'>" +
+          
+          "<div class='sim-slider-card'>" +
+            "<div class='sim-slider-header'>Your estimate: <span class='sim-slider-value' id='est30_val'>50%</span></div>" +
+            "<div class='slider-wrapper'>" +
+              "<span class='slider-label'>0%</span>" +
+              "<div class='slider-range-wrap'>" +
+                "<div class='slider-band' style='left:25%; right:55%;'></div>" +
+                "<div class='slider-coverage-band' id='est30_cov'></div>" +
+                "<input type='range' class='slider-input' id='est30_slider' min='0' max='100' step='1' value='50' data-display='est30_val' data-coverage-band='est30_cov'>" +
+              "</div>" +
+              "<span class='slider-label'>100%</span>" +
+            "</div>" +
+          "</div>" +
+          "<div class='sim-result'>" +
+            "<div class='sim-result-row'>Within 10 percentage points of the correct answer? <span id='est30_within' class='sim-flag-no'>No &#10008;</span></div>" +
+            "<div class='sim-result-total'>Estimate bonus: <span id='est30_bonus'>0&cent;</span></div>" +
+          "</div>" +
+        "</div>" +
+        "<p style='text-align:left; font-size:20px; max-width:620px; margin:22px auto 0; line-height:1.5; font-weight:700; color:#15803d;'>" +
+          "At 30%, you're within 10 percentage points of 35%. You earn <strong>+10&cent;</strong>." +
+        "</p>",
+      showCalculator: true,
+      minTimeSeconds: 12
+    },
+
+    // -- Page 35: Takeaway ---------------------------------------------
+    {
+      id: "p4_inst_estimate_takeaway",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:22px; max-width:620px; margin:0 auto 14px; font-weight:600;'>" +
+          "Takeaway." +
+        "</p>" +
+        "<p style='text-align:justify; font-size:18px; max-width:620px; margin:0 auto; line-height:1.6;'>" +
+          "Correct answer <strong>35%</strong> &rarr; the bonus pays out for any estimate between " +
+          "<strong>25%</strong> and <strong>45%</strong>." +
+        "</p>",
+      minTimeSeconds: 6
+    },
+
+    // -- Page 35b: Attention check -- estimate bonus numeric ----------
+    // Tests the "within 10 percentage points" rule on a fresh number
+    // (truth = 60%) to check the participant didn't just memorize the
+    // 35/25/45 example above.
+    {
+      id: "p4_check_estimate_bonus",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quick attention check" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600; line-height:1.5;'>" +
+          "The correct answer is <strong>60%</strong>. You estimate <strong>55%</strong>. " +
+          "How much do you earn from the estimate?" +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='ten' data-mode='retry' " +
+             "data-explain='55% is within 10 percentage points of 60% (difference is 5), so the estimate bonus is +10&cent;.'>" +
+          "<button type='button' class='practice-btn' data-val='zero'>0&cent;</button>" +
+          "<button type='button' class='practice-btn' data-val='five'>+5&cent;</button>" +
+          "<button type='button' class='practice-btn' data-val='ten'>+10&cent;</button>" +
+          "<button type='button' class='practice-btn' data-val='minus'>&minus;5&cent;</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      showCalculator: true,
+      minTimeSeconds: 6
+    },
+
+    // -- Page 36: Bet bonus intro ---------------------------------------
+    // -- Page 36: Bet intro (concept) -- no kicker --------------------
+    {
+      id: "p4_inst_bet_intro",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:26px; max-width:620px; margin:0 auto 16px; font-weight:700;'>" +
+          "The bet." +
+        "</p>" +
+        "<p style='text-align:justify; font-size:18px; max-width:620px; margin:0 auto; line-height:1.6;'>" +
+          "Besides your estimate, you can also <strong>bet up to 10&cent;</strong> on whether your estimate is within 10 percentage points of the correct answer." +
+        "</p>",
+      minTimeSeconds: 7
+    },
+
+    // -- Page 36b: Bet example (concrete) -- no kicker ------------------
+    {
+      id: "p4_inst_bet_example",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:center; font-size:22px; max-width:620px; margin:0 auto 18px; font-weight:700;'>" +
+          "For instance, you bet <strong>5&cent;</strong> on your estimate:" +
+        "</p>" +
+        "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 14px; line-height:1.65; padding-left:22px;'>" +
+          "<li>Within 10 percentage points &rarr; you <strong>win the bet</strong>: <strong>+5&cent;</strong>.</li>" +
+          "<li>More than 10 percentage points away &rarr; you <strong>lose the bet</strong>: <strong>&minus;5&cent;</strong> (deducted from bonus on other companies).</li>" +
+          "<li>Your <strong>$3 base pay is never touched.</strong> Lost bets only reduce bonus from other companies, and total bonus can't drop below $0.</li>" +
+        "</ul>",
+      minTimeSeconds: 9
+    },
+
+    // -- Page 37: Bet practice -- good scenario (+18¢) -----------------
+    {
+      id: "p4_inst_bet_try_good",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:left; font-size:22px; max-width:620px; margin:0 auto 14px; font-weight:700;'>" +
+          "Try it." +
+        "</p>" +
+        "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 18px; line-height:1.6; padding-left:22px;'>" +
+          "<li>The correct answer is <strong>35%</strong>.</li>" +
+          "<li>Set your estimate to <strong>30%</strong>.</li>" +
+          "<li>Set your bet to <strong>8&cent;</strong>.</li>" +
+        "</ul>" +
+        "<div class='bonus-sim' data-truth='35' data-target-est='30' data-target-bet='8' data-band-low='25' data-band-high='45'>" +
+          
+          "<div class='sim-slider-card'>" +
+            "<div class='sim-slider-header'>Your estimate: <span class='sim-slider-value' id='betg_est_display'>50%</span></div>" +
+            "<div class='slider-wrapper'>" +
+              "<span class='slider-label'>0%</span>" +
+              "<div class='slider-range-wrap'>" +
+                "<div class='slider-band' style='left:25%; right:55%;'></div>" +
+                "<div class='slider-coverage-band' id='betg_cov'></div>" +
+                "<input type='range' class='slider-input' id='betg_estimate' min='0' max='100' step='1' value='50' data-display='betg_est_display' data-coverage-band='betg_cov'>" +
+              "</div>" +
+              "<span class='slider-label'>100%</span>" +
+            "</div>" +
+          "</div>" +
+          "<div class='sim-slider-card'>" +
+            "<div class='sim-slider-header'>Your bet: <span class='sim-slider-value' id='betg_conf_display'>0&cent;</span></div>" +
+            "<div class='slider-wrapper'>" +
+              "<span class='slider-label'>0&cent;</span>" +
+              "<div class='slider-range-wrap'>" +
+                "<input type='range' class='slider-input' id='betg_confidence' min='0' max='10' step='1' value='0' data-display='betg_conf_display' data-display-suffix='cents'>" +
+              "</div>" +
+              "<span class='slider-label'>10&cent;</span>" +
+            "</div>" +
+          "</div>" +
+          "<div class='sim-result'>" +
+            "<div class='sim-result-row'>Within 10 percentage points of the correct answer? <span id='betg_within' class='sim-flag-no'>No &#10008;</span></div>" +
+            "<div class='sim-result-row'>Estimate bonus: <span id='betg_answer'>0&cent;</span></div>" +
+            "<div class='sim-result-row'>Bet outcome: <span id='betg_conf_bonus'>0&cent;</span></div>" +
+            "<div class='sim-result-total'>You'd earn: <span id='betg_total'>0&cent;</span></div>" +
+          "</div>" +
+        "</div>" +
+        "<p style='text-align:left; font-size:20px; max-width:620px; margin:22px auto 0; line-height:1.5; font-weight:700; color:#15803d;'>" +
+          "Within 10 percentage points, bet won. You earn <strong>+18&cent;</strong>." +
+        "</p>",
+      showCalculator: true,
+      minTimeSeconds: 12
+    },
+
+    // -- Page 38: Bet practice -- bad scenario (-8¢) -------------------
+    {
+      id: "p4_inst_bet_try_bad",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:left; font-size:22px; max-width:620px; margin:0 auto 14px; font-weight:700;'>" +
+          "Now try again." +
+        "</p>" +
+        "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 18px; line-height:1.6; padding-left:22px;'>" +
+          "<li>Same correct answer: <strong>35%</strong>.</li>" +
+          "<li>Set your estimate to <strong>50%</strong>.</li>" +
+          "<li>Keep your bet at <strong>8&cent;</strong>.</li>" +
+        "</ul>" +
+        "<div class='bonus-sim' data-truth='35' data-target-est='50' data-target-bet='8' data-band-low='25' data-band-high='45'>" +
+          
+          "<div class='sim-slider-card'>" +
+            "<div class='sim-slider-header'>Your estimate: <span class='sim-slider-value' id='betb_est_display'>30%</span></div>" +
+            "<div class='slider-wrapper'>" +
+              "<span class='slider-label'>0%</span>" +
+              "<div class='slider-range-wrap'>" +
+                "<div class='slider-band' style='left:25%; right:55%;'></div>" +
+                "<div class='slider-coverage-band' id='betb_cov'></div>" +
+                "<input type='range' class='slider-input' id='betb_estimate' min='0' max='100' step='1' value='30' data-display='betb_est_display' data-coverage-band='betb_cov'>" +
+              "</div>" +
+              "<span class='slider-label'>100%</span>" +
+            "</div>" +
+          "</div>" +
+          "<div class='sim-slider-card'>" +
+            "<div class='sim-slider-header'>Your bet: <span class='sim-slider-value' id='betb_conf_display'>0&cent;</span></div>" +
+            "<div class='slider-wrapper'>" +
+              "<span class='slider-label'>0&cent;</span>" +
+              "<div class='slider-range-wrap'>" +
+                "<input type='range' class='slider-input' id='betb_confidence' min='0' max='10' step='1' value='0' data-display='betb_conf_display' data-display-suffix='cents'>" +
+              "</div>" +
+              "<span class='slider-label'>10&cent;</span>" +
+            "</div>" +
+          "</div>" +
+          "<div class='sim-result'>" +
+            "<div class='sim-result-row'>Within 10 percentage points of the correct answer? <span id='betb_within' class='sim-flag-yes'>Yes &#10004;</span></div>" +
+            "<div class='sim-result-row'>Estimate bonus: <span id='betb_answer'>+10&cent;</span></div>" +
+            "<div class='sim-result-row'>Bet outcome: <span id='betb_conf_bonus'>0&cent;</span></div>" +
+            "<div class='sim-result-total'>You'd earn: <span id='betb_total'>+10&cent;</span></div>" +
+          "</div>" +
+        "</div>" +
+        "<p style='text-align:left; font-size:20px; max-width:620px; margin:22px auto 0; line-height:1.5; font-weight:700; color:#b91c1c;'>" +
+          "More than 10 percentage points off, bet lost. You earn <strong>&minus;8&cent;</strong>." +
+        "</p>" +
+        "<p style='text-align:left; font-size:17px; max-width:620px; margin:14px auto 0; line-height:1.6;'>" +
+          "Bet <strong>0&cent;</strong> instead, and you'd have earned <strong>0&cent;</strong>, not lost 8&cent;. " +
+          "<strong>Only bet when you're confident.</strong>" +
+        "</p>",
+      showCalculator: true,
+      minTimeSeconds: 12
+    },
+
+    // (Page 39 "Play with the bonus" removed -- redundant with the two
+    //  try-it pages above, which already use both sliders live.)
+
+    // -- Page 40a: Opposing goals -- reveal YOU (auditor) only ---------
+    // Progressive reveal pattern (same trick as Pages 8/9, 53a/b/c):
+    // the auditor card is visible, the manager card is kept as an
+    // invisible placeholder so the layout doesn't shift on 40b.
+    {
+      id: "p4_inst_opposing_a",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:24px; line-height:1.35; max-width:620px; margin:0 auto 24px; font-weight:700;'>" +
+          "Your goal and the manager's are <strong>opposite</strong>." +
+        "</p>" +
+        "<div class='interests-row'>" +
+          "<div class='interests-card interests-auditor'>" +
+            "<div class='interests-icon'>" +
+              "<svg viewBox='0 0 100 120' xmlns='http://www.w3.org/2000/svg' aria-hidden='true' width='64'>" +
+                "<defs>" +
+                  "<linearGradient id='auditorMagIntA' x1='0%' y1='0%' x2='0%' y2='100%'>" +
+                    "<stop offset='0%' stop-color='#0ea5a0'/>" +
+                    "<stop offset='100%' stop-color='#0f766e'/>" +
+                  "</linearGradient>" +
+                "</defs>" +
+                "<rect x='16' y='18' width='54' height='72' rx='4' fill='#ffffff' stroke='#0f766e' stroke-width='2'/>" +
+                "<line x1='24' y1='32' x2='62' y2='32' stroke='#94a3b8' stroke-width='2' stroke-linecap='round'/>" +
+                "<line x1='24' y1='42' x2='58' y2='42' stroke='#94a3b8' stroke-width='2' stroke-linecap='round'/>" +
+                "<line x1='24' y1='52' x2='62' y2='52' stroke='#94a3b8' stroke-width='2' stroke-linecap='round'/>" +
+                "<line x1='24' y1='62' x2='50' y2='62' stroke='#94a3b8' stroke-width='2' stroke-linecap='round'/>" +
+                "<circle cx='66' cy='72' r='20' fill='none' stroke='url(#auditorMagIntA)' stroke-width='7'/>" +
+                "<circle cx='66' cy='72' r='16' fill='#ccfbf1' opacity='0.5'/>" +
+                "<line x1='80' y1='86' x2='96' y2='104' stroke='url(#auditorMagIntA)' stroke-width='8' stroke-linecap='round'/>" +
+              "</svg>" +
+            "</div>" +
+            "<div class='interests-label'>You &ndash; the government auditor</div>" +
+            "<div class='interests-body'>" +
+              "<strong>Detect fraud.</strong> Estimate each company as accurately as you can." +
+            "</div>" +
+          "</div>" +
+          // Invisible placeholders so 40b doesn't shift the auditor card
+          "<div class='interests-divider' style='visibility:hidden;' aria-hidden='true'>vs</div>" +
+          "<div class='interests-card interests-manager' style='visibility:hidden;' aria-hidden='true'>" +
+            "<div class='interests-icon'>&nbsp;</div>" +
+            "<div class='interests-label'>&nbsp;</div>" +
+            "<div class='interests-body'>&nbsp;</div>" +
+          "</div>" +
+        "</div>",
+      minTimeSeconds: 5
+    },
+
+    // -- Page 40b: Opposing goals -- reveal MANAGER (vs) ---------------
+    {
+      id: "p4_inst_opposing_b",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:24px; line-height:1.35; max-width:620px; margin:0 auto 24px; font-weight:700;'>" +
+          "Your goal and the manager's are <strong>opposite</strong>." +
+        "</p>" +
+        "<div class='interests-row'>" +
+          "<div class='interests-card interests-auditor'>" +
+            "<div class='interests-icon'>" +
+              "<svg viewBox='0 0 100 120' xmlns='http://www.w3.org/2000/svg' aria-hidden='true' width='64'>" +
+                "<defs>" +
+                  "<linearGradient id='auditorMagIntB' x1='0%' y1='0%' x2='0%' y2='100%'>" +
+                    "<stop offset='0%' stop-color='#0ea5a0'/>" +
+                    "<stop offset='100%' stop-color='#0f766e'/>" +
+                  "</linearGradient>" +
+                "</defs>" +
+                "<rect x='16' y='18' width='54' height='72' rx='4' fill='#ffffff' stroke='#0f766e' stroke-width='2'/>" +
+                "<line x1='24' y1='32' x2='62' y2='32' stroke='#94a3b8' stroke-width='2' stroke-linecap='round'/>" +
+                "<line x1='24' y1='42' x2='58' y2='42' stroke='#94a3b8' stroke-width='2' stroke-linecap='round'/>" +
+                "<line x1='24' y1='52' x2='62' y2='52' stroke='#94a3b8' stroke-width='2' stroke-linecap='round'/>" +
+                "<line x1='24' y1='62' x2='50' y2='62' stroke='#94a3b8' stroke-width='2' stroke-linecap='round'/>" +
+                "<circle cx='66' cy='72' r='20' fill='none' stroke='url(#auditorMagIntB)' stroke-width='7'/>" +
+                "<circle cx='66' cy='72' r='16' fill='#ccfbf1' opacity='0.5'/>" +
+                "<line x1='80' y1='86' x2='96' y2='104' stroke='url(#auditorMagIntB)' stroke-width='8' stroke-linecap='round'/>" +
+              "</svg>" +
+            "</div>" +
+            "<div class='interests-label'>You &ndash; the government auditor</div>" +
+            "<div class='interests-body'>" +
+              "<strong>Detect fraud.</strong> Estimate each company as accurately as you can." +
+            "</div>" +
+          "</div>" +
+          "<div class='interests-divider'>vs</div>" +
+          "<div class='interests-card interests-manager'>" +
+            "<div class='interests-icon'>" +
+              "<svg viewBox='0 0 120 140' xmlns='http://www.w3.org/2000/svg' aria-hidden='true' width='64'>" +
+                "<defs>" +
+                  "<linearGradient id='intMgr' x1='0%' y1='0%' x2='0%' y2='100%'>" +
+                    "<stop offset='0%' stop-color='#6366f1'/>" +
+                    "<stop offset='100%' stop-color='#4338ca'/>" +
+                  "</linearGradient>" +
+                "</defs>" +
+                "<rect x='4' y='4' width='112' height='132' rx='22' fill='url(#intMgr)' stroke='#3730a3' stroke-width='2'/>" +
+                "<circle cx='60' cy='54' r='18' fill='#ffffff'/>" +
+                "<path d='M24 126 C24 96 40 80 60 80 C80 80 96 96 96 126 Z' fill='#ffffff'/>" +
+              "</svg>" +
+            "</div>" +
+            "<div class='interests-label'>The manager</div>" +
+            "<div class='interests-body'>" +
+              "Wants the <strong>lowest estimate</strong> possible, ideally " +
+              "<strong>0%</strong>, even if the company really is fraudulent." +
+            "</div>" +
+          "</div>" +
+        "</div>",
+      minTimeSeconds: 7
+    },
+
+    // -- Page 40c: The sum-up line on its own page, big + emphasized ---
+    {
+      id: "p4_inst_opposing_c",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:center; font-size:30px; line-height:1.35; max-width:620px; margin:60px auto 24px; font-weight:800; color:#0f172a;'>" +
+          "The manager just wants a <span style='color:#b91c1c;'>low</span> estimate." +
+        "</p>" +
+        "<p style='text-align:center; font-size:30px; line-height:1.35; max-width:620px; margin:0 auto 32px; font-weight:800; color:#0f172a;'>" +
+          "You want an <span style='color:#0f766e;'>accurate</span> one." +
+        "</p>" +
+        "<p style='text-align:center; font-size:17px; max-width:560px; margin:0 auto; line-height:1.6; color:#475569;'>" +
+          "A full audit costs the manager their raise whether fraud is found or not." +
+        "</p>",
+      minTimeSeconds: 8
+    },
+
+    // ==================================================================
+    //  ACT V -- 10-QUESTION COMPREHENSION QUIZ
+    // ==================================================================
+
+    // -- Page 41: Quiz intro --------------------------------------------
+    {
+      id: "p5_quiz_intro",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:26px; max-width:620px; margin:0 auto 18px; font-weight:700;'>" +
+          "One last check before the audits." +
+        "</p>" +
+        "<p style='text-align:justify; font-size:18px; max-width:620px; margin:0 auto; line-height:1.6;'>" +
+          "Answer 14 quick questions. Each wrong answer triggers a " +
+          "<strong>10-second pause</strong> before you can try again." +
+        "</p>",
+      minTimeSeconds: 5
+    },
+
+    // -- Q1 -------------------------------------------------------------
+    {
+      id: "p5_q1", type: "instructions", title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quiz: question 1 of 14" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "What is your job in this study?" +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='audit' data-mode='retry' " +
+             "data-explain='You&apos;re the government auditor. You estimate each company&apos;s percentage of suspicious transactions.'>" +
+          "<button type='button' class='practice-btn' data-val='invest'>Decide which companies to invest in.</button>" +
+          "<button type='button' class='practice-btn' data-val='audit'>Assign each company a fraud estimate from its transactions.</button>" +
+          "<button type='button' class='practice-btn' data-val='rate'>Give each company a customer-service score.</button>" +
+          "<button type='button' class='practice-btn' data-val='pick'>Pick which transactions the company discloses.</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      minTimeSeconds: 8
+    },
+
+    // -- Q2 -------------------------------------------------------------
+    {
+      id: "p5_q2", type: "instructions", title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quiz: question 2 of 14" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "How many transactions must a company send you?" +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='4' data-mode='retry' " +
+             "data-explain='Exactly 4. Set by law.'>" +
+          "<button type='button' class='practice-btn' data-val='1'>1.</button>" +
+          "<button type='button' class='practice-btn' data-val='2'>2.</button>" +
+          "<button type='button' class='practice-btn' data-val='4'>4.</button>" +
+          "<button type='button' class='practice-btn' data-val='all'>All of them.</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      minTimeSeconds: 8
+    },
+
+    // -- Q3 -------------------------------------------------------------
+    {
+      id: "p5_q3", type: "instructions", title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quiz: question 3 of 14" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "Who decides <strong>how many</strong> transactions are disclosed?" +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='law' data-mode='retry' " +
+             "data-explain='The law. Fixed at 4; no one can change it.'>" +
+          "<button type='button' class='practice-btn' data-val='law'>The law.</button>" +
+          "<button type='button' class='practice-btn' data-val='manager'>The manager.</button>" +
+          "<button type='button' class='practice-btn' data-val='you'>You.</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      minTimeSeconds: 8
+    },
+
+    // -- Q4 -------------------------------------------------------------
+    {
+      id: "p5_q4", type: "instructions", title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quiz: question 4 of 14" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "Who decides <strong>which</strong> transactions get sent to you?" +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='manager' data-mode='retry' " +
+             "data-explain='The manager picks which 4 to disclose.'>" +
+          "<button type='button' class='practice-btn' data-val='law'>The law.</button>" +
+          "<button type='button' class='practice-btn' data-val='random'>Random chance.</button>" +
+          "<button type='button' class='practice-btn' data-val='manager'>The manager.</button>" +
+          "<button type='button' class='practice-btn' data-val='you'>You.</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      minTimeSeconds: 8
+    },
+
+    // -- Q5 (NEW): The 4 you see are NOT random ------------------------
+    {
+      id: "p5_q5", type: "instructions", title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quiz: question 5 of 14" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600; line-height:1.5;'>" +
+          "<strong>True or False:</strong> The 4 transactions you receive from a company are <strong>randomly picked</strong> from all of its transactions." +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='false' data-mode='retry' " +
+             "data-explain='False. The manager picks which 4 to send, and the manager has an incentive to make the company look clean.'>" +
+          "<button type='button' class='practice-btn' data-val='true'>True.</button>" +
+          "<button type='button' class='practice-btn' data-val='false'>False.</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      minTimeSeconds: 8
+    },
+
+    // -- Q6 (was Q5) ----------------------------------------------------
+    {
+      id: "p5_q6", type: "instructions", title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quiz: question 6 of 14" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "Can the manager turn a suspicious transaction into a clean one?" +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='no' data-mode='retry' " +
+             "data-explain='No. The manager can only pick which ones get sent.'>" +
+          "<button type='button' class='practice-btn' data-val='yes'>Yes.</button>" +
+          "<button type='button' class='practice-btn' data-val='no'>No.</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      minTimeSeconds: 8
+    },
+
+    // -- Q6 -------------------------------------------------------------
+    {
+      id: "p5_q7", type: "instructions", title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quiz: question 7 of 14" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "Fraud estimate =" +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='share' data-mode='retry' " +
+             "data-explain='Suspicious divided by total.'>" +
+          "<button type='button' class='practice-btn' data-val='gut'>Your gut feeling, in percent.</button>" +
+          "<button type='button' class='practice-btn' data-val='count'>The count of suspicious transactions.</button>" +
+          "<button type='button' class='practice-btn' data-val='share'>The share of suspicious transactions out of all the company's transactions.</button>" +
+          "<button type='button' class='practice-btn' data-val='fifty'>50% for every company.</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      minTimeSeconds: 8
+    },
+
+    // -- Q7 -------------------------------------------------------------
+    {
+      id: "p5_q8", type: "instructions", title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quiz: question 8 of 14" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "What happens when you rate a company <strong>high</strong>?" +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='likely' data-mode='retry' " +
+             "data-explain='Higher estimate &rarr; more lottery tickets &rarr; higher chance of a full audit.'>" +
+          "<button type='button' class='practice-btn' data-val='never'>They never get audited.</button>" +
+          "<button type='button' class='practice-btn' data-val='always'>They get audited for sure.</button>" +
+          "<button type='button' class='practice-btn' data-val='likely'>They're more likely to be picked for a full audit.</button>" +
+          "<button type='button' class='practice-btn' data-val='random'>It's random. Your estimate doesn't matter.</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      minTimeSeconds: 8
+    },
+
+    // -- Q8 -------------------------------------------------------------
+    {
+      id: "p5_q9", type: "instructions", title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quiz: question 9 of 14" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "Correct answer: <strong>40%</strong>. Your estimate: <strong>46%</strong>. Estimate bonus?" +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='10' data-mode='retry' " +
+             "data-explain='46 is within 10 percentage points of 40. Pays the +10&cent;.'>" +
+          "<button type='button' class='practice-btn' data-val='0'>0&cent;.</button>" +
+          "<button type='button' class='practice-btn' data-val='10'>+10&cent;.</button>" +
+          "<button type='button' class='practice-btn' data-val='6'>+6&cent;.</button>" +
+          "<button type='button' class='practice-btn' data-val='-10'>&minus;10&cent;.</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      showCalculator: true,
+      minTimeSeconds: 8
+    },
+
+    // -- Q9 -------------------------------------------------------------
+    {
+      id: "p5_q10", type: "instructions", title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quiz: question 10 of 14" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "Correct answer: <strong>50%</strong>. Estimate: <strong>80%</strong>. Bet: <strong>7&cent;</strong>. " +
+          "Total for this company?" +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='-7' data-mode='retry' " +
+             "data-explain='30 percentage points off &rarr; 0&cent; estimate bonus. Bet lost &rarr; &minus;7&cent;.'>" +
+          "<button type='button' class='practice-btn' data-val='17'>+17&cent;.</button>" +
+          "<button type='button' class='practice-btn' data-val='7'>+7&cent;.</button>" +
+          "<button type='button' class='practice-btn' data-val='0'>0&cent;.</button>" +
+          "<button type='button' class='practice-btn' data-val='-7'>&minus;7&cent;.</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      showCalculator: true,
+      minTimeSeconds: 8
+    },
+
+    // -- Q10 ------------------------------------------------------------
+    {
+      id: "p5_q11", type: "instructions", title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quiz: question 11 of 14" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "If you lose several bets, can your <strong>$3 base pay</strong> drop below $3?" +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='no' data-mode='retry' " +
+             "data-explain='Correct. Bets can eat into bonus, never into base pay.'>" +
+          "<button type='button' class='practice-btn' data-val='yes'>Yes, wrong answers cut into base pay.</button>" +
+          "<button type='button' class='practice-btn' data-val='no'>No. Base pay is guaranteed; lost bets only reduce bonus, and total bonus can't go below $0.</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      minTimeSeconds: 8
+    },
+
+    // -- Q11 ------------------------------------------------------------
+    {
+      id: "p5_q12", type: "instructions", title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quiz: question 12 of 14" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "What's the probability that any given transaction is clean?" +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='50' data-mode='retry' " +
+             "data-explain='Any transaction is a coin flip: 50% clean, 50% suspicious.'>" +
+          "<button type='button' class='practice-btn' data-val='0'>0%.</button>" +
+          "<button type='button' class='practice-btn' data-val='25'>25%.</button>" +
+          "<button type='button' class='practice-btn' data-val='50'>50%.</button>" +
+          "<button type='button' class='practice-btn' data-val='100'>100%.</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      minTimeSeconds: 8
+    },
+
+    // -- Q12 ------------------------------------------------------------
+    {
+      id: "p5_q13", type: "instructions", title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quiz: question 13 of 14" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "Why doesn't the manager want a <strong>high</strong> fraud estimate?" +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='raise' data-mode='retry' " +
+             "data-explain='A high estimate makes a full audit likely, and a full audit costs the manager their raise.'>" +
+          "<button type='button' class='practice-btn' data-val='fine'>A high estimate triggers a fine for the manager.</button>" +
+          "<button type='button' class='practice-btn' data-val='raise'>A high estimate makes a full audit likely, and a full audit costs the manager their raise.</button>" +
+          "<button type='button' class='practice-btn' data-val='bonus'>A high estimate directly reduces the government auditor's bonus.</button>" +
+          "<button type='button' class='practice-btn' data-val='indiff'>The manager is indifferent to your estimate.</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      minTimeSeconds: 8
+    },
+
+    // -- Q13 ------------------------------------------------------------
+    {
+      id: "p5_q14", type: "instructions", title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quiz: question 14 of 14" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "If you are <strong>not at all confident</strong> in your fraud estimate, how much " +
+          "should you bet?" +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='0' data-mode='retry' " +
+             "data-explain='Bet 0. An uncertain estimate is more likely to miss the 10-point band, and losing a bet only costs you.'>" +
+          "<button type='button' class='practice-btn' data-val='10'>10&cent;, the maximum.</button>" +
+          "<button type='button' class='practice-btn' data-val='5'>5&cent;, to hedge.</button>" +
+          "<button type='button' class='practice-btn' data-val='0'>0&cent;. Bet only when you're confident.</button>" +
+          "<button type='button' class='practice-btn' data-val='must'>Whatever. Betting is mandatory.</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      minTimeSeconds: 8
+    },
+
+    // -- Page 52: You're ready -----------------------------------------
+    {
+      id: "p5_ready",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
+          "You're ready." +
+        "</p>" +
+        "<p style='text-align:justify; font-size:19px; max-width:620px; margin:0 auto 16px; line-height:1.65;'>" +
+          "The audits come in two parts:" +
+        "</p>" +
+        "<ol style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 16px; line-height:1.65; padding-left:22px;'>" +
+          "<li><strong>5 warm-up audits.</strong> To get the hang of it. <strong>No bonus</strong> on these.</li>" +
+          "<li><strong>30 scored audits.</strong> These count toward your bonus, <strong>up to $6.00</strong>.</li>" +
+        "</ol>",
+      minTimeSeconds: 6
+    },
+
+    // ==================================================================
+    //  ACT VI -- THE TRIALS (15 + 15 = 30)
+    // ==================================================================
+
+    // -- Firm-size intro: step 1 -- small company (10) -----------------
+    {
+      id: "p6_firm_sizes_a",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
+          "One last thing. Companies come in different sizes." +
+        "</p>" +
+        "<div class='firm-size-row size-diff' style='margin-top:16px;'>" +
           "<div class='firm-size-card firm-size-card-small size-diff-small'>" +
             "<svg class='firm-icon-small' viewBox='0 0 60 80' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
               "<rect x='10' y='40' width='40' height='40' fill='#cbd5e1' stroke='#475569' stroke-width='2'/>" +
@@ -356,7 +2269,48 @@ var SURVEY_CONFIG = {
               "<rect x='38' y='60' width='6' height='6' fill='#64748b'/>" +
             "</svg>" +
             "<div class='firm-size-number'>10</div>" +
-            "<div class='firm-size-subtext'>transactions</div>" +
+            "<div class='firm-size-subtext'>transactions<br>(small)</div>" +
+          "</div>" +
+          // invisible placeholders to reserve space
+          "<div class='firm-size-card firm-size-card-medium size-diff-medium' style='visibility:hidden;' aria-hidden='true'>" +
+            "<svg class='firm-icon-medium' viewBox='0 0 80 120' xmlns='http://www.w3.org/2000/svg'><rect width='1' height='1' fill='none'/></svg>" +
+            "<div class='firm-size-number'>&nbsp;</div>" +
+            "<div class='firm-size-subtext'>&nbsp;</div>" +
+          "</div>" +
+          "<div class='firm-size-card firm-size-card-large size-diff-large' style='visibility:hidden;' aria-hidden='true'>" +
+            "<svg viewBox='0 0 110 180' xmlns='http://www.w3.org/2000/svg' style='width:110px; height:180px;'><rect width='1' height='1' fill='none'/></svg>" +
+            "<div class='firm-size-number'>&nbsp;</div>" +
+            "<div class='firm-size-subtext'>&nbsp;</div>" +
+          "</div>" +
+        "</div>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:20px auto 0; line-height:1.5; font-weight:700;'>" +
+          "Some are <strong>small</strong> &mdash; <strong>10 transactions</strong>." +
+        "</p>",
+      minTimeSeconds: 5
+    },
+
+    // -- Firm-size intro: step 2 -- medium (20) ------------------------
+    {
+      id: "p6_firm_sizes_b",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
+          "One last thing. Companies come in different sizes." +
+        "</p>" +
+        "<div class='firm-size-row size-diff' style='margin-top:16px;'>" +
+          "<div class='firm-size-card firm-size-card-small size-diff-small'>" +
+            "<svg class='firm-icon-small' viewBox='0 0 60 80' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
+              "<rect x='10' y='40' width='40' height='40' fill='#cbd5e1' stroke='#475569' stroke-width='2'/>" +
+              "<rect x='18' y='48' width='6' height='6' fill='#64748b'/>" +
+              "<rect x='28' y='48' width='6' height='6' fill='#64748b'/>" +
+              "<rect x='38' y='48' width='6' height='6' fill='#64748b'/>" +
+              "<rect x='18' y='60' width='6' height='6' fill='#64748b'/>" +
+              "<rect x='28' y='60' width='6' height='6' fill='#64748b'/>" +
+              "<rect x='38' y='60' width='6' height='6' fill='#64748b'/>" +
+            "</svg>" +
+            "<div class='firm-size-number'>10</div>" +
+            "<div class='firm-size-subtext'>transactions<br>(small)</div>" +
           "</div>" +
           "<div class='firm-size-card firm-size-card-medium size-diff-medium'>" +
             "<svg class='firm-icon-medium' viewBox='0 0 80 120' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
@@ -369,10 +2323,58 @@ var SURVEY_CONFIG = {
               "</g>" +
             "</svg>" +
             "<div class='firm-size-number'>20</div>" +
-            "<div class='firm-size-subtext'>transactions</div>" +
+            "<div class='firm-size-subtext'>transactions<br>(medium)</div>" +
+          "</div>" +
+          "<div class='firm-size-card firm-size-card-large size-diff-large' style='visibility:hidden;' aria-hidden='true'>" +
+            "<svg viewBox='0 0 110 180' xmlns='http://www.w3.org/2000/svg' style='width:110px; height:180px;'><rect width='1' height='1' fill='none'/></svg>" +
+            "<div class='firm-size-number'>&nbsp;</div>" +
+            "<div class='firm-size-subtext'>&nbsp;</div>" +
+          "</div>" +
+        "</div>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:20px auto 0; line-height:1.5; font-weight:700;'>" +
+          "Some are <strong>medium</strong> &mdash; <strong>20 transactions</strong>." +
+        "</p>",
+      minTimeSeconds: 5
+    },
+
+    // -- Firm-size intro: step 3 -- large (30) + rule reminder ---------
+    {
+      id: "p6_firm_sizes_c",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
+          "One last thing. Companies come in different sizes." +
+        "</p>" +
+        "<div class='firm-size-row size-diff' style='margin-top:16px;'>" +
+          "<div class='firm-size-card firm-size-card-small size-diff-small'>" +
+            "<svg class='firm-icon-small' viewBox='0 0 60 80' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
+              "<rect x='10' y='40' width='40' height='40' fill='#cbd5e1' stroke='#475569' stroke-width='2'/>" +
+              "<rect x='18' y='48' width='6' height='6' fill='#64748b'/>" +
+              "<rect x='28' y='48' width='6' height='6' fill='#64748b'/>" +
+              "<rect x='38' y='48' width='6' height='6' fill='#64748b'/>" +
+              "<rect x='18' y='60' width='6' height='6' fill='#64748b'/>" +
+              "<rect x='28' y='60' width='6' height='6' fill='#64748b'/>" +
+              "<rect x='38' y='60' width='6' height='6' fill='#64748b'/>" +
+            "</svg>" +
+            "<div class='firm-size-number'>10</div>" +
+            "<div class='firm-size-subtext'>transactions<br>(small)</div>" +
+          "</div>" +
+          "<div class='firm-size-card firm-size-card-medium size-diff-medium'>" +
+            "<svg class='firm-icon-medium' viewBox='0 0 80 120' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
+              "<rect x='10' y='30' width='60' height='90' fill='#cbd5e1' stroke='#475569' stroke-width='2'/>" +
+              "<g fill='#64748b'>" +
+                "<rect x='20' y='40' width='7' height='7'/><rect x='33' y='40' width='7' height='7'/><rect x='46' y='40' width='7' height='7'/><rect x='59' y='40' width='7' height='7'/>" +
+                "<rect x='20' y='54' width='7' height='7'/><rect x='33' y='54' width='7' height='7'/><rect x='46' y='54' width='7' height='7'/><rect x='59' y='54' width='7' height='7'/>" +
+                "<rect x='20' y='68' width='7' height='7'/><rect x='33' y='68' width='7' height='7'/><rect x='46' y='68' width='7' height='7'/><rect x='59' y='68' width='7' height='7'/>" +
+                "<rect x='20' y='82' width='7' height='7'/><rect x='33' y='82' width='7' height='7'/><rect x='46' y='82' width='7' height='7'/><rect x='59' y='82' width='7' height='7'/>" +
+              "</g>" +
+            "</svg>" +
+            "<div class='firm-size-number'>20</div>" +
+            "<div class='firm-size-subtext'>transactions<br>(medium)</div>" +
           "</div>" +
           "<div class='firm-size-card firm-size-card-large size-diff-large'>" +
-            "<svg class='firm-icon-large' viewBox='0 0 110 180' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
+            "<svg viewBox='0 0 110 180' xmlns='http://www.w3.org/2000/svg' aria-hidden='true' style='width:110px; height:180px;'>" +
               "<rect x='10' y='10' width='90' height='170' fill='#cbd5e1' stroke='#475569' stroke-width='2'/>" +
               "<g fill='#64748b'>" +
                 "<rect x='20' y='20' width='8' height='8'/><rect x='34' y='20' width='8' height='8'/><rect x='48' y='20' width='8' height='8'/><rect x='62' y='20' width='8' height='8'/><rect x='76' y='20' width='8' height='8'/>" +
@@ -381,1164 +2383,182 @@ var SURVEY_CONFIG = {
                 "<rect x='20' y='62' width='8' height='8'/><rect x='34' y='62' width='8' height='8'/><rect x='48' y='62' width='8' height='8'/><rect x='62' y='62' width='8' height='8'/><rect x='76' y='62' width='8' height='8'/>" +
                 "<rect x='20' y='76' width='8' height='8'/><rect x='34' y='76' width='8' height='8'/><rect x='48' y='76' width='8' height='8'/><rect x='62' y='76' width='8' height='8'/><rect x='76' y='76' width='8' height='8'/>" +
                 "<rect x='20' y='90' width='8' height='8'/><rect x='34' y='90' width='8' height='8'/><rect x='48' y='90' width='8' height='8'/><rect x='62' y='90' width='8' height='8'/><rect x='76' y='90' width='8' height='8'/>" +
-                "<rect x='20' y='104' width='8' height='8'/><rect x='34' y='104' width='8' height='8'/><rect x='48' y='104' width='8' height='8'/><rect x='62' y='104' width='8' height='8'/><rect x='76' y='104' width='8' height='8'/>" +
-                "<rect x='20' y='118' width='8' height='8'/><rect x='34' y='118' width='8' height='8'/><rect x='48' y='118' width='8' height='8'/><rect x='62' y='118' width='8' height='8'/><rect x='76' y='118' width='8' height='8'/>" +
-                "<rect x='20' y='132' width='8' height='8'/><rect x='34' y='132' width='8' height='8'/><rect x='48' y='132' width='8' height='8'/><rect x='62' y='132' width='8' height='8'/><rect x='76' y='132' width='8' height='8'/>" +
               "</g>" +
             "</svg>" +
-            "<div class='firm-size-number'>50</div>" +
-            "<div class='firm-size-subtext'>transactions</div>" +
+            "<div class='firm-size-number'>30</div>" +
+            "<div class='firm-size-subtext'>transactions<br>(large)</div>" +
           "</div>" +
         "</div>" +
-        "<p style='text-align:center; font-size:17px; margin-top:8px;'>" +
-          "Firms come in three sizes. Larger firms process more transactions." +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:20px auto 0; line-height:1.5; font-weight:700;'>" +
+          "Some are <strong>large</strong> &mdash; <strong>30 transactions</strong>." +
         "</p>",
-      minTimeSeconds: 8
-    },
-
-    // -- Page 10: What the Firm Discloses --
-    {
-      id: "p1_inst_always_four",
-      type: "instructions",
-      title: "What the Firm Discloses",
-      body:
-        "<p style='text-align:center; font-size:19px; margin-bottom:10px; color:#1e293b;'>" +
-          "For every audit, a firm is required to submit <strong>4 transactions</strong> to the government." +
-        "</p>" +
-        "<p style='text-align:center; font-size:16px; color:#475569; margin-bottom:24px;'>" +
-          "This is true regardless of how many transactions the firm has." +
-        "</p>" +
-        "<div class='always-four-row'>" +
-          // Small firm
-          "<div class='af-col'>" +
-            "<svg class='af-firm af-firm-small' viewBox='0 0 60 80' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
-              "<rect x='10' y='40' width='40' height='40' fill='#cbd5e1' stroke='#475569' stroke-width='2'/>" +
-              "<rect x='18' y='48' width='6' height='6' fill='#64748b'/>" +
-              "<rect x='28' y='48' width='6' height='6' fill='#64748b'/>" +
-              "<rect x='38' y='48' width='6' height='6' fill='#64748b'/>" +
-              "<rect x='18' y='60' width='6' height='6' fill='#64748b'/>" +
-              "<rect x='28' y='60' width='6' height='6' fill='#64748b'/>" +
-              "<rect x='38' y='60' width='6' height='6' fill='#64748b'/>" +
-            "</svg>" +
-            "<div class='af-size-label'>Small firm</div>" +
-            "<div class='af-size-num'>10</div>" +
-            "<div class='af-arrow'>&#8595;</div>" +
-            "<div class='af-four-docs'>" +
-              "<span class='af-doc'>?</span>" +
-              "<span class='af-doc'>?</span>" +
-              "<span class='af-doc'>?</span>" +
-              "<span class='af-doc'>?</span>" +
-            "</div>" +
-            "<div class='af-four-sub'>disclosed</div>" +
-          "</div>" +
-          // Medium firm
-          "<div class='af-col'>" +
-            "<svg class='af-firm af-firm-medium' viewBox='0 0 80 120' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
-              "<rect x='10' y='30' width='60' height='90' fill='#cbd5e1' stroke='#475569' stroke-width='2'/>" +
-              "<g fill='#64748b'>" +
-                "<rect x='20' y='40' width='7' height='7'/><rect x='33' y='40' width='7' height='7'/><rect x='46' y='40' width='7' height='7'/><rect x='59' y='40' width='7' height='7'/>" +
-                "<rect x='20' y='54' width='7' height='7'/><rect x='33' y='54' width='7' height='7'/><rect x='46' y='54' width='7' height='7'/><rect x='59' y='54' width='7' height='7'/>" +
-                "<rect x='20' y='68' width='7' height='7'/><rect x='33' y='68' width='7' height='7'/><rect x='46' y='68' width='7' height='7'/><rect x='59' y='68' width='7' height='7'/>" +
-                "<rect x='20' y='82' width='7' height='7'/><rect x='33' y='82' width='7' height='7'/><rect x='46' y='82' width='7' height='7'/><rect x='59' y='82' width='7' height='7'/>" +
-              "</g>" +
-            "</svg>" +
-            "<div class='af-size-label'>Medium firm</div>" +
-            "<div class='af-size-num'>20</div>" +
-            "<div class='af-arrow'>&#8595;</div>" +
-            "<div class='af-four-docs'>" +
-              "<span class='af-doc'>?</span>" +
-              "<span class='af-doc'>?</span>" +
-              "<span class='af-doc'>?</span>" +
-              "<span class='af-doc'>?</span>" +
-            "</div>" +
-            "<div class='af-four-sub'>disclosed</div>" +
-          "</div>" +
-          // Large firm
-          "<div class='af-col'>" +
-            "<svg class='af-firm af-firm-large' viewBox='0 0 100 160' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
-              "<rect x='10' y='10' width='80' height='150' fill='#cbd5e1' stroke='#475569' stroke-width='2'/>" +
-              "<g fill='#64748b'>" +
-                "<rect x='20' y='20' width='7' height='7'/><rect x='34' y='20' width='7' height='7'/><rect x='48' y='20' width='7' height='7'/><rect x='62' y='20' width='7' height='7'/><rect x='76' y='20' width='7' height='7'/>" +
-                "<rect x='20' y='34' width='7' height='7'/><rect x='34' y='34' width='7' height='7'/><rect x='48' y='34' width='7' height='7'/><rect x='62' y='34' width='7' height='7'/><rect x='76' y='34' width='7' height='7'/>" +
-                "<rect x='20' y='48' width='7' height='7'/><rect x='34' y='48' width='7' height='7'/><rect x='48' y='48' width='7' height='7'/><rect x='62' y='48' width='7' height='7'/><rect x='76' y='48' width='7' height='7'/>" +
-                "<rect x='20' y='62' width='7' height='7'/><rect x='34' y='62' width='7' height='7'/><rect x='48' y='62' width='7' height='7'/><rect x='62' y='62' width='7' height='7'/><rect x='76' y='62' width='7' height='7'/>" +
-                "<rect x='20' y='76' width='7' height='7'/><rect x='34' y='76' width='7' height='7'/><rect x='48' y='76' width='7' height='7'/><rect x='62' y='76' width='7' height='7'/><rect x='76' y='76' width='7' height='7'/>" +
-                "<rect x='20' y='90' width='7' height='7'/><rect x='34' y='90' width='7' height='7'/><rect x='48' y='90' width='7' height='7'/><rect x='62' y='90' width='7' height='7'/><rect x='76' y='90' width='7' height='7'/>" +
-                "<rect x='20' y='104' width='7' height='7'/><rect x='34' y='104' width='7' height='7'/><rect x='48' y='104' width='7' height='7'/><rect x='62' y='104' width='7' height='7'/><rect x='76' y='104' width='7' height='7'/>" +
-                "<rect x='20' y='118' width='7' height='7'/><rect x='34' y='118' width='7' height='7'/><rect x='48' y='118' width='7' height='7'/><rect x='62' y='118' width='7' height='7'/><rect x='76' y='118' width='7' height='7'/>" +
-                "<rect x='20' y='132' width='7' height='7'/><rect x='34' y='132' width='7' height='7'/><rect x='48' y='132' width='7' height='7'/><rect x='62' y='132' width='7' height='7'/><rect x='76' y='132' width='7' height='7'/>" +
-              "</g>" +
-            "</svg>" +
-            "<div class='af-size-label'>Large firm</div>" +
-            "<div class='af-size-num'>50</div>" +
-            "<div class='af-arrow'>&#8595;</div>" +
-            "<div class='af-four-docs'>" +
-              "<span class='af-doc'>?</span>" +
-              "<span class='af-doc'>?</span>" +
-              "<span class='af-doc'>?</span>" +
-              "<span class='af-doc'>?</span>" +
-            "</div>" +
-            "<div class='af-four-sub'>disclosed</div>" +
-          "</div>" +
-        "</div>" +
-        "<div class='af-picker-note'>" +
-          "<div class='af-picker-icon'>" +
-            "<svg viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
-              "<circle cx='20' cy='14' r='7' fill='#475569'/>" +
-              "<path d='M6 38 Q20 24 34 38 L34 40 L6 40 Z' fill='#475569'/>" +
-            "</svg>" +
-          "</div>" +
-          "<div class='af-picker-text'>" +
-            "The firm's <strong>manager</strong> gets to choose " +
-            "<em>which</em> 4 transactions to disclose." +
-          "</div>" +
-        "</div>",
       minTimeSeconds: 6
     },
 
-    // -- Page 11: The Manager --
+    // -- Firm-size intro: rule reminder on its own page for emphasis ---
+    // The reminder used to sit under the three cabinets on 53c. Pulled
+    // onto its own page so the "exactly 4, regardless of size" rule
+    // lands as its own beat -- it's a critical fact for reasoning
+    // about the 30-vs-10 size contrast in the trials.
     {
-      id: "p1_inst_manager",
+      id: "p6_firm_sizes_rule",
       type: "instructions",
-      title: "The Manager",
+      title: "",
       body:
-        "<div class='manager-flow'>" +
-          "<div class='mf-side'>" +
-            "<div class='mf-label'>Firm has</div>" +
-            "<div class='mf-docs-10'>" +
-              "<span class='mf-doc'>?</span>" +
-              "<span class='mf-doc'>?</span>" +
-              "<span class='mf-doc'>?</span>" +
-              "<span class='mf-doc'>?</span>" +
-              "<span class='mf-doc'>?</span>" +
-              "<span class='mf-doc'>?</span>" +
-              "<span class='mf-doc'>?</span>" +
-              "<span class='mf-doc'>?</span>" +
-              "<span class='mf-doc'>?</span>" +
-              "<span class='mf-doc'>?</span>" +
-            "</div>" +
-            "<div class='mf-sub'>all transactions</div>" +
-          "</div>" +
-          "<div class='mf-middle'>" +
-            "<svg class='mf-manager-svg' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
-              "<circle cx='30' cy='20' r='10' fill='#475569'/>" +
-              "<path d='M12 56 Q30 36 48 56 L48 60 L12 60 Z' fill='#475569'/>" +
-            "</svg>" +
-            "<div class='mf-arrow'>&#10140;</div>" +
-            "<div class='mf-middle-label'>picks 4</div>" +
-          "</div>" +
-          "<div class='mf-side'>" +
-            "<div class='mf-label'>You see</div>" +
-            "<div class='mf-docs-4'>" +
-              "<span class='mf-doc mf-doc-selected'>?</span>" +
-              "<span class='mf-doc mf-doc-selected'>?</span>" +
-              "<span class='mf-doc mf-doc-selected'>?</span>" +
-              "<span class='mf-doc mf-doc-selected'>?</span>" +
-            "</div>" +
-            "<div class='mf-sub'>only 4</div>" +
-          "</div>" +
-        "</div>" +
-        "<p style='text-align:center;'>The manager chooses which <strong>4 transactions</strong> " +
-          "to reveal. The manager cannot change or fabricate any transaction.</p>",
-      minTimeSeconds: 8
-    },
-
-    // -- Page 12: Manager Incentives --
-    {
-      id: "p1_inst_incentives",
-      type: "instructions",
-      title: "Manager Incentives",
-      body:
-        "<p style='text-align:center; font-size:18px; margin-bottom:20px;'>" +
-          "How well the manager does depends on the <strong>fraud probability</strong> you assign:" +
+        "<p style='text-align:center; font-size:26px; line-height:1.4; max-width:620px; margin:60px auto 22px; font-weight:700; color:#0f172a;'>" +
+          "We'll tell you each company's size." +
         "</p>" +
-        "<div class='incentive-examples'>" +
-          "<div class='incentive-example incentive-good'>" +
-            "<div class='incentive-manager-avatar incentive-manager-happy'>" +
-              "<svg viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
-                "<circle cx='30' cy='30' r='28' fill='#d1fae5' stroke='#059669' stroke-width='2'/>" +
-                "<circle cx='22' cy='26' r='2.5' fill='#059669'/>" +
-                "<circle cx='38' cy='26' r='2.5' fill='#059669'/>" +
-                "<path d='M20 38 Q30 46 40 38' stroke='#059669' stroke-width='2.5' fill='none' stroke-linecap='round'/>" +
-              "</svg>" +
-            "</div>" +
-            "<div class='incentive-rating-gauge'>" +
-              "<div class='incentive-rating-label'>Fraud probability</div>" +
-              "<div class='incentive-rating-value' style='color:#059669;'>15%</div>" +
-              "<div class='incentive-rating-bar'>" +
-                "<div class='incentive-rating-fill' style='width:15%; background:#10b981;'></div>" +
-              "</div>" +
-            "</div>" +
-            "<div class='incentive-outcome incentive-outcome-good'>" +
-              "<span class='incentive-outcome-icon'>&#128176;</span>" +
-              "<div><strong>Bonus earned</strong></div>" +
-            "</div>" +
-          "</div>" +
-          "<div class='incentive-example incentive-bad'>" +
-            "<div class='incentive-manager-avatar incentive-manager-sad'>" +
-              "<svg viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
-                "<circle cx='30' cy='30' r='28' fill='#fee2e2' stroke='#dc2626' stroke-width='2'/>" +
-                "<circle cx='22' cy='26' r='2.5' fill='#dc2626'/>" +
-                "<circle cx='38' cy='26' r='2.5' fill='#dc2626'/>" +
-                "<path d='M20 44 Q30 36 40 44' stroke='#dc2626' stroke-width='2.5' fill='none' stroke-linecap='round'/>" +
-              "</svg>" +
-            "</div>" +
-            "<div class='incentive-rating-gauge'>" +
-              "<div class='incentive-rating-label'>Fraud probability</div>" +
-              "<div class='incentive-rating-value' style='color:#dc2626;'>75%</div>" +
-              "<div class='incentive-rating-bar'>" +
-                "<div class='incentive-rating-fill' style='width:75%; background:#ef4444;'></div>" +
-              "</div>" +
-            "</div>" +
-            "<div class='incentive-outcome incentive-outcome-bad'>" +
-              "<span class='incentive-outcome-icon'>&#128178;</span>" +
-              "<div><strong>Fined</strong></div>" +
-            "</div>" +
-          "</div>" +
-        "</div>" +
-        "<div class='manager-hero-callout'>" +
-          "<div class='manager-hero-arrow'>&#128073;</div>" +
-          "<div class='manager-hero-text'>" +
-            "The manager <strong>wants you to assign a LOW fraud probability</strong>, " +
-            "whether the firm is actually fraudulent or not." +
-          "</div>" +
-        "</div>",
-      minTimeSeconds: 8
-    },
-
-    // -- Page 13: Your Bonus (accuracy-based bucket scoring) --
-    {
-      id: "p1_inst_your_bonus",
-      type: "instructions",
-      title: "Your Bonus",
-      body:
-        "<p style='text-align:center; font-size:18px; margin-bottom:8px;'>" +
-          "<strong>Your bonus depends on how close your probability range is to the truth.</strong>" +
-        "</p>" +
-        "<p style='text-align:center; font-size:15px; color:#475569; margin-bottom:20px; max-width:680px; margin-left:auto; margin-right:auto;'>" +
-          "At the end, one of your 9 firms is picked at random. " +
-          "We compare the range you picked (e.g., 40% to 50%) to the range containing the " +
-          "firm's <em>actual</em> fraud probability." +
-        "</p>" +
-        "<div class='bonus-formula-card'>" +
-          "<div class='bonus-formula-line'>" +
-            "<strong>Start at $2.00.</strong> Lose $0.20 for every 10% range you are off." +
-          "</div>" +
-          "<div class='bonus-formula-table'>" +
-            "<div class='bonus-formula-row'><span>Exact range match</span><span class='bonus-formula-amt good'>$2.00</span></div>" +
-            "<div class='bonus-formula-row'><span>1 range off</span><span class='bonus-formula-amt'>$1.80</span></div>" +
-            "<div class='bonus-formula-row'><span>2 ranges off</span><span class='bonus-formula-amt'>$1.60</span></div>" +
-            "<div class='bonus-formula-row'><span>5 ranges off</span><span class='bonus-formula-amt'>$1.00</span></div>" +
-            "<div class='bonus-formula-row'><span>9 ranges off (worst)</span><span class='bonus-formula-amt bad'>$0.20</span></div>" +
-          "</div>" +
-        "</div>" +
-        "<div class='bonus-example-card'>" +
-          "<div class='bonus-example-title'>Example</div>" +
-          "<p style='margin:0 0 10px 0;'>" +
-            "You guess <strong>40% to 50%</strong>. The firm's actual probability of fraud is <strong>85%</strong> " +
-            "(which falls in the <strong>80% to 90%</strong> range)." +
-          "</p>" +
-          "<p style='margin:0 0 10px 0;'>" +
-            "Your range is <strong>4 ranges below</strong> the actual range " +
-            "(40&ndash;50 \u2192 50&ndash;60 \u2192 60&ndash;70 \u2192 70&ndash;80 \u2192 80&ndash;90)." +
-          "</p>" +
-          "<p style='margin:0;'>" +
-            "Bonus = $2.00 &minus; (4 \u00d7 $0.20) = <strong>$1.20</strong>." +
-          "</p>" +
-        "</div>" +
-        "<div class='auditor-rule' style='margin-top:16px;'>" +
-          "<p style='margin:0;'><strong>Rule of thumb:</strong> " +
-          "Pick the range you <em>honestly believe</em> contains the true probability of fraud. " +
-          "Guessing too high when the firm is clean costs you just as much as guessing too low when the firm is fraudulent.</p>" +
-        "</div>",
-      minTimeSeconds: 12
-    },
-
-    // -- Page 11: Your Job + Try the Slider --
-    {
-      id: "p1_slider_demo",
-      type: "slider_demo",
-      title: "Your Job",
-      body:
-        "<p style='text-align:center; font-size:18px; margin-bottom:8px;'>" +
-          "For each firm, you will see <strong>4 transactions</strong> " +
-          "and assign a <strong>probability range</strong> that the firm is fraudulent." +
-        "</p>" +
-        "<p style='text-align:center; font-size:16px; color:#475569; margin-bottom:4px;'>" +
-          "<strong>Try the slider:</strong> drag it to any range to continue." +
+        "<p style='text-align:center; font-size:26px; line-height:1.4; max-width:620px; margin:0 auto; font-weight:700; color:#0f172a;'>" +
+          "The law still requires the manager to disclose " +
+          "<strong style='color:#b91c1c;'>exactly 4</strong>, " +
+          "regardless of size." +
         "</p>",
-      hint: "The slider snaps to 10-percentage-point ranges (e.g., 20% to 30%). Drag it to any range to continue.",
-      minTimeSeconds: 4
+      minTimeSeconds: 7
     },
 
-    // -- Page 12: Example (1 of 3) --
-    {
-      id: "p1_example_1",
-      type: "instructions",
-      title: "Example",
-      body:
-        "<p class='example-subtitle'>A medium firm has 10 transactions.</p>" +
-        "<div class='example-grid'>" +
-          "<div class='transaction-doc small hidden'>?</div>" +
-          "<div class='transaction-doc small hidden'>?</div>" +
-          "<div class='transaction-doc small hidden'>?</div>" +
-          "<div class='transaction-doc small hidden'>?</div>" +
-          "<div class='transaction-doc small hidden'>?</div>" +
-          "<div class='transaction-doc small hidden'>?</div>" +
-          "<div class='transaction-doc small hidden'>?</div>" +
-          "<div class='transaction-doc small hidden'>?</div>" +
-          "<div class='transaction-doc small hidden'>?</div>" +
-          "<div class='transaction-doc small hidden'>?</div>" +
-        "</div>" +
-        "<p style='text-align:center; margin-top:8px;'>This firm has <strong>10 transactions</strong> in total.</p>",
-      minTimeSeconds: 4
-    },
+    // ==================================================================
+    //  PRACTICE BLOCK -- 5 unscored warm-up rounds, random sample from
+    //  the phase-1 (K=4) stimuli. Participant is told clearly these
+    //  don't count toward the bonus. At the end, a summary page shows
+    //  how much they WOULD HAVE earned (aggregate; no per-round feedback
+    //  so they can't back out which item was wrong).
+    // ==================================================================
 
-    // -- Page 12: Example (2 of 3) --
+    // -- Practice intro ------------------------------------------------
     {
-      id: "p1_example_2",
+      id: "p6_practice_intro",
       type: "instructions",
-      title: "Example (2 of 3)",
+      title: "",
       body:
-        "<p class='example-subtitle'>The manager shows you only 4.</p>" +
-        "<div class='example-grid'>" +
-          "<div class='transaction-doc small normal'>N</div>" +
-          "<div class='transaction-doc small flagged'>F</div>" +
-          "<div class='transaction-doc small normal'>N</div>" +
-          "<div class='transaction-doc small flagged'>F</div>" +
-          "<div class='transaction-doc small hidden'>?</div>" +
-          "<div class='transaction-doc small hidden'>?</div>" +
-          "<div class='transaction-doc small hidden'>?</div>" +
-          "<div class='transaction-doc small hidden'>?</div>" +
-          "<div class='transaction-doc small hidden'>?</div>" +
-          "<div class='transaction-doc small hidden'>?</div>" +
-        "</div>" +
-        "<p style='text-align:center; margin-top:8px;'>You see <strong>4 transactions</strong>: 2 Normal, 2 Flagged. The other 6 are <strong>hidden</strong>.</p>",
-      minTimeSeconds: 5
-    },
-
-    // -- Page 13: Example (3 of 3) --
-    {
-      id: "p1_example_3",
-      type: "instructions",
-      title: "Example (3 of 3)",
-      body:
-        "<p class='example-subtitle'>The firm's actual transactions were these.</p>" +
-        "<div class='example-grid'>" +
-          "<div class='transaction-doc small normal'>N</div>" +
-          "<div class='transaction-doc small flagged'>F</div>" +
-          "<div class='transaction-doc small normal'>N</div>" +
-          "<div class='transaction-doc small flagged'>F</div>" +
-          "<div class='transaction-doc small flagged reveal'>F</div>" +
-          "<div class='transaction-doc small flagged reveal'>F</div>" +
-          "<div class='transaction-doc small flagged reveal'>F</div>" +
-          "<div class='transaction-doc small flagged reveal'>F</div>" +
-          "<div class='transaction-doc small flagged reveal'>F</div>" +
-          "<div class='transaction-doc small flagged reveal'>F</div>" +
-        "</div>" +
-        "<p style='text-align:center; margin-top:8px; color:#475569;'>" +
-          "You only saw 4 of them. The other 6 remained hidden." +
+        "<p style='text-align:justify; font-size:28px; line-height:1.3; max-width:620px; margin:0 auto 18px; font-weight:700;'>" +
+          "First, <strong>5 warm-up audits</strong>." +
+        "</p>" +
+        "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 16px; line-height:1.65; padding-left:22px;'>" +
+          "<li>Same task as the scored audits: estimate + bet.</li>" +
+          "<li><strong>These don't count toward your bonus.</strong></li>" +
+          "<li>At the end, we'll tell you how much you <em>would have</em> earned, so you can see how you did before the scored rounds.</li>" +
+        "</ul>" +
+        "<p style='text-align:center; font-size:20px; font-weight:700; max-width:620px; margin:22px auto 0;'>" +
+          "Take them seriously &mdash; the 30 scored audits come right after." +
         "</p>",
-      minTimeSeconds: 5
-    },
-
-    // -- Pre-quiz gate --
-    {
-      id: "p1_quiz_gate",
-      type: "quiz_gate",
-      title: "Before the Quiz",
-      body:
-        "<p style='text-align:center; font-size:18px;'>" +
-          "There is a <strong>13-question quiz</strong> ahead." +
-        "</p>" +
-        "<div class='quiz-gate-stats'>" +
-          "<div class='quiz-gate-stat'>" +
-            "<div class='quiz-gate-stat-label'>Questions</div>" +
-            "<div class='quiz-gate-stat-value'>13</div>" +
-          "</div>" +
-          "<div class='quiz-gate-stat'>" +
-            "<div class='quiz-gate-stat-label'>Format</div>" +
-            "<div class='quiz-gate-stat-value'>One at a time</div>" +
-          "</div>" +
-          "<div class='quiz-gate-stat'>" +
-            "<div class='quiz-gate-stat-label'>Passing grade</div>" +
-            "<div class='quiz-gate-stat-value'>12 of 13</div>" +
-          "</div>" +
-        "</div>" +
-        "<div class='quiz-gate-warning'>" +
-          "<strong>Important:</strong> You can go back to review the instructions now. " +
-          "Once you begin the quiz, <strong>you cannot go back</strong>." +
-        "</div>",
-      startButtonText: "Start Quiz",
-      minTimeSeconds: 6
-    },
-
-    // -- Quiz Q1 (correct at B) --
-    {
-      id: "p1_quiz_q1",
-      type: "quiz_question",
-      questionIndex: 1,
-      totalQuestions: 13,
-      prompt: "For each firm, who decides which transactions you will see?",
-      correct: "manager",
-      options: [
-        { value: "you",     label: "You, the auditor" },
-        { value: "manager", label: "The firm's manager" },
-        { value: "random",  label: "A random selection" },
-        { value: "nobody",  label: "No one -- you see every transaction" }
-      ]
-    },
-
-    // -- Quiz Q2 (correct at C) --
-    {
-      id: "p1_quiz_q2",
-      type: "quiz_question",
-      questionIndex: 2,
-      totalQuestions: 13,
-      prompt: "The manager is more likely to earn a bonus when the auditor assigns a:",
-      correct: "low",
-      options: [
-        { value: "high",      label: "High fraud probability" },
-        { value: "mid",       label: "A fraud probability close to 50%" },
-        { value: "low",       label: "Low fraud probability" },
-        { value: "no_effect", label: "The probability does not affect the manager" }
-      ]
-    },
-
-    // -- Quiz Q3 (correct at B) --
-    {
-      id: "p1_quiz_q3",
-      type: "quiz_question",
-      questionIndex: 3,
-      totalQuestions: 13,
-      prompt: "Out of every 100 firms you audit, about how many are fraudulent?",
-      correct: "20",
-      options: [
-        { value: "50", label: "About 50 out of 100 (50%)" },
-        { value: "20", label: "About 20 out of 100 (20%)" },
-        { value: "80", label: "About 80 out of 100 (80%)" },
-        { value: "40", label: "About 40 out of 100 (40%)" }
-      ]
-    },
-
-    // -- Quiz Q4 (correct at D) --
-    {
-      id: "p1_quiz_q4",
-      type: "quiz_question",
-      questionIndex: 4,
-      totalQuestions: 13,
-      prompt: "A clean firm has exactly 50% Normal and 50% Flagged transactions. A fraudulent firm has 40% Normal and 60% Flagged. Which of the following is true?",
-      correct: "both",
-      options: [
-        { value: "only_fraud", label: "Only fraudulent firms have Flagged transactions" },
-        { value: "only_clean", label: "Only clean firms have Normal transactions" },
-        { value: "neither",    label: "Neither type has Flagged transactions" },
-        { value: "both",       label: "Both types of firm can have Flagged transactions" }
-      ]
-    },
-
-    // -- Quiz Q5 (correct at D) --
-    {
-      id: "p1_quiz_q5",
-      type: "quiz_question",
-      questionIndex: 5,
-      totalQuestions: 13,
-      prompt: "How many total transactions does a Small firm have?",
-      correct: "10",
-      options: [
-        { value: "50", label: "50" },
-        { value: "20", label: "20" },
-        { value: "30", label: "30" },
-        { value: "10", label: "10" }
-      ]
-    },
-
-    // -- Quiz Q6 (correct at C; prompt no longer gives away the answer,
-    //     and "Depends on firm size" is a concrete distractor) --
-    {
-      id: "p1_quiz_q6",
-      type: "quiz_question",
-      questionIndex: 6,
-      totalQuestions: 13,
-      prompt: "How many transactions does the manager disclose to you?",
-      correct: "4",
-      options: [
-        { value: "2",       label: "2" },
-        { value: "depends", label: "It depends on the firm size" },
-        { value: "4",       label: "4" },
-        { value: "all",     label: "All of the firm's transactions" }
-      ]
-    },
-
-    // -- Quiz Q7 (correct at C) --
-    {
-      id: "p1_quiz_q7",
-      type: "quiz_question",
-      questionIndex: 7,
-      totalQuestions: 13,
-      prompt: "In a clean firm, what percentage of its transactions are Flagged?",
-      correct: "50",
-      options: [
-        { value: "40", label: "40%" },
-        { value: "60", label: "60%" },
-        { value: "50", label: "50%" },
-        { value: "10", label: "10%" }
-      ]
-    },
-
-    // -- Quiz Q8 (correct at D) --
-    {
-      id: "p1_quiz_q8",
-      type: "quiz_question",
-      questionIndex: 8,
-      totalQuestions: 13,
-      prompt: "In a fraudulent firm, what percentage of its transactions are Flagged?",
-      correct: "60",
-      options: [
-        { value: "50",  label: "50%" },
-        { value: "100", label: "100%" },
-        { value: "40",  label: "40%" },
-        { value: "60",  label: "60%" }
-      ]
-    },
-
-    // -- Quiz Q9 (correct at B) --
-    {
-      id: "p1_quiz_q9",
-      type: "quiz_question",
-      questionIndex: 9,
-      totalQuestions: 13,
-      prompt: "You said a firm has an 80% to 90% chance of fraud. The firm's actual probability of fraud is 85%. What happens to your bonus?",
-      correct: "big_bonus",
-      options: [
-        { value: "small_bonus", label: "Your bonus is much smaller than the maximum" },
-        { value: "big_bonus",   label: "You earn a bonus close to the maximum" },
-        { value: "nothing",     label: "Nothing changes" },
-        { value: "disqualified",label: "You are disqualified" }
-      ]
-    },
-
-    // -- Quiz Q10 (correct at C) --
-    {
-      id: "p1_quiz_q10",
-      type: "quiz_question",
-      questionIndex: 10,
-      totalQuestions: 13,
-      prompt: "You said a firm has an 80% to 90% chance of fraud. The firm's actual probability of fraud is 10%. What happens to your bonus?",
-      correct: "small_bonus",
-      options: [
-        { value: "nothing",      label: "Nothing changes" },
-        { value: "big_bonus",    label: "You earn a bonus close to the maximum" },
-        { value: "small_bonus",  label: "Your bonus is much smaller than the maximum" },
-        { value: "disqualified", label: "You are disqualified" }
-      ]
-    },
-
-    // -- Quiz Q11 (incentive alignment -- biggest bonus; correct at D) --
-    {
-      id: "p1_quiz_q11",
-      type: "quiz_question",
-      questionIndex: 11,
-      totalQuestions: 13,
-      prompt: "Suppose a firm's actual probability of fraud is 10%. Which range should you pick to earn the biggest bonus?",
-      correct: "10",
-      options: [
-        { value: "30", label: "30% to 40%" },
-        { value: "50", label: "50% to 60%" },
-        { value: "70", label: "70% to 80%" },
-        { value: "10", label: "0% to 10%" }
-      ]
-    },
-
-    // -- Quiz Q12 (incentive alignment -- smallest bonus; correct at A) --
-    {
-      id: "p1_quiz_q12",
-      type: "quiz_question",
-      questionIndex: 12,
-      totalQuestions: 13,
-      prompt: "Suppose a firm's actual probability of fraud is 10%. Which range would result in the smallest bonus?",
-      correct: "70",
-      options: [
-        { value: "70", label: "70% to 80%" },
-        { value: "30", label: "30% to 40%" },
-        { value: "50", label: "50% to 60%" },
-        { value: "10", label: "0% to 10%" }
-      ]
-    },
-
-    // -- Quiz Q13 (bonus formula applied with numbers; correct at C) --
-    // Your range 40-50%, actual 90-100%. Distance = |4 - 9| = 5 buckets.
-    // Bonus = $2.00 - 5 x $0.20 = $1.00.
-    {
-      id: "p1_quiz_q13",
-      type: "quiz_question",
-      questionIndex: 13,
-      totalQuestions: 13,
-      prompt: "You guess a firm has a <strong>40% to 50%</strong> chance of being fraudulent. It actually has a <strong>90% to 100%</strong> chance of being fraudulent. What is your bonus?",
-      correct: "1.00",
-      options: [
-        { value: "2.00", label: "About $2.00" },
-        { value: "1.60", label: "About $1.60" },
-        { value: "1.00", label: "About $1.00" },
-        { value: "0.20", label: "About $0.20" }
-      ]
-    },
-
-    // -- Quiz pass: Completion --
-    {
-      id: "p1_comprehension_result",
-      type: "completion",
-      title: "You Passed!",
-      body: "<p>You understand the task. You have been <strong>invited to Part 2</strong>.</p>" +
-            "<p><strong>Part 2</strong> is a separate Prolific study (~10 min, " +
-            "$2.00 base + up to $2.00 accuracy bonus).</p>" +
-            "<p style='margin-top:14px;'><strong>Two steps to get paid:</strong></p>" +
-            "<ol style='margin-left:20px;'>" +
-            "<li>Copy the completion code below and submit it on Prolific to get paid for Part 1.</li>" +
-            "<li>Then click <strong>Continue to Part 2</strong> to start the second study right away.</li>" +
-            "</ol>"
-    },
-
-    // -- Quiz fail: offer retake or exit --
-    {
-      id: "p1_quiz_fail",
-      type: "quiz_fail",
-      title: "Almost There",
-      retakeText: "Retake instructions",
-      exitText: "Exit without retake"
-    },
-
-    // -- Fail completion (FAIL1SN) --
-    {
-      id: "p1_fail_completion",
-      type: "fail_completion",
-      title: "Part 1 Complete"
-    }
-  ],
-
-
-  // ====================================================================
-  //  PART 2 PAGES -- 9 trials + Demographics + Debrief
-  // ====================================================================
-
-  part2Pages: [
-
-    // -- Welcome back --
-    {
-      id: "p2_welcome",
-      type: "welcome",
-      title: "Welcome Back, Auditor",
-      subtitle: "",
-      body: "<p>This part takes about <strong>10 minutes</strong>. " +
-            "As a government auditor, you will review <strong>9 firms</strong> " +
-            "and assign each a probability of fraud.</p>" +
-            "<p>Pay: <strong>$2.00</strong> base + up to <strong>$2.00</strong> " +
-            "based on how <strong>accurate</strong> your probabilities are.</p>",
-      buttonText: "Continue"
-    },
-
-    // -- Quick reminder --
-    {
-      id: "p2_reminder",
-      type: "instructions",
-      title: "Quick Reminder",
-      body:
-        "<p style='text-align:center; font-size:16px; margin-bottom:18px;'>" +
-          "You are a <strong>government auditor</strong>. For each firm, you review " +
-          "<strong>4 transactions</strong> chosen by its manager and assign a " +
-          "<strong>probability of fraud</strong>." +
-        "</p>" +
-
-        "<div style='display:flex; align-items:flex-start; gap:20px; justify-content:center; margin:20px 0; flex-wrap:wrap;'>" +
-          // Firm-type prior
-          "<div style='text-align:center;'>" +
-            "<div style='font-weight:700; font-size:12px; margin-bottom:8px; color:#1e293b; text-transform:uppercase; letter-spacing:0.5px;'>How Common Is Fraud?</div>" +
-            "<div style='width:80px; height:80px; border-radius:50%; background:conic-gradient(#14b8a6 0deg 288deg, #7c3aed 288deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1); margin:0 auto;'></div>" +
-            "<div style='display:flex; flex-direction:column; gap:3px; text-align:left; font-size:12px; margin-top:8px;'>" +
-              "<div style='display:flex; align-items:center; gap:5px;'><span style='display:inline-block; width:10px; height:10px; background:#14b8a6; border-radius:2px;'></span><strong>80% Clean</strong></div>" +
-              "<div style='display:flex; align-items:center; gap:5px;'><span style='display:inline-block; width:10px; height:10px; background:#7c3aed; border-radius:2px;'></span>20% Fraudulent</div>" +
-            "</div>" +
-          "</div>" +
-          // Clean firm transaction mix
-          "<div style='text-align:center;'>" +
-            "<div style='font-weight:700; font-size:12px; margin-bottom:8px; color:#14b8a6; border:2px solid #14b8a6; padding:2px 10px; border-radius:6px; display:inline-block;'>Clean Firm</div>" +
-            "<div style='display:flex; align-items:center; gap:10px;'>" +
-              "<div style='width:80px; height:80px; border-radius:50%; background:conic-gradient(#22c55e 0deg 180deg, #ef4444 180deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
-              "<div style='display:flex; flex-direction:column; gap:3px; text-align:left; font-size:12px;'>" +
-                "<div style='display:flex; align-items:center; gap:5px;'><span class='doc-icon doc-icon-normal' style='width:16px; height:18px; font-size:9px;'>N</span><strong>50%</strong></div>" +
-                "<div style='display:flex; align-items:center; gap:5px;'><span class='doc-icon doc-icon-flagged' style='width:16px; height:18px; font-size:9px;'>F</span>50%</div>" +
-              "</div>" +
-            "</div>" +
-          "</div>" +
-          // Fraudulent firm transaction mix
-          "<div style='text-align:center;'>" +
-            "<div style='font-weight:700; font-size:12px; margin-bottom:8px; color:#7c3aed; border:2px solid #7c3aed; padding:2px 10px; border-radius:6px; display:inline-block;'>Fraudulent Firm</div>" +
-            "<div style='display:flex; align-items:center; gap:10px;'>" +
-              "<div style='width:80px; height:80px; border-radius:50%; background:conic-gradient(#22c55e 0deg 144deg, #ef4444 144deg 360deg); box-shadow:0 2px 8px rgba(0,0,0,0.1);'></div>" +
-              "<div style='display:flex; flex-direction:column; gap:3px; text-align:left; font-size:12px;'>" +
-                "<div style='display:flex; align-items:center; gap:5px;'><span class='doc-icon doc-icon-normal' style='width:16px; height:18px; font-size:9px;'>N</span>40%</div>" +
-                "<div style='display:flex; align-items:center; gap:5px;'><span class='doc-icon doc-icon-flagged' style='width:16px; height:18px; font-size:9px;'>F</span><strong>60%</strong></div>" +
-              "</div>" +
-            "</div>" +
-          "</div>" +
-        "</div>" +
-
-        "<p style='text-align:center; color:#64748b; font-size:13px; margin-bottom:20px;'>" +
-          "Firm sizes: <strong>Small</strong> (10), <strong>Medium</strong> (20), " +
-          "<strong>Large</strong> (50) transactions. Manager always discloses 4." +
-        "</p>" +
-
-        // Manager hero callout (same style as Part 1)
-        "<div class='manager-hero-callout' style='margin:20px auto;'>" +
-          "<div class='manager-hero-arrow'>&#128073;</div>" +
-          "<div class='manager-hero-text'>" +
-            "The manager <strong>wants you to assign a LOW fraud probability</strong>, " +
-            "whether the firm is actually fraudulent or not." +
-          "</div>" +
-        "</div>" +
-
-        // Your Bonus compact reminder (same style as Part 1)
-        "<div class='auditor-outcomes' style='margin-top:16px;'>" +
-          "<div class='auditor-outcome auditor-outcome-good' style='padding:14px 16px;'>" +
-            "<div class='auditor-outcome-badge' style='width:40px; height:40px; font-size:22px;'>&#10004;</div>" +
-            "<div class='auditor-outcome-title' style='font-size:14px;'>High probability on a Fraudulent firm</div>" +
-            "<div class='auditor-outcome-body' style='font-size:13px;'><strong>Bonus</strong></div>" +
-          "</div>" +
-          "<div class='auditor-outcome auditor-outcome-bad' style='padding:14px 16px;'>" +
-            "<div class='auditor-outcome-badge' style='width:40px; height:40px; font-size:22px;'>&#10060;</div>" +
-            "<div class='auditor-outcome-title' style='font-size:14px;'>High probability on a Clean firm</div>" +
-            "<div class='auditor-outcome-body' style='font-size:13px;'><strong>Pay cut</strong></div>" +
-          "</div>" +
-        "</div>",
       minTimeSeconds: 8
     },
 
-    // -- BLOCK 1: 9 trials --
+    // -- Practice block (5 trials randomly sampled from phase 1) -------
     {
-      id: "block1",
+      id: "block_practice",
       type: "trial_block",
-      block: 1,
+      block: 0,                  // block=0 means practice (engine skips in bonus)
+      practice: true,            // engine: mark each rendered trial as practice
+      practiceCount: 5,          // engine: after randomize+filter, slice to 5
+      filterPhase: 1,
       randomize: true,
-      trialCount: 9,
       askFlaggedEstimate: false,
-      minTimePerTrial: 10
+      minTimePerTrial: 8
     },
 
-    // -- Demographics --
+    // -- Practice summary ----------------------------------------------
+    // Engine renders this with the aggregate would-have-earned amount
+    // computed from practice responses only. No per-round breakdown.
     {
-      id: "demographics",
-      type: "questionnaire",
-      title: "About You",
-      minTimeSeconds: 10,
-      questions: [
-        {
-          id: "age",
-          prompt: "Age",
-          type: "dropdown",
-          required: true,
-          options: [
-            { value: "18-24", label: "18-24" },
-            { value: "25-34", label: "25-34" },
-            { value: "35-44", label: "35-44" },
-            { value: "45-54", label: "45-54" },
-            { value: "55-64", label: "55-64" },
-            { value: "65+",   label: "65 or older" }
-          ]
-        },
-        {
-          id: "gender",
-          prompt: "Gender",
-          type: "dropdown",
-          required: true,
-          options: [
-            { value: "male",       label: "Male" },
-            { value: "female",     label: "Female" },
-            { value: "nonbinary",  label: "Non-binary" },
-            { value: "other",      label: "Other" },
-            { value: "prefer_not", label: "Prefer not to say" }
-          ]
-        },
-        {
-          id: "stats_comfort",
-          prompt: "How comfortable are you with probability and statistics?",
-          type: "likert",
-          required: true,
-          min: 1,
-          max: 5,
-          minLabel: "Not at all",
-          maxLabel: "Very comfortable"
-        }
-      ]
-    },
-
-    // -- Debrief --
-    {
-      id: "debrief",
-      type: "debrief",
-      title: "Thank You, Auditor",
-      body: "<p>This study examines how people in an auditor's role assess fraud " +
-            "when a firm's manager strategically selects which transactions to disclose.</p>" +
-            "<p>Across trials we varied two things: firm size (Small, Medium, or Large) " +
-            "and the composition of the 4 disclosed transactions.</p>" +
-            "<p>We are interested in how people account for the transactions they <em>cannot</em> see, " +
-            "and whether their reasoning matches different statistical models of inference.</p>" +
-            "<p>Thank you for contributing to this research.</p>",
-      showBonus: true,
-      completionCode: "COMP2SN"
-    }
-  ],
-
-
-  // ====================================================================
-  //  FULL SURVEY PAGES (legacy, used when ?part is not specified)
-  // ====================================================================
-
-  pages: [
-
-    // -- Welcome --
-    {
-      id: "welcome",
-      type: "welcome",
-      title: "Welcome",
-      subtitle: "Decision Making Study",
-      body: "<p>Help us study decision-making under uncertainty. " +
-            "This takes about <strong>10 minutes</strong>.</p>" +
-            "<p>Pay: <strong>$2.00</strong> base + up to <strong>$2.00</strong> accuracy bonus.</p>" +
-            "<p>Please use a <strong>desktop or laptop</strong> for the best experience.</p>",
-      buttonText: "Begin"
-    },
-
-    // -- Consent --
-    {
-      id: "consent",
-      type: "consent",
-      title: "Consent",
-      body: "<p>You are being invited to participate in a research study about decision-making.</p>" +
-            "<p><strong>What you will do:</strong> Learn the decision-making task, pass a quiz, " +
-            "then evaluate 9 firms.</p>" +
-            "<p><strong>Time:</strong> ~10 minutes.</p>" +
-            "<p><strong>Pay:</strong> $2.00 base + up to $2.00 accuracy bonus.</p>" +
-            "<p><strong>Risks:</strong> None beyond everyday life.</p>" +
-            "<p><strong>Confidentiality:</strong> Anonymous. Prolific ID collected only for payment.</p>" +
-            "<p><strong>Voluntary:</strong> Withdraw at any time by closing this window.</p>",
-      mustAgree: true,
-      declineMessage: "You must agree to participate in order to continue.",
-      minTimeSeconds: 15
-    },
-
-    // -- Your Mission --
-    {
-      id: "inst_mission",
-      type: "instructions",
-      title: "Your Mission",
-      body:
-        "<div class='mission-badge'>" +
-          "<svg viewBox='0 0 100 120' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
-            "<defs>" +
-              "<linearGradient id='shieldGrad2' x1='0%' y1='0%' x2='0%' y2='100%'>" +
-                "<stop offset='0%' stop-color='#0ea5a0'/>" +
-                "<stop offset='100%' stop-color='#0f766e'/>" +
-              "</linearGradient>" +
-            "</defs>" +
-            "<path d='M50 5 L90 20 V55 C90 82 72 105 50 115 C28 105 10 82 10 55 V20 Z' " +
-                  "fill='url(#shieldGrad2)' stroke='#0f766e' stroke-width='2'/>" +
-            "<path d='M32 58 L45 72 L70 42' stroke='#ffffff' stroke-width='7' " +
-                  "stroke-linecap='round' stroke-linejoin='round' fill='none'/>" +
-          "</svg>" +
-          "<div class='mission-badge-label'>AUDITOR</div>" +
-        "</div>" +
-        "<p style='text-align:center; font-size:19px; max-width:560px; margin:0 auto;'>" +
-          "You are a <strong>government auditor</strong>. Your job is to detect " +
-          "<strong>fraudulent firms</strong>. For each firm you investigate, you will estimate " +
-          "the probability that it is fraudulent." +
-        "</p>",
-      minTimeSeconds: 6
-    },
-
-    // -- Try the Slider --
-    {
-      id: "slider_demo",
-      type: "slider_demo",
-      title: "Try the Slider",
-      body: "<p>Here is how you will report your fraud estimate. " +
-            "Drag the slider to any range to continue.</p>",
-      hint: "The slider snaps to 10-percentage-point ranges (e.g., 30% to 40%).",
-      minTimeSeconds: 4
-    },
-
-    // -- Firms: Clean or Fraudulent --
-    {
-      id: "inst_firms",
-      type: "instructions",
-      title: "Firms: Clean or Fraudulent",
-      body:
-        "<div class='firm-prior-visual'>" +
-          "<div class='firm-prior-pie'></div>" +
-          "<div class='firm-prior-legend'>" +
-            "<div class='firm-prior-legend-item'>" +
-              "<span class='firm-prior-swatch' style='background:#14b8a6;'></span>" +
-              "<span><strong>80%</strong> Clean</span>" +
-            "</div>" +
-            "<div class='firm-prior-legend-item'>" +
-              "<span class='firm-prior-swatch' style='background:#7c3aed;'></span>" +
-              "<span><strong>20%</strong> Fraudulent</span>" +
-            "</div>" +
-          "</div>" +
-        "</div>" +
-        "<p style='text-align:center; font-size:18px; margin-top:8px;'>" +
-          "Most firms are <strong>clean</strong>. About <strong>1 in 5</strong> is fraudulent." +
-        "</p>",
-      minTimeSeconds: 6
-    },
-
-    // -- Two Types of Transactions --
-    {
-      id: "inst_two_types",
-      type: "instructions",
-      title: "Two Types of Transactions",
-      body:
-        "<div class='two-types-row'>" +
-          "<div class='transaction-doc-wrap'>" +
-            "<div class='transaction-doc large normal'>N</div>" +
-            "<div class='transaction-doc-caption' style='color:#15803d;'>Normal</div>" +
-          "</div>" +
-          "<div class='transaction-doc-wrap'>" +
-            "<div class='transaction-doc large flagged'>F</div>" +
-            "<div class='transaction-doc-caption' style='color:#b91c1c;'>Flagged</div>" +
-          "</div>" +
-        "</div>" +
-        "<p style='text-align:center; font-size:18px; margin-top:8px;'>" +
-          "Every transaction is classified as either <strong>Normal</strong> or <strong>Flagged</strong>." +
-        "</p>",
-      minTimeSeconds: 6
-    },
-
-    // -- Firms Look Different --
-    {
-      id: "inst_mix_differs",
-      type: "instructions",
-      title: "Firms Look Different",
-      body:
-        "<div class='type-pie-row'>" +
-          "<div class='type-pie-card type-pie-clean'>" +
-            "<div class='type-pie-label'>Clean Firm</div>" +
-            "<div class='type-pie' style='background:conic-gradient(#22c55e 0deg 180deg, #ef4444 180deg 360deg);'></div>" +
-            "<div class='type-pie-legend'>" +
-              "<div class='type-pie-legend-item'><span class='doc-icon doc-icon-normal' style='width:18px; height:22px; font-size:10px;'>N</span><strong>50%</strong></div>" +
-              "<div class='type-pie-legend-item'><span class='doc-icon doc-icon-flagged' style='width:18px; height:22px; font-size:10px;'>F</span>50%</div>" +
-            "</div>" +
-          "</div>" +
-          "<div class='type-pie-card type-pie-fraud'>" +
-            "<div class='type-pie-label'>Fraudulent Firm</div>" +
-            "<div class='type-pie' style='background:conic-gradient(#22c55e 0deg 144deg, #ef4444 144deg 360deg);'></div>" +
-            "<div class='type-pie-legend'>" +
-              "<div class='type-pie-legend-item'><span class='doc-icon doc-icon-normal' style='width:18px; height:22px; font-size:10px;'>N</span>40%</div>" +
-              "<div class='type-pie-legend-item'><span class='doc-icon doc-icon-flagged' style='width:18px; height:22px; font-size:10px;'>F</span><strong>60%</strong></div>" +
-            "</div>" +
-          "</div>" +
-        "</div>" +
-        "<p style='text-align:center; font-size:17px; margin-top:8px;'>" +
-          "<strong>Clean</strong> firms have about half Normal and half Flagged. " +
-          "<strong>Fraudulent</strong> firms tilt toward <strong>Flagged</strong> -- about 60%." +
-        "</p>",
-      minTimeSeconds: 8
-    },
-
-    // -- Firm Sizes --
-    {
-      id: "inst_sizes",
-      type: "instructions",
-      title: "Firm Sizes",
-      body:
-        "<div class='firm-size-row size-diff'>" +
-          "<div class='firm-size-card firm-size-card-small size-diff-small'>" +
-            "<svg class='firm-icon-small' viewBox='0 0 60 80' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
-              "<rect x='10' y='40' width='40' height='40' fill='#cbd5e1' stroke='#475569' stroke-width='2'/>" +
-            "</svg>" +
-            "<div class='firm-size-number'>10</div>" +
-            "<div class='firm-size-subtext'>transactions</div>" +
-          "</div>" +
-          "<div class='firm-size-card firm-size-card-medium size-diff-medium'>" +
-            "<svg class='firm-icon-medium' viewBox='0 0 80 120' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
-              "<rect x='10' y='30' width='60' height='90' fill='#cbd5e1' stroke='#475569' stroke-width='2'/>" +
-            "</svg>" +
-            "<div class='firm-size-number'>20</div>" +
-            "<div class='firm-size-subtext'>transactions</div>" +
-          "</div>" +
-          "<div class='firm-size-card firm-size-card-large size-diff-large'>" +
-            "<svg class='firm-icon-large' viewBox='0 0 110 180' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
-              "<rect x='10' y='10' width='90' height='170' fill='#cbd5e1' stroke='#475569' stroke-width='2'/>" +
-            "</svg>" +
-            "<div class='firm-size-number'>50</div>" +
-            "<div class='firm-size-subtext'>transactions</div>" +
-          "</div>" +
-        "</div>" +
-        "<p style='text-align:center; font-size:17px; margin-top:8px;'>" +
-          "Firms come in three sizes. The manager always shows you <strong>4 transactions</strong>." +
-        "</p>",
-      minTimeSeconds: 8
-    },
-
-    // -- The Manager --
-    {
-      id: "inst_manager",
-      type: "instructions",
-      title: "The Manager",
-      body:
-        "<div class='manager-visual'>" +
-          "<div class='manager-figure'>&#128188;</div>" +
-          "<div class='manager-transactions'>" +
-            "<span class='transaction-doc small normal manager-show'>N</span>" +
-            "<span class='transaction-doc small flagged manager-hide'>F</span>" +
-            "<span class='transaction-doc small normal manager-show'>N</span>" +
-            "<span class='transaction-doc small flagged manager-hide'>F</span>" +
-            "<span class='transaction-doc small normal manager-show'>N</span>" +
-            "<span class='transaction-doc small flagged manager-hide'>F</span>" +
-          "</div>" +
-        "</div>" +
-        "<p>The manager sees <em>all</em> of the firm's transactions but only shows you " +
-          "<strong>4</strong>. The manager cannot fabricate transactions -- only choose which to reveal.</p>" +
-        "<p>The manager prefers a <strong>lower</strong> fraud probability from you. A low fraud " +
-          "probability means the manager is unlikely to be fined and more likely to earn a bonus.</p>" +
-        "<div class='incentive-cards incentive-cards-compact'>" +
-          "<div class='incentive-card incentive-card-good'>" +
-            "<div class='incentive-card-icon'>&#9989;</div>" +
-            "<div><strong>Fraud probability: LOW</strong></div>" +
-            "<div>Manager earns a bonus</div>" +
-          "</div>" +
-          "<div class='incentive-card incentive-card-bad'>" +
-            "<div class='incentive-card-icon'>&#10060;</div>" +
-            "<div><strong>Fraud probability: HIGH</strong></div>" +
-            "<div>Manager gets fined</div>" +
-          "</div>" +
-        "</div>",
+      id: "p6_practice_summary",
+      type: "practice_summary",
+      title: "",
       minTimeSeconds: 10
     },
 
-    // -- Example (1 of 3) --
+    // -- Handoff to the scored 30 --------------------------------------
     {
-      id: "example_1",
+      id: "p6_scored_intro",
       type: "instructions",
-      title: "Example",
+      title: "",
       body:
-        "<p class='example-subtitle'>A medium firm has 10 transactions.</p>" +
-        "<div class='example-grid'>" +
-          "<div class='transaction-doc small hidden'>?</div><div class='transaction-doc small hidden'>?</div>" +
-          "<div class='transaction-doc small hidden'>?</div><div class='transaction-doc small hidden'>?</div>" +
-          "<div class='transaction-doc small hidden'>?</div><div class='transaction-doc small hidden'>?</div>" +
-          "<div class='transaction-doc small hidden'>?</div><div class='transaction-doc small hidden'>?</div>" +
-          "<div class='transaction-doc small hidden'>?</div><div class='transaction-doc small hidden'>?</div>" +
-        "</div>" +
-        "<p style='text-align:center; margin-top:8px;'>This firm has <strong>10 transactions</strong> in total.</p>",
-      minTimeSeconds: 4
+        "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 18px; font-weight:700;'>" +
+          "Now, the real thing." +
+        "</p>" +
+        "<p style='text-align:justify; font-size:19px; max-width:620px; margin:0 auto 16px; line-height:1.65;'>" +
+          "The next <strong>30 audits</strong> count toward your bonus " +
+          "(<strong>up to $6.00</strong>)." +
+        "</p>" +
+        "<p style='text-align:justify; font-size:17px; max-width:620px; margin:0 auto; line-height:1.65; color:#334155;'>" +
+          "Same task as the warm-up. Good luck." +
+        "</p>",
+      minTimeSeconds: 6
     },
 
-    // -- Example (2 of 3) --
+    // Phase 1: 15 companies (K=4) -------------------------------------------
     {
-      id: "example_2",
-      type: "instructions",
-      title: "Example (2 of 3)",
-      body:
-        "<p class='example-subtitle'>The manager shows you only 4.</p>" +
-        "<div class='example-grid'>" +
-          "<div class='transaction-doc small normal'>N</div><div class='transaction-doc small flagged'>F</div>" +
-          "<div class='transaction-doc small normal'>N</div><div class='transaction-doc small flagged'>F</div>" +
-          "<div class='transaction-doc small hidden'>?</div><div class='transaction-doc small hidden'>?</div>" +
-          "<div class='transaction-doc small hidden'>?</div><div class='transaction-doc small hidden'>?</div>" +
-          "<div class='transaction-doc small hidden'>?</div><div class='transaction-doc small hidden'>?</div>" +
-        "</div>" +
-        "<p style='text-align:center; margin-top:8px;'>You see <strong>4 transactions</strong>: 2 Normal, 2 Flagged. The other 6 are <strong>hidden</strong>.</p>",
-      minTimeSeconds: 5
+      id: "block_k4",
+      type: "trial_block",
+      block: 1,
+      filterPhase: 1,
+      randomize: true,
+      askFlaggedEstimate: false,
+      minTimePerTrial: 8
     },
 
-    // -- Example (3 of 3) --
+    // -- Rule change (K=4 -> K=8), Page A: announcement ------------------
     {
-      id: "example_3",
+      id: "p6_rule_change_a",
       type: "instructions",
-      title: "Example (3 of 3)",
+      title: "",
       body:
-        "<p class='example-subtitle'>In this example, all 6 hidden transactions were Flagged.</p>" +
-        "<div class='example-grid'>" +
-          "<div class='transaction-doc small normal'>N</div><div class='transaction-doc small flagged'>F</div>" +
-          "<div class='transaction-doc small normal'>N</div><div class='transaction-doc small flagged'>F</div>" +
-          "<div class='transaction-doc small flagged reveal'>F</div><div class='transaction-doc small flagged reveal'>F</div>" +
-          "<div class='transaction-doc small flagged reveal'>F</div><div class='transaction-doc small flagged reveal'>F</div>" +
-          "<div class='transaction-doc small flagged reveal'>F</div><div class='transaction-doc small flagged reveal'>F</div>" +
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Rule change" +
+        "</p>" +
+        "<p style='text-align:center; font-size:28px; line-height:1.3; max-width:620px; margin:0 auto 26px; font-weight:800; color:#0f172a;'>" +
+          "Audit regulations just changed." +
+        "</p>" +
+        "<div class='forbidden-row'>" +
+          "<div class='forbidden-item'>" +
+            "<div class='forbidden-label'>Old rule</div>" +
+            "<div class='forbidden-num' style='color:#475569; text-decoration:line-through; text-decoration-thickness:3px;'>4</div>" +
+          "</div>" +
+          "<div class='forbidden-arrow'>&rarr;</div>" +
+          "<div class='forbidden-item' style='background:#f0fdf4; border-color:#86efac;'>" +
+            "<div class='forbidden-label' style='color:#15803d;'>New rule</div>" +
+            "<div class='forbidden-num' style='color:#15803d;'>8</div>" +
+          "</div>" +
         "</div>" +
-        "<p style='margin-top:8px;'><strong>Why it matters</strong>: The manager chose to hide transactions " +
-          "that looked bad. A firm that shows only 2 Flagged out of 4 may actually have many more hidden.</p>",
+        "<p style='text-align:center; font-size:26px; line-height:1.4; max-width:620px; margin:34px auto 0; font-weight:800; color:#0f172a;'>" +
+          "Managers must now disclose " +
+          "<strong style='color:#15803d;'>8</strong> transactions, " +
+          "not <strong style='color:#b91c1c; text-decoration:line-through;'>4</strong>." +
+        "</p>",
       minTimeSeconds: 8
     },
 
-    // -- Comprehension Quiz --
+    // -- Rule change, Page B: everything else stays the same -------------
     {
-      id: "comprehension",
-      type: "comprehension",
-      title: "Quiz",
-      description: "<p>Answer all questions correctly to continue.</p>",
-      questions: [
-        {
-          prompt: "For each firm, who decides which transactions you will see?",
-          type: "radio",
-          correct: "manager",
-          options: [
-            { value: "manager",  label: "The firm's manager" },
-            { value: "you",      label: "You, the auditor" },
-            { value: "random",   label: "A random selection" },
-            { value: "nobody",   label: "No one -- you see every transaction" }
-          ]
-        },
-        {
-          prompt: "The manager is more likely to earn a bonus when the auditor assigns a:",
-          type: "radio",
-          correct: "low",
-          options: [
-            { value: "low",        label: "Low fraud probability" },
-            { value: "high",       label: "High fraud probability" },
-            { value: "mid",        label: "A fraud probability close to 50%" },
-            { value: "no_effect",  label: "The probability does not affect the manager" }
-          ]
-        },
-        {
-          prompt: "Out of every 100 firms you audit, about how many are fraudulent?",
-          type: "radio",
-          correct: "20",
-          options: [
-            { value: "20", label: "About 20 out of 100 (20%)" },
-            { value: "40", label: "About 40 out of 100 (40%)" },
-            { value: "50", label: "About 50 out of 100 (50%)" },
-            { value: "80", label: "About 80 out of 100 (80%)" }
-          ]
-        },
-        {
-          prompt: "A clean firm has exactly 50% Normal and 50% Flagged transactions. A fraudulent firm has 40% Normal and 60% Flagged. Which of the following is true?",
-          type: "radio",
-          correct: "both",
-          options: [
-            { value: "both",  label: "Both types of firm can have Flagged transactions" },
-            { value: "only_fraud",  label: "Only fraudulent firms have Flagged transactions" },
-            { value: "only_clean",  label: "Only clean firms have Normal transactions" },
-            { value: "neither",  label: "Neither type has Flagged transactions" }
-          ]
-        }
-      ],
-      minTimeSeconds: 15,
-      maxAttempts: 1,
-      failMessage: "You did not answer all questions correctly. Thank you for your time."
+      id: "p6_rule_change_b",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:22px; max-width:620px; margin:0 auto 18px; line-height:1.55; font-weight:600;'>" +
+          "Everything else stays the same: the manager still picks which ones, you still estimate and bet." +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:24px auto 0; line-height:1.55;'>" +
+          "<strong>15 more companies</strong> under the new rule." +
+        "</p>",
+      minTimeSeconds: 7
     },
 
-    // -- Block 1: 9 trials --
+    // Phase 2: 15 companies (K=8) -------------------------------------------
     {
-      id: "trials_block1",
+      id: "block_k8",
       type: "trial_block",
-      block: 1,
+      block: 2,
+      filterPhase: 2,
       randomize: true,
-      trialCount: 9,
       askFlaggedEstimate: false,
-      minTimePerTrial: 10
+      minTimePerTrial: 8
     },
 
-    // -- Demographics --
+    // ==================================================================
+    //  ACT VII -- WRAP-UP
+    // ==================================================================
+
+    // -- Demographics ---------------------------------------------------
     {
       id: "demographics",
       type: "questionnaire",
@@ -1546,10 +2566,7 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 10,
       questions: [
         {
-          id: "age",
-          prompt: "Age",
-          type: "dropdown",
-          required: true,
+          id: "age", prompt: "Age", type: "dropdown", required: true,
           options: [
             { value: "18-24", label: "18-24" },
             { value: "25-34", label: "25-34" },
@@ -1560,10 +2577,7 @@ var SURVEY_CONFIG = {
           ]
         },
         {
-          id: "gender",
-          prompt: "Gender",
-          type: "dropdown",
-          required: true,
+          id: "gender", prompt: "Gender", type: "dropdown", required: true,
           options: [
             { value: "male",       label: "Male" },
             { value: "female",     label: "Female" },
@@ -1575,28 +2589,34 @@ var SURVEY_CONFIG = {
         {
           id: "stats_comfort",
           prompt: "How comfortable are you with probability and statistics?",
-          type: "likert",
-          required: true,
-          min: 1,
-          max: 5,
-          minLabel: "Not at all",
-          maxLabel: "Very comfortable"
+          type: "likert", required: true, min: 1, max: 5,
+          minLabel: "Not at all", maxLabel: "Very comfortable"
         }
       ]
     },
 
-    // -- Debrief --
+    // -- Debrief --------------------------------------------------------
+    // Intentionally minimal: does NOT reveal the study's hypothesis,
+    // what the "correct" reasoning would have been, or the real
+    // incentive structure behind disclosure. A detailed explanation at
+    // the end can prime future participants (word-of-mouth on Prolific)
+    // and distort later samples.
     {
       id: "debrief",
       type: "debrief",
-      title: "Thank You",
-      body: "<p>This study examines how people assess fraud risk when a manager " +
-            "strategically selects which transactions to disclose.</p>" +
-            "<p>We varied firm size (Small, Medium, or Large) and the composition of the 4 disclosed transactions.</p>" +
-            "<p>Thank you for contributing to this research.</p>",
+      title: "Thank You, Government Auditor",
+      body:
+        "<p>Thanks for taking part in this study.</p>" +
+        "<p>Your bonus is shown below. Use the completion code to " +
+        "register your submission on Prolific.</p>",
       showBonus: true,
       completionCode: "COMP2SN"
     }
   ]
 
 };
+
+// Expose for non-module loaders
+if (typeof window !== 'undefined') {
+  window.SURVEY_CONFIG = SURVEY_CONFIG;
+}

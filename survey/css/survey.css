@@ -1,6 +1,8 @@
 /* ==========================================================================
-   FBO Survey -- Professional Design System
+   FBO Survey -- Professional Design System (v4.0 typography overhaul)
    ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@400;600&display=swap');
 
 /* ---------- Reset & Base ---------- */
 *, *::before, *::after {
@@ -16,24 +18,26 @@
   --color-success: #2dc653;
   --color-error: #e63946;
   --color-warning: #f77f00;
-  --color-text: #2b2d42;
-  --color-text-secondary: #6c757d;
-  --color-text-muted: #adb5bd;
-  --color-bg: #f0f2f5;
+  --color-text: #1e293b;
+  --color-text-secondary: #475569;
+  --color-text-slate: #475569;   /* replaces "grey" for secondary/tertiary text */
+  --color-text-muted: #94a3b8;
+  --color-bg: #f5f7fb;
   --color-card: #ffffff;
-  --color-border: #dee2e6;
+  --color-border: #e2e8f0;
   --color-border-hover: #4361ee;
-  --color-input-bg: #f8f9fa;
+  --color-input-bg: #f8fafc;
 
-  --font-stack: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+  --font-stack: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
                 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: 'IBM Plex Serif', Georgia, 'Times New Roman', serif;
   --font-mono: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
 
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
 
-  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 4px 24px rgba(15, 23, 42, 0.08), 0 1px 4px rgba(15, 23, 42, 0.04);
   --shadow-hover: 0 8px 32px rgba(67, 97, 238, 0.15);
 
   --transition: 200ms ease;
@@ -147,30 +151,39 @@ body {
 .page-title {
   font-size: 28px;
   font-weight: 700;
+  letter-spacing: -0.02em;
   color: var(--color-text);
-  margin-bottom: 8px;
-  line-height: 1.3;
+  margin-bottom: 10px;
+  line-height: 1.2;
 }
 
 .page-subtitle {
   font-size: 17px;
   color: var(--color-text-secondary);
-  margin-bottom: 24px;
+  margin-bottom: 26px;
 }
 
 .page-body {
-  font-size: 18px;
-  line-height: 1.75;
+  font-size: 17px;
+  line-height: 1.6;
   color: var(--color-text);
-  margin-bottom: 24px;
+  margin-bottom: 22px;
+  text-align: justify;
+  text-justify: inter-word;
+  /* No auto-hyphenation anywhere: browsers were splitting words like
+     "regardless" -> "regard-less" at line ends, which reads as an error. */
+  hyphens: none;
+  -webkit-hyphens: none;
+  -ms-hyphens: none;
 }
 
 .page-body p {
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .page-body strong {
   font-weight: 600;
+  color: #0f172a;
 }
 
 .page-body ul, .page-body ol {
@@ -325,12 +338,9 @@ body {
 }
 
 /* ----- Range-band overlay (visualizes the 10-pp bucket) ---------- */
-/* Wrapper reserves a 10% phantom gutter on the right so the band can
-   extend past the thumb's max position (90%) to the end of the track. */
 .slider-range-wrap {
   position: relative;
   flex: 1;
-  padding-right: 10%;
   box-sizing: border-box;
   /* Give the wrapper a defined height so the absolute band aligns
      with the slider track regardless of surrounding layout. */
@@ -341,9 +351,50 @@ body {
 
 .slider-range-wrap .slider-input {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   flex: none;
   width: 100%;
+}
+
+/* Page-level error toast (for validation messages that aren't tied to a
+   specific field). Sits at the bottom of the current page content. */
+.page-error-toast {
+  display: none;
+  margin: 18px auto 0;
+  max-width: 640px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1.5px solid #dc2626;
+  border-radius: 8px;
+  font-size: 15.5px;
+  line-height: 1.4;
+  font-weight: 500;
+  text-align: left;
+}
+.page-error-toast.visible { display: block; }
+
+/* Slider-coverage text next to the live value readout */
+.slider-coverage-text {
+  font-size: 15px;
+  color: var(--color-text-slate);
+  margin-left: 6px;
+  font-weight: 500;
+}
+
+/* Coverage band: a moving shaded window showing the 10-pp window
+   around the participant's current estimate. Positioned via JS. */
+.slider-coverage-band {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 16px;
+  background: rgba(67, 97, 238, 0.18);
+  border: 1px solid rgba(67, 97, 238, 0.45);
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 1;
+  transition: left 0.1s ease, width 0.1s ease;
 }
 
 .slider-range-band {
@@ -372,14 +423,14 @@ body {
 .slider-input::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 28px;
-  height: 28px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  background: var(--color-primary);
-  border: 3px solid #fff;
-  box-shadow: 0 2px 8px rgba(67, 97, 238, 0.35);
+  background: rgba(67, 97, 238, 0.85);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(67, 97, 238, 0.4);
   cursor: grab;
-  margin-top: -10px;
+  margin-top: -5px;
   transition: box-shadow 0.2s, transform 0.2s;
 }
 
@@ -401,12 +452,12 @@ body {
 }
 
 .slider-input::-moz-range-thumb {
-  width: 24px;
-  height: 24px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background: var(--color-primary);
-  border: 3px solid #fff;
-  box-shadow: 0 2px 8px rgba(67, 97, 238, 0.35);
+  background: rgba(67, 97, 238, 0.85);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(67, 97, 238, 0.4);
   cursor: grab;
 }
 
@@ -439,12 +490,14 @@ body {
   display: inline-block;
   font-size: 28px;
   font-weight: 800;
-  color: var(--color-primary-dark);
+  /* Plain black on transparent background -- the previous indigo tint
+     read as a UI accent and distracted from the number itself. */
+  color: #0f172a;
   font-variant-numeric: tabular-nums;
   min-width: 72px;
   padding: 2px 6px;
   border-radius: 6px;
-  background: rgba(67, 97, 238, 0.08);
+  background: transparent;
 }
 
 /* Slider endpoint labels (above track) */
@@ -457,16 +510,18 @@ body {
 
 .slider-endpoint-label {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.3px;
 }
 
+/* "0% clean"  --> green.  "100% fraudulent"  --> red.
+   Matches the C (green) / S (red) coding used everywhere else. */
 .slider-endpoint-label.clean {
-  color: #0f766e;
+  color: #15803d;
 }
 
 .slider-endpoint-label.fraud {
-  color: #7c3aed;
+  color: #b91c1c;
 }
 
 /* ---------- Text Input & Textarea ---------- */
@@ -578,6 +633,44 @@ body {
   color: #fff;
 }
 
+/* ---------- Trial Intro Splash (between rounds) ---------- */
+.trial-intro-splash {
+  max-width: 560px;
+  margin: 48px auto 0;
+  text-align: center;
+  color: #0f172a;
+}
+.trial-intro-counter {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #0f172a;
+  margin-bottom: 24px;
+}
+.trial-intro-main {
+  margin: 12px 0;
+}
+.trial-intro-line {
+  font-size: 54px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+  margin-bottom: 22px;
+  line-height: 1.1;
+}
+.trial-intro-detail {
+  font-size: 22px;
+  font-weight: 500;
+  color: #0f172a;
+  line-height: 1.5;
+  max-width: 520px;
+  margin: 0 auto;
+}
+.trial-intro-detail strong {
+  font-weight: 800;
+}
+
 /* ---------- Trial Header Card ---------- */
 .trial-header-card {
   background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
@@ -594,6 +687,92 @@ body {
   letter-spacing: 1.5px;
   color: rgba(255, 255, 255, 0.7);
   margin-bottom: 12px;
+}
+
+/* Practice / warm-up variant: amber gradient so the participant can
+   see at a glance that these don't count. */
+.trial-header-card-practice {
+  background: linear-gradient(135deg, #b45309 0%, #f59e0b 100%);
+}
+.trial-header-practice-badge {
+  display: inline-block;
+  background: #fff;
+  color: #b45309;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-bottom: 8px;
+}
+.trial-header-practice-note {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.92);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* Practice summary card -- shown after the 5 warm-up rounds, before
+   the 30 scored rounds. Shows aggregate would-have-earned only. */
+.practice-summary-card {
+  max-width: 620px;
+  margin: 32px auto 0;
+  padding: 28px 28px 24px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+}
+.practice-summary-kicker {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #b45309;
+  margin-bottom: 10px;
+}
+.practice-summary-title {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 22px;
+}
+.practice-summary-amount-wrap {
+  background: #f0fdf4;
+  border: 2px solid #86efac;
+  border-radius: 10px;
+  padding: 18px 20px;
+  text-align: center;
+  margin-bottom: 18px;
+}
+.practice-summary-amount-label {
+  font-size: 15px;
+  font-weight: 500;
+  color: #166534;
+  margin-bottom: 6px;
+}
+.practice-summary-amount {
+  font-size: 36px;
+  font-weight: 800;
+  color: #14532d;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+.practice-summary-amount-sub {
+  font-size: 14px;
+  color: #475569;
+}
+.practice-summary-note {
+  font-size: 15px;
+  line-height: 1.55;
+  color: #334155;
+  background: #fef3c7;
+  border-left: 4px solid #d97706;
+  padding: 12px 16px;
+  border-radius: 6px;
 }
 
 .trial-header-stats {
@@ -1043,20 +1222,34 @@ body {
   pointer-events: none;
 }
 
-/* ---------- Stealth AI Check ---------- */
-/* Positioned off-screen but input remains fillable via JS/DOM.
-   An AI reading the DOM sees the label+input and may fill it.
-   A human never scrolls to -9999px. */
+/* ---------- Stealth AI Check (honeypot) ----------
+   Positioned off-screen, zero opacity, transparent text, 1px size.
+   A DOM-scraping AI sees the question label and input structure and
+   often tries to "answer"; a human never encounters it. We intentionally
+   do NOT set pointer-events:none -- programmatic form fillers often
+   simulate real clicks, and we want those to register so we can flag
+   the submission as bot-like. */
 .stealth-check {
   position: absolute;
   left: -9999px;
   top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
   opacity: 0;
-  pointer-events: none;
+  color: transparent;
+  background: transparent;
+  font-size: 1px;
+  line-height: 1;
+}
+.stealth-check label {
+  color: transparent;
+  font-size: 1px;
 }
 .stealth-check input {
-  width: 200px;
-  height: 30px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
 }
 
 /* ---------- Prolific ID Fallback ---------- */
@@ -1990,19 +2183,81 @@ body {
   display: flex;
   gap: 80px;
   justify-content: center;
-  align-items: flex-end;
+  /* Align by the TOP of each card so a visibility-hidden placeholder
+     on Page 8 does not shift the visible Clean card between Page 8 and
+     Page 9.  (Previous value was flex-end, which made layout sensitive
+     to invisible content in the placeholder caption.)  */
+  align-items: flex-start;
   margin: 16px 0 24px;
   flex-wrap: wrap;
 }
 
+/* Single-transaction slot used on the independence interlude pages
+   (18b, 18c, 18f). Fixed height so the card reveal on 18c doesn't
+   shift the surrounding text between 18b and 18c. */
+.random-single-slot {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 170px;
+  margin: 12px auto 0;
+}
+
+/* Question row on Page 18d: "single S --> ? cluster" */
+.random-question-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  max-width: 620px;
+  margin: 10px auto 0;
+  flex-wrap: wrap;
+}
+.random-question-arrow {
+  font-size: 40px;
+  font-weight: 700;
+  color: #64748b;
+  line-height: 1;
+}
+.random-question-unknowns {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 8px;
+  max-width: 160px;
+}
+.transaction-doc-mini.hidden-mini {
+  width: 34px;
+  height: 44px;
+  border: 2px dashed #94a3b8;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'IBM Plex Serif', serif;
+  font-weight: 700;
+  font-size: 20px;
+  opacity: 0.75;
+}
+
 .transaction-doc-wrap {
   text-align: center;
+  /* Fix the wrap's width to the card's width so the caption cannot
+     narrow or widen the column, which used to cause a tiny shift of
+     the sibling card on single-card pages. */
+  width: 130px;
 }
 
 .transaction-doc-caption {
   margin-top: 12px;
   font-size: 20px;
   font-weight: 700;
+  /* Reserve vertical space even when the caption is empty/&nbsp; --
+     keeps the placeholder on Page 8 the same total height as the
+     Clean card, so nothing visually shifts between Page 8 and Page 9. */
+  min-height: 1.6em;
+  line-height: 1.6;
 }
 
 /* ---------- Transaction Doc Icon (generic base) ---------- */
@@ -2787,7 +3042,7 @@ body {
   font-size: 19px;
   font-weight: 600;
   color: #1e293b;
-  text-align: center;
+  text-align: left;
   margin: 12px 0 24px;
   line-height: 1.5;
 }
@@ -2817,30 +3072,53 @@ body {
 /*          card grid + bonus-formula explainer                        */
 /* ================================================================== */
 
+/* --- Trial header bullet list (replaces the old firm-size banner) ---
+   Deliberately bigger than the rest of the trial chrome so the company
+   size + "Transactions shown below" are the first things the participant
+   reads. Plain markers, no colored background. */
+.trial-header-bullets {
+  list-style: disc;
+  margin: 0 auto 22px;
+  padding: 0 0 0 28px;
+  max-width: 620px;
+  color: #0f172a;
+  font-size: 26px;
+  line-height: 1.5;
+  font-weight: 600;
+}
+.trial-header-bullets li {
+  margin-bottom: 4px;
+}
+.trial-header-bullets li strong {
+  font-weight: 800;
+}
+
 /* --- Firm size banner (prominent, sits above the transactions card) -- */
 .firm-size-banner {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 18px 24px;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 24px 16px;
   margin-bottom: 16px;
   border-radius: var(--radius-md);
   border: 2px solid #e2e8f0;
   background: #fff;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  text-align: center;
 }
 
 .firm-size-banner-main {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 800;
-  letter-spacing: 0.2px;
+  letter-spacing: -0.01em;
   color: #0f172a;
+  white-space: nowrap;
 }
 
 .firm-size-banner-sub {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 500;
   color: #475569;
   font-variant-numeric: tabular-nums;
 }
@@ -2875,15 +3153,15 @@ body {
   padding: 4px 0 10px;
 }
 
-/* Keep transaction-doc semantics but upsize the cards inside the trial
-   panel so they are visually prominent (roughly matches the "example"
-   grid in the Part 1 explanation pages). */
+/* Trial-panel cards intentionally kept small so the bullet-list header
+   ("Company Size: Medium (20 transactions)" + "Transactions shown below.")
+   remains the visually-dominant element on the page, per design feedback. */
 .transaction-doc.disclosed-card {
-  width: 90px;
-  height: 112px;
-  font-size: 52px;
-  border-radius: 10px;
-  border-width: 4px;
+  width: 62px;
+  height: 78px;
+  font-size: 36px;
+  border-radius: 8px;
+  border-width: 3px;
   flex-shrink: 0;
 }
 
@@ -2927,17 +3205,16 @@ body {
   color: #b91c1c;
 }
 
-/* Mobile / narrow viewports: shrink the cards so long trials (dN + nFlagged
-   up to 4 cards) still fit without wrapping strangely. */
+/* Mobile / narrow viewports: shrink the cards so long trials (up to 8
+   disclosed cards in Block 2) still fit without wrapping strangely. */
 @media (max-width: 720px) {
   .transaction-doc.disclosed-card {
-    width: 68px;
-    height: 86px;
-    font-size: 40px;
+    width: 52px;
+    height: 66px;
+    font-size: 28px;
   }
-  .disclosed-cards { gap: 10px; }
-  .firm-size-banner-main { font-size: 20px; }
-  .firm-size-banner-sub { font-size: 14px; }
+  .disclosed-cards { gap: 8px; }
+  .trial-header-bullets { font-size: 22px; }
 }
 
 /* --- Bonus-formula explainer (Part 1 "Your Bonus" page) -------------- */
@@ -3000,5 +3277,1782 @@ body {
   text-transform: uppercase;
   color: #1e40af;
   margin-bottom: 8px;
+}
+
+/* ===========================================================
+   v4.0 (linear-mapping) additions
+   =========================================================== */
+
+/* Clean / Suspicious aliases for the new card terminology */
+.transaction-doc.clean {
+  border-color: #22c55e;
+  background: #f0fdf4;
+  color: #15803d;
+}
+.transaction-doc.suspicious {
+  border-color: #ef4444;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+.transaction-doc-mini.clean {
+  border: 2px solid #22c55e;
+  background: #f0fdf4;
+  color: #15803d;
+  display: inline-block;
+  width: 18px;
+  height: 22px;
+  line-height: 22px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 12px;
+  border-radius: 3px;
+  margin-right: 4px;
+}
+.transaction-doc-mini.suspicious {
+  border: 2px solid #ef4444;
+  background: #fef2f2;
+  color: #b91c1c;
+  display: inline-block;
+  width: 18px;
+  height: 22px;
+  line-height: 22px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 12px;
+  border-radius: 3px;
+  margin-right: 4px;
+}
+
+/* Regime banners (replaces firm-size-small/medium/large coloring) */
+.firm-size-banner.regime-light {
+  background: #eff6ff;
+  border: 2px solid #3b82f6;
+}
+.firm-size-banner.regime-light .firm-size-banner-main { color: #1e40af; }
+.firm-size-banner.regime-heavy {
+  background: #fef3c7;
+  border: 2px solid #d97706;
+}
+.firm-size-banner.regime-heavy .firm-size-banner-main { color: #92400e; }
+
+/* Single-column trial layout (no reference panel) */
+.trial-main-content.trial-main-single {
+  grid-column: 1 / -1;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* ================================================================== */
+/*  DEV-only: floating page jumper (shown only when ?dev=true)        */
+/* ================================================================== */
+.dev-jumper {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 9999;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+}
+.dev-jumper-toggle {
+  background: #111827;
+  color: #fff;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+.dev-jumper-toggle:hover { background: #1f2937; }
+.dev-jumper-toggle-icon {
+  margin-right: 4px;
+}
+.dev-jumper-panel {
+  position: absolute;
+  top: 42px;
+  left: 0;
+  width: 340px;
+  max-height: 70vh;
+  background: #fff;
+  border: 1.5px solid #111827;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.dev-jumper.collapsed .dev-jumper-panel { display: none; }
+.dev-jumper-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: #111827;
+  color: #fff;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+.dev-jumper-close {
+  background: transparent;
+  border: 0;
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 6px;
+}
+.dev-jumper-search {
+  border: 0;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+}
+.dev-jumper-search:focus { background: #f9fafb; }
+.dev-jumper-list {
+  overflow-y: auto;
+  font-size: 12px;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+}
+.dev-jumper-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f4f6;
+}
+.dev-jumper-row:hover { background: #f9fafb; }
+.dev-jumper-row.current { background: #fef3c7; }
+.dev-jumper-idx {
+  display: inline-block;
+  min-width: 28px;
+  text-align: right;
+  color: #6b7280;
+}
+.dev-jumper-type {
+  display: inline-block;
+  min-width: 84px;
+  padding: 2px 6px;
+  background: #e5e7eb;
+  color: #374151;
+  border-radius: 4px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.dev-jumper-id {
+  color: #111827;
+  font-weight: 600;
+}
+
+/* ================================================================== */
+/*  Trial-page side calculator                                        */
+/* ================================================================== */
+.trial-calculator {
+  position: fixed;
+  top: 90px;
+  right: 20px;
+  width: 220px;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
+  z-index: 40;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  overflow: hidden;
+  transition: height 0.2s ease;
+}
+.calc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: #0f172a;
+  color: #fff;
+  border-bottom: 1px solid #cbd5e1;
+}
+.calc-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.calc-toggle {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  line-height: 1;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.calc-toggle:hover { background: rgba(255, 255, 255, 0.15); }
+.trial-calculator.calc-collapsed .calc-body { display: none; }
+.calc-body {
+  padding: 10px;
+}
+.calc-display {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 10px 12px;
+  text-align: right;
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #0f172a;
+  overflow-x: auto;
+  white-space: nowrap;
+  min-height: 42px;
+  line-height: 1.2;
+}
+.calc-history {
+  text-align: right;
+  font-size: 17px;
+  font-weight: 600;
+  color: #334155;
+  padding: 6px 4px 8px;
+  min-height: 26px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow-x: auto;
+  letter-spacing: 0.01em;
+}
+.calc-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(6, 40px);
+  gap: 4px;
+}
+.calc-btn {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #0f172a;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.1s, transform 0.05s;
+  font-variant-numeric: tabular-nums;
+}
+.calc-btn:hover { background: #e2e8f0; }
+.calc-btn:active { transform: scale(0.96); }
+.calc-btn.calc-op {
+  background: #e2e8f0;
+  color: #0f172a;
+  font-weight: 800;
+}
+.calc-btn.calc-op:hover { background: #cbd5e1; }
+.calc-btn.calc-btn-eq {
+  /* '=' is the action button -- full-width at the bottom of the grid,
+     taller + bolder + accented so it reads as "execute the expression". */
+  grid-column: 1 / -1;
+  background: #0f766e;
+  color: #fff;
+  border-color: #0f766e;
+  font-size: 20px;
+  letter-spacing: 2px;
+}
+.calc-btn.calc-btn-eq:hover { background: #115e59; }
+
+/* Parenthesis buttons: slightly distinct style so they read as grouping
+   operators, not arithmetic. */
+.calc-btn.calc-paren {
+  background: #f1f5f9;
+  color: #0f172a;
+  font-weight: 800;
+}
+.calc-btn.calc-paren:hover { background: #cbd5e1; }
+
+/* Empty grid slot -- keeps the layout rectangular without forcing a
+   seldom-used button into the corner. Transparent + not interactive. */
+.calc-spacer {
+  background: transparent;
+  border: 0;
+  pointer-events: none;
+}
+
+/* Collapse to a tiny labeled tab on narrow viewports so the panel
+   doesn't cover the slider or the Next button on smaller screens. */
+@media (max-width: 1100px) {
+  .trial-calculator { top: auto; bottom: 16px; right: 12px; width: 200px; }
+  .calc-grid { grid-template-rows: repeat(6, 34px); }
+  .calc-display { font-size: 18px; min-height: 34px; padding: 7px 10px; }
+  .calc-history { font-size: 15px; min-height: 22px; }
+}
+@media (max-width: 720px) {
+  .trial-calculator { width: 180px; }
+  .calc-btn { font-size: 13px; }
+  .calc-btn.calc-btn-eq { font-size: 17px; }
+  .calc-history { font-size: 14px; min-height: 20px; }
+}
+
+/* Placeholder for N - K undisclosed transactions */
+.undisclosed-placeholder {
+  margin-top: 14px;
+  padding: 12px 16px;
+  background: #f1f5f9;
+  border: 2px dashed #94a3b8;
+  border-radius: 8px;
+  text-align: center;
+  color: #475569;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.undisclosed-placeholder strong {
+  color: #1e293b;
+  font-size: 17px;
+}
+
+/* Small variant of the transaction doc, used for inline examples */
+.transaction-doc.rule-small {
+  width: 44px;
+  height: 54px;
+  font-size: 22px;
+  border-radius: 6px;
+  border-width: 3px;
+}
+
+/* Even smaller variant, used on the rule page where 10 cards sit in one row */
+.transaction-doc.rule-tiny {
+  width: 32px;
+  height: 40px;
+  font-size: 16px;
+  border-radius: 5px;
+  border-width: 2px;
+}
+
+/* A hidden ("?") card for the undisclosed placeholder visual */
+.transaction-doc.hidden-card {
+  border: 3px dashed #94a3b8;
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
+/* ---------- Rule examples (share-suspicious -> fraud probability) ---------- */
+.rule-example-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+/* Stacked variant: cards on top, ratio/arrow/result on a tidy row below.
+   Guarantees the % never overflows the card regardless of card count. */
+.rule-example-row.rule-example-stack {
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.rule-example-row.rule-example-stack .rule-example-cards {
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.rule-example-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.rule-example-row.rule-example-stack .rule-example-ratio,
+.rule-example-row.rule-example-stack .rule-example-result,
+.rule-example-row.rule-example-stack .rule-example-arrow {
+  min-width: 0;
+}
+.rule-example-cards {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  justify-content: center;
+}
+.rule-example-arrow {
+  font-size: 34px;
+  color: #94a3b8;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.rule-example-ratio {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  min-width: 70px;
+  text-align: center;
+  flex-shrink: 0;
+  color: #334155;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Force 10 cards per row. Used on practice pages when N > 10 so that
+   the transactions stack into clean 10-wide rows instead of flowing
+   awkwardly via flex-wrap. */
+.cards-grid-10 {
+  display: grid;
+  grid-template-columns: repeat(10, auto);
+  justify-content: center;
+  gap: 6px;
+  margin: 0 auto 18px;
+  max-width: 640px;
+  padding: 14px 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+.rule-example-result {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  min-width: 80px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ---------- Hidden-transactions visual ---------- */
+.hidden-viz {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin: 12px 0 8px;
+}
+.hidden-viz-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ---------- Regime comparison (K=4 vs K=8) ---------- */
+.regime-compare {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 8px auto 12px;
+}
+.regime-card {
+  flex: 0 1 310px;
+  border-radius: 14px;
+  padding: 20px 20px 22px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+.regime-card-light {
+  background: #eff6ff;
+  border: 2px solid #3b82f6;
+}
+.regime-card-heavy {
+  background: #fef3c7;
+  border: 2px solid #d97706;
+}
+.regime-card-tag {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.regime-card-light .regime-card-tag { color: #1e40af; }
+.regime-card-heavy .regime-card-tag { color: #92400e; }
+.regime-card-big {
+  font-size: 44px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.regime-card-light .regime-card-big { color: #1e40af; }
+.regime-card-heavy .regime-card-big { color: #92400e; }
+.regime-card-sub {
+  font-size: 16px;
+  color: #334155;
+  margin-bottom: 14px;
+}
+.regime-card-row {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Plain outlined "slot" for a not-yet-known disclosed transaction.
+   Used on the regimes page where we want "K disclosed" visually without
+   ? marks that would imply the content is hidden. */
+.doc-slot {
+  width: 38px;
+  height: 50px;
+  border-radius: 6px;
+  border: 2px solid #cbd5e1;
+  background: #ffffff;
+}
+
+/* ---------- Practice ("Try it yourself") buttons ---------- */
+.practice-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 10px auto 0;
+  max-width: 640px;
+}
+.practice-btn {
+  min-width: 110px;
+  padding: 14px 20px;
+  font-size: 20px;
+  font-weight: 700;
+  font-family: var(--font-stack);
+  color: #1e293b;
+  background: #ffffff;
+  border: 2px solid #cbd5e1;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+/* Quiz-style variant: vertical stack, full width, left-aligned text,
+   and automatic A/B/C/D letter prefixes on each option. Applied to the
+   "Quick Check" pages and the bonus quiz where options read like
+   multiple-choice quiz answers. */
+.practice-buttons.quiz-style {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  max-width: 620px;
+  margin: 10px auto 0;
+  counter-reset: choice;
+}
+.practice-buttons.quiz-style .practice-btn {
+  min-width: 0;
+  width: 100%;
+  text-align: left;
+  padding: 13px 18px;
+  font-size: 17px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  line-height: 1.4;
+}
+.practice-buttons.quiz-style .practice-btn::before {
+  counter-increment: choice;
+  content: counter(choice, upper-alpha) ".";
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--color-primary);
+  margin-right: 14px;
+  min-width: 22px;
+  flex-shrink: 0;
+}
+.practice-buttons.quiz-style .practice-btn.practice-correct::before { color: #15803d; }
+.practice-buttons.quiz-style .practice-btn.practice-wrong::before   { color: #b91c1c; }
+.practice-btn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  transform: translateY(-1px);
+}
+.practice-btn.practice-correct {
+  background: #dcfce7;
+  border-color: #16a34a;
+  color: #14532d;
+}
+.practice-btn.practice-wrong {
+  background: #fee2e2;
+  border-color: #dc2626;
+  color: #7f1d1d;
+}
+.practice-btn.practice-dimmed {
+  opacity: 0.5;
+}
+.practice-btn.practice-timeout {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.practice-buttons.retry-timeout {
+  pointer-events: none;
+}
+.practice-btn:disabled {
+  cursor: default;
+  transform: none;
+}
+.practice-feedback {
+  max-width: 640px;
+  margin: 18px auto 0;
+  padding: 14px 18px;
+  border-radius: 10px;
+  font-size: 17px;
+  line-height: 1.45;
+  text-align: center;
+  display: none;
+}
+.practice-feedback.fb-correct,
+.practice-feedback.fb-wrong {
+  display: block;
+}
+.practice-feedback.fb-correct {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #14532d;
+}
+.practice-feedback.fb-wrong {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #7f1d1d;
+}
+
+/* ---------- Mandate page (law icon + 4 or 8) ---------- */
+.mandate-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 14px 0;
+}
+.mandate-num {
+  font-size: 72px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #0f172a;
+  line-height: 1;
+}
+.mandate-num span {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin: 0 8px;
+  letter-spacing: normal;
+}
+
+/* ---------- "Manager cannot change" visual ---------- */
+.forbidden-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  flex-wrap: wrap;
+  margin: 12px auto 0;
+  max-width: 720px;
+}
+.forbidden-item {
+  text-align: center;
+  padding: 18px 24px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  min-width: 200px;
+}
+.forbidden-item.forbidden-bad {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+.forbidden-label {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  margin-bottom: 6px;
+}
+.forbidden-num {
+  font-size: 60px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: #0f172a;
+}
+.forbidden-num.forbidden-strike {
+  font-size: 28px;
+  color: #b91c1c;
+  text-decoration: line-through;
+  text-decoration-thickness: 3px;
+}
+.forbidden-arrow {
+  font-size: 30px;
+  color: #94a3b8;
+}
+
+/* ---------- Step-through example cards (used with reveal-step) ---------- */
+.step-list {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.step-card {
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(15,23,42,0.04);
+}
+.step-base { background: #f8fafc; }
+.step-card .step-tag {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  margin-bottom: 6px;
+}
+.step-card .step-body { font-size: 17px; line-height: 1.55; color: #0f172a; }
+.step-card .step-body-big { font-size: 44px; font-weight: 800; color: #15803d; line-height: 1.1; margin-top: 6px; letter-spacing: -0.02em; }
+.step-card .step-result {
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 8px;
+  display: inline-block;
+}
+.step-result-good { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.step-result-bad  { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+.step-total { background: #ecfdf5; border-color: #a7f3d0; }
+.step-rule  { background: #eff6ff; border-color: #bfdbfe; }
+
+/* ---------- Click-driven reveal (PowerPoint "appear" animations) ---------- */
+/* Elements start hidden; Next-click reveals them one at a time. */
+.reveal-step {
+  opacity: 0;
+  transform: translateY(6px);
+  max-height: 0;
+  overflow: hidden;
+  transition: opacity 350ms ease-out, transform 350ms ease-out;
+  pointer-events: none;
+}
+.reveal-step.reveal-shown {
+  opacity: 1;
+  transform: translateY(0);
+  max-height: none;
+  pointer-events: auto;
+  margin-top: 0;
+}
+
+/* ---------- Stagger reveal (auto, sequential fade-in on load) ---------- */
+.stagger-reveal > * {
+  opacity: 0;
+  transform: translateY(6px);
+  animation: staggerIn 450ms ease-out forwards;
+}
+.stagger-reveal > *:nth-child(1) { animation-delay:  100ms; }
+.stagger-reveal > *:nth-child(2) { animation-delay:  700ms; }
+.stagger-reveal > *:nth-child(3) { animation-delay: 1300ms; }
+.stagger-reveal > *:nth-child(4) { animation-delay: 1900ms; }
+.stagger-reveal > *:nth-child(5) { animation-delay: 2500ms; }
+.stagger-reveal > *:nth-child(6) { animation-delay: 3100ms; }
+.stagger-reveal > *:nth-child(7) { animation-delay: 3700ms; }
+@keyframes staggerIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- Cherry-pick example (all 10 -> 4 chosen clean) ---------- */
+.cherry-pick-wrap {
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: center;
+}
+.cherry-label {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  margin-bottom: 8px;
+}
+.cherry-label-shown {
+  color: #1e40af;
+  margin-top: 8px;
+}
+.cherry-all,
+.cherry-shown {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+.cherry-shown {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+.cherry-arrow {
+  font-size: 32px;
+  color: #94a3b8;
+  margin: 4px 0;
+  line-height: 1;
+}
+.transaction-doc.cherry-picked {
+  box-shadow: 0 0 0 3px #3b82f6;
+}
+
+/* ---------- Consequence chain (rating -> audit -> fired) ---------- */
+.consequence-chain {
+  display: flex;
+  gap: 14px;
+  align-items: stretch;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 18px auto;
+  max-width: 780px;
+}
+.consequence-box {
+  flex: 1 1 180px;
+  max-width: 220px;
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 14px;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
+}
+.consequence-box.consequence-bad {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+.consequence-icon {
+  font-size: 40px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.consequence-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+.consequence-sub {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+.consequence-arrow {
+  align-self: center;
+  font-size: 32px;
+  color: #94a3b8;
+}
+
+/* ---------- Bonus examples (one at a time, Part 1 bonus explainer) ---------- */
+.bonus-ex {
+  max-width: 640px;
+  margin: 10px auto;
+  padding: 14px 18px;
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  font-size: 18px;
+  flex-wrap: wrap;
+}
+.bonus-ex-main {
+  flex: 1 1 auto;
+  color: #1e293b;
+  line-height: 1.45;
+}
+.bonus-ex-result {
+  flex: 0 0 auto;
+  font-size: 17px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+.bonus-ex-good {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+}
+.bonus-ex-bad {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+/* ---------- Two-scenario example (incentive page) ---------- */
+/* Plain lines, no filled boxes; bolding carries emphasis. */
+.scenario-pair {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 19px;
+  line-height: 1.5;
+}
+.scenario-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  text-align: center;
+}
+.scenario-tag {
+  font-weight: 700;
+  color: #0f172a;
+}
+.scenario-arrow {
+  color: #94a3b8;
+  font-size: 22px;
+}
+.scenario-outcome {
+  font-weight: 700;
+}
+.scenario-good .scenario-outcome { color: #15803d; }
+.scenario-bad  .scenario-outcome { color: #b91c1c; }
+.scenario-line::before {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.scenario-good::before { content: "\2714\fe0f"; }
+.scenario-bad::before  { content: "\2716\fe0f"; }
+
+/* ---------- Bonus rule cards (per-firm formula breakdown) ---------- */
+.bonus-rule-row {
+  display: flex;
+  gap: 22px;
+  max-width: 780px;
+  margin: 0 auto;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.bonus-rule-card {
+  flex: 1 1 300px;
+  max-width: 360px;
+  padding: 22px 22px 20px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(15,23,42,0.05);
+}
+.bonus-rule-right { border-color: #86efac; background: #f0fdf4; }
+.bonus-rule-wrong { border-color: #fca5a5; background: #fef2f2; }
+.bonus-rule-tag {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 800;
+  margin-bottom: 14px;
+}
+.bonus-rule-right .bonus-rule-tag { color: #15803d; }
+.bonus-rule-wrong .bonus-rule-tag { color: #b91c1c; }
+.bonus-rule-math {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.bonus-rule-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.rule-part {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+}
+.rule-lbl {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.bonus-rule-plus {
+  font-size: 22px;
+  color: #94a3b8;
+  margin: 2px 0;
+}
+.bonus-rule-cap {
+  margin-top: 14px;
+  font-size: 15px;
+  color: var(--color-text-secondary);
+}
+.bonus-rule-cap strong {
+  color: #0f172a;
+  font-size: 17px;
+}
+
+/* ---------- Bonus example calculation ---------- */
+.bonus-calc {
+  max-width: 640px;
+  margin: 8px auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.bonus-calc-scenario {
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-size: 18px;
+}
+.bonus-calc-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+.bonus-calc-row .lbl { color: var(--color-text-secondary); }
+.bonus-calc-row .val { font-weight: 700; color: #0f172a; }
+.bonus-calc-row .ok  { color: #15803d; margin-left: 10px; font-weight: 600; font-size: 15px; }
+.bonus-calc-row .bad { color: #b91c1c; margin-left: 10px; font-weight: 600; font-size: 15px; }
+.bonus-calc-math {
+  padding: 18px 22px;
+  border-radius: 12px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  font-size: 17px;
+  line-height: 1.7;
+}
+.bonus-calc-math-row { color: #1e3a8a; }
+.bonus-calc-math-row .calc-note { color: var(--color-text-secondary); font-size: 15px; margin-left: 6px; }
+.bonus-calc-math-total {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 2px solid #bfdbfe;
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* ---------- Bonus simulator (interactive live display) ---------- */
+.bonus-sim {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.sim-truth-banner {
+  padding: 14px 18px;
+  border-radius: 10px;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  text-align: center;
+  font-size: 17px;
+  color: #78350f;
+}
+.sim-slider-card {
+  padding: 16px 20px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+.sim-slider-header {
+  text-align: center;
+  font-size: 17px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 10px;
+}
+.sim-slider-value {
+  color: var(--color-primary);
+  font-weight: 800;
+  font-size: 20px;
+}
+.sim-result {
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  font-size: 17px;
+  line-height: 1.6;
+}
+.sim-result-row { display: flex; justify-content: space-between; padding: 3px 0; }
+.sim-result-total {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 10px;
+  margin-top: 10px;
+  border-top: 2px solid #94a3b8;
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+}
+.sim-flag-yes { color: #15803d; font-weight: 700; }
+.sim-flag-no  { color: #b91c1c; font-weight: 700; }
+
+/* ---------- Two-answers intro cards (Part 1) ---------- */
+.two-answers-row {
+  display: flex;
+  gap: 22px;
+  justify-content: center;
+  flex-wrap: wrap;
+  max-width: 720px;
+  margin: 0 auto;
+}
+.answer-card {
+  flex: 0 1 280px;
+  padding: 22px 20px 24px;
+  text-align: center;
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05);
+}
+.answer-num {
+  width: 44px;
+  height: 44px;
+  line-height: 44px;
+  margin: 0 auto 10px;
+  font-size: 24px;
+  font-weight: 800;
+  color: #ffffff;
+  background: var(--color-primary);
+  border-radius: 50%;
+}
+.answer-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+.answer-sub {
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+.answer-sub strong { color: #0f172a; }
+
+/* ---------- "Some firms show 4, others 8" big-number layout ---------- */
+.two-counts-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 44px;
+  flex-wrap: wrap;
+  margin: 20px 0;
+}
+.count-card {
+  text-align: center;
+  padding: 0 10px;
+}
+.count-big {
+  font-size: 120px;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  color: var(--color-primary);
+  line-height: 1;
+}
+.count-sub {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--color-text-secondary);
+  margin-top: 10px;
+  font-weight: 600;
+}
+.count-divider {
+  font-size: 28px;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+/* Secondary prompt under a slider question-prompt */
+.slider-sub-prompt {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  margin: -4px 0 12px;
+  line-height: 1.45;
+}
+
+/* ---------- Different-mixes page (3 firms side by side) ---------- */
+.firm-mix-row {
+  display: flex;
+  justify-content: center;
+  gap: 22px;
+  flex-wrap: wrap;
+  margin: 10px auto 0;
+  max-width: 760px;
+}
+.firm-mix-card {
+  flex: 0 1 200px;
+  padding: 16px 14px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  text-align: center;
+}
+.firm-mix-cards {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.firm-mix-label {
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ---------- Opposing-interests two-card layout ---------- */
+.interests-row {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 20px;
+  max-width: 780px;
+  margin: 0 auto;
+  flex-wrap: wrap;
+}
+.interests-card {
+  flex: 1 1 260px;
+  max-width: 320px;
+  padding: 22px 20px 24px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05);
+}
+.interests-auditor { border-color: #14b8a6; }
+.interests-manager { border-color: #6366f1; }
+.interests-icon {
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: center;
+}
+.interests-label {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+.interests-auditor .interests-label { color: #0f766e; }
+.interests-manager .interests-label { color: #4338ca; }
+.interests-body {
+  font-size: 17px;
+  line-height: 1.5;
+  color: #1e293b;
+}
+.interests-divider {
+  align-self: center;
+  font-size: 22px;
+  font-style: italic;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  padding: 0 4px;
+}
+
+/* ---------- Manager badge (mission-style, different gradient) ---------- */
+.manager-badge {
+  text-align: center;
+  margin: 4px auto 18px;
+}
+.manager-badge svg {
+  width: 110px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+.manager-badge-label {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #4338ca;
+  margin-top: 4px;
+}
+
+/* ==================================================================== */
+/*  Mobile responsive fallbacks for narrow viewports                    */
+/* ==================================================================== */
+@media (max-width: 640px) {
+  html { font-size: 16px; }
+  .page-title { font-size: 26px; }
+  .page-body { font-size: 18px; }
+
+  /* Force 5 per row on mobile (the N=10/20/30 grids) */
+  .cards-grid-10 { grid-template-columns: repeat(5, 1fr); }
+
+  /* Shrink oversized display numbers */
+  .count-big { font-size: 72px; }
+  .mandate-num { font-size: 54px; }
+
+  /* Regime & practice cards full-width stack */
+  .regime-compare, .two-counts-row, .two-answers-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .consequence-chain { gap: 8px; }
+  .consequence-arrow { display: none; }
+
+  /* Rule examples: hide the middle ratio column on very narrow screens
+     (keep cards + result so the message still reads) */
+  .rule-example-row { flex-wrap: wrap; gap: 10px; padding: 10px 12px; }
+  .rule-example-ratio { font-size: 18px; min-width: 0; }
+  .rule-example-result { font-size: 26px; min-width: 0; }
+
+  /* Practice buttons: full width so they stack cleanly */
+  .practice-btn { min-width: 0; flex: 1 1 45%; }
+
+  /* Trial page: the 10-wide grid on the stimulus is the main overflow
+     risk -- let it wrap */
+  .disclosed-cards { flex-wrap: wrap; justify-content: center; }
+}
+
+/* ============================================================
+   v5 ADDITIONS -- new visual components
+   ============================================================ */
+
+/* ---------- Transaction icon as a real document (v5 rework) ---------- */
+/* Override: white page with faux text lines; for clean/suspicious, a
+   colored stamp with the letter. No tinted page background; the stamp
+   carries the color. */
+.transaction-doc {
+  background: #ffffff;
+  color: transparent;        /* hide raw text; stamp drawn via ::after */
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+}
+/* Faux text lines inside the page */
+.transaction-doc::before {
+  content: '';
+  position: absolute;
+  top: 14%;
+  left: 12%;
+  right: 12%;
+  bottom: 14%;
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      #cbd5e1 0,
+      #cbd5e1 1px,
+      transparent 1px,
+      transparent 5px
+    );
+  opacity: 0.75;
+  pointer-events: none;
+  z-index: 0;
+}
+/* A tiny "number" mark at the very top-right of the page for flavor */
+.transaction-doc.large::before { background-size: 100% 9px; }
+.transaction-doc.rule-small::before { background-size: 100% 4px; }
+.transaction-doc.rule-tiny::before { background-size: 100% 3px; }
+
+/* The stamp overlay: colored letter inside a bordered, rotated box */
+.transaction-doc.clean,
+.transaction-doc.suspicious {
+  /* keep white page; reset any prior tinted background */
+  background: #ffffff;
+  border-color: #cbd5e1;
+}
+.transaction-doc.clean::after,
+.transaction-doc.suspicious::after {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(-10deg);
+  font-family: 'IBM Plex Serif', serif;
+  font-weight: 900;
+  line-height: 1;
+  padding: 2px 7px;
+  border: 2.5px solid currentColor;
+  border-radius: 3px;
+  /* Semi-transparent color-coded tint so the stamp reads as a proper
+     colored stamp (green for C, red for S) while the page's white
+     paper still shows through at the edges. */
+  letter-spacing: 0.04em;
+  z-index: 2;
+  font-size: 22px;
+}
+.transaction-doc.clean::after      {
+  content: 'C';
+  color: #15803d;
+  background: rgba(34, 197, 94, 0.22);
+}
+.transaction-doc.suspicious::after {
+  content: 'S';
+  color: #b91c1c;
+  background: rgba(239, 68, 68, 0.22);
+}
+/* Scale the stamp for the different sizes */
+.transaction-doc.large.clean::after,
+.transaction-doc.large.suspicious::after {
+  font-size: 56px; padding: 4px 16px; border-width: 5px; border-radius: 5px;
+}
+.transaction-doc.rule-small.clean::after,
+.transaction-doc.rule-small.suspicious::after {
+  font-size: 20px; padding: 1px 6px; border-width: 2px;
+}
+.transaction-doc.rule-tiny.clean::after,
+.transaction-doc.rule-tiny.suspicious::after {
+  font-size: 14px; padding: 0 4px; border-width: 1.5px;
+}
+
+/* Neutral transaction icon (no C/S, just the page with lines) */
+.transaction-doc.neutral {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+/* Neutral uses the same ::before pattern as the base, no stamp. */
+
+/* Coin-flip caption (Page 10) -- bigger, bolder */
+.transaction-doc-caption.coin-flip-pct {
+  font-size: 42px;
+  font-weight: 800;
+  margin-top: 16px;
+  letter-spacing: -0.02em;
+}
+
+/* Document cluster (page 11, 19, 20) ---------------------------
+   No background or outline; icons sit free on the page.           */
+.doc-cluster {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  margin: 20px auto;
+  aspect-ratio: 16 / 11;
+  min-height: 300px;
+}
+
+/* Mini cluster variant -- used in the side-by-side "mostly clean / mostly
+   suspicious" panels on Page 12. Smaller docs so two fit side by side. */
+.doc-cluster.mini {
+  max-width: 300px;
+  min-height: 220px;
+  margin: 0 auto;
+}
+.doc-cluster.mini .cluster-doc {
+  width: 30px;
+  height: 40px;
+  border-radius: 2px;
+}
+.doc-cluster.mini .cluster-doc.labeled::after {
+  font-size: 11px;
+  padding: 0 3px;
+  border-width: 1.5px;
+}
+
+/* Micro cluster variant -- used for the 3-panel independence punchline
+   (Page 18e). Even smaller than .mini so three clusters fit side by side
+   within the 620 px content width. */
+.doc-cluster.micro {
+  max-width: 190px;
+  min-height: 150px;
+  margin: 0 auto;
+}
+.doc-cluster.micro .cluster-doc {
+  width: 20px;
+  height: 26px;
+  border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+.doc-cluster.micro .cluster-doc::before {
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      #cbd5e1 0,
+      #cbd5e1 0.5px,
+      transparent 0.5px,
+      transparent 2.5px
+    );
+}
+.doc-cluster.micro .cluster-doc.labeled::after {
+  font-size: 8px;
+  padding: 0 1.5px;
+  border-width: 1px;
+}
+
+/* Three-panel container for "any of these" -- wider than the 2-panel
+   pair, with tighter gaps so three micro clusters fit cleanly. */
+.company-triple {
+  display: flex;
+  gap: 14px;
+  max-width: 640px;
+  margin: 14px auto 0;
+  align-items: flex-start;
+  justify-content: center;
+}
+.company-triple .company-mix-panel {
+  flex: 1;
+}
+.company-mix-label.company-mix-label-half {
+  color: #b45309;
+}
+@media (max-width: 640px) {
+  .company-triple {
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
+/* Two-panel row for the "Mostly clean" vs "Mostly suspicious" illustration.
+   Each panel stacks a colored label above a mini cluster. */
+.company-mix-pair {
+  display: flex;
+  gap: 24px;
+  max-width: 680px;
+  margin: 18px auto 4px;
+  align-items: flex-start;
+  justify-content: center;
+}
+.company-mix-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.company-mix-label {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  margin-bottom: 10px;
+}
+.company-mix-label.mostly-clean { color: #15803d; }
+.company-mix-label.mostly-suspicious { color: #b91c1c; }
+@media (max-width: 640px) {
+  .company-mix-pair {
+    flex-direction: column;
+    gap: 18px;
+  }
+}
+.cluster-doc {
+  position: absolute;
+  width: 46px;
+  height: 60px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  transform: translate(-50%, -50%) rotate(-4deg);
+  transition: opacity 0.4s ease, transform 0.4s ease, border-color 0.4s ease,
+              background 0.4s ease;
+}
+/* Faux text lines inside each cluster doc */
+.cluster-doc::before {
+  content: '';
+  position: absolute;
+  top: 16%;
+  left: 14%;
+  right: 14%;
+  bottom: 16%;
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      #cbd5e1 0,
+      #cbd5e1 1px,
+      transparent 1px,
+      transparent 4px
+    );
+  opacity: 0.7;
+  pointer-events: none;
+}
+.cluster-doc:nth-child(even) { transform: translate(-50%, -50%) rotate(6deg); }
+.cluster-doc:nth-child(3n)   { transform: translate(-50%, -50%) rotate(-9deg); }
+.cluster-doc:nth-child(5n)   { transform: translate(-50%, -50%) rotate(4deg); }
+
+/* Highlighted cluster docs (the 4 disclosed by law). BLACK outline, not green,
+   to avoid implying the highlighted docs are "clean". */
+.cluster-doc.highlighted {
+  background: #ffffff;
+  border: 3px solid #0f172a;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+  z-index: 2;
+}
+/* The non-highlighted ones on pages 19+ are dimmed */
+.doc-cluster:has(.cluster-doc.highlighted) .cluster-doc:not(.highlighted):not(.hidden-q) {
+  opacity: 0.2;
+  filter: grayscale(100%);
+}
+
+/* Cluster docs labeled with C or S (page 20) -- white page, stamped */
+.cluster-doc.labeled {
+  background: #ffffff;
+  color: transparent;
+  overflow: hidden;
+}
+.cluster-doc.labeled::after {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(-10deg);
+  font-family: 'IBM Plex Serif', serif;
+  font-weight: 900;
+  font-size: 18px;
+  padding: 1px 6px;
+  border: 2px solid currentColor;
+  border-radius: 3px;
+  letter-spacing: 0.03em;
+  z-index: 3;
+}
+.cluster-doc.labeled.clean         { border-color: #0f172a; }
+.cluster-doc.labeled.clean::after  {
+  content: 'C'; color: #15803d;
+  background: rgba(34, 197, 94, 0.22);
+}
+.cluster-doc.labeled.suspicious    { border-color: #0f172a; }
+.cluster-doc.labeled.suspicious::after {
+  content: 'S'; color: #b91c1c;
+  background: rgba(239, 68, 68, 0.22);
+}
+
+/* Cluster docs with a ? on them (hidden) -- lighter, no hatched bg */
+.cluster-doc.hidden-q {
+  background: #ffffff;
+  border-style: dashed;
+  border-color: #94a3b8;
+  color: transparent;
+  opacity: 0.65;
+  filter: none;
+}
+.cluster-doc.hidden-q::after {
+  content: '?';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: #64748b;
+  font-family: 'IBM Plex Serif', serif;
+  font-weight: 700;
+  font-size: 24px;
+  z-index: 2;
+}
+
+/* Manager-above layout (page 24) ------------------------------- */
+.manager-above-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 640px;
+  margin: 24px auto;
+  padding: 24px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+.manager-badge-mini {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.manager-badge-caption {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  color: var(--color-text-slate);
+}
+.manager-cards-below {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Split view (page 25) ----------------------------------------- */
+.split-view {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: 720px;
+  margin: 24px auto;
+  padding: 20px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+.split-side {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.split-side + .split-side { border-left: 2px dashed #cbd5e1; padding-left: 16px; }
+.split-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.split-badge-label {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+.split-cards {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.split-caption {
+  font-size: 14px;
+  color: var(--color-text-slate);
+  text-align: center;
+}
+.split-arrow {
+  font-size: 28px;
+  color: var(--color-text-slate);
+  align-self: center;
+  flex-shrink: 0;
+}
+
+/* Slider band (for estimate practice pages) -------------------- */
+.slider-range-wrap {
+  position: relative;
+}
+.slider-band {
+  position: absolute;
+  top: 50%;
+  height: 14px;
+  background: rgba(21, 128, 61, 0.18);
+  border: 1px solid rgba(21, 128, 61, 0.45);
+  border-radius: 4px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Truth header for estimate-sim / bet-sim pages */
+.sim-truth-header {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text);
+  padding: 8px 14px;
+  margin: 0 auto 12px;
+  background: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  max-width: 320px;
+}
+
+/* On mobile/narrow: stack the split view vertically */
+@media (max-width: 560px) {
+  .split-view { flex-direction: column; }
+  .split-side + .split-side { border-left: none; border-top: 2px dashed #cbd5e1;
+                              padding-left: 0; padding-top: 16px; }
+  .split-arrow { transform: rotate(90deg); }
 }
 
