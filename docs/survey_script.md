@@ -615,8 +615,7 @@ is colloquial for "from the full set of all transactions."
 white person silhouette. Uppercase caption `MANAGER`.
 
 **Closing line:**
-- [p, 20 px] The manager is the one sending the company's records to
-  you.
+- [p, 20 px] The manager sends you the 4 transactions you'll see.
 
 ---
 
@@ -1006,7 +1005,7 @@ two try-it pages.)*
 
 ---
 
-# ACT V — COMPREHENSION QUIZ (14 QUESTIONS)
+# ACT V — COMPREHENSION QUIZ (13 QUESTIONS)
 
 *Same retry-with-10-second-timeout behavior as the attention checks.
 Participants can't advance until every question is answered correctly.
@@ -1020,13 +1019,13 @@ Participants can't advance until every question is answered correctly.
 
 **BODY:**
 - [headline, 24 px, bold] One last check before the trials.
-- [p, 18 px] Answer 14 quick questions. Each wrong answer triggers a
+- [p, 18 px] Answer 13 quick questions. Each wrong answer triggers a
   **10-second pause** before you can try again.
 
 ---
 
 ### Quiz Q1
-**Kicker:** `QUIZ: QUESTION 1 OF 14`
+**Kicker:** `QUIZ: QUESTION 1 OF 13`
 **Question:** What is your job in this study?
 - A. Decide which companies to invest in.
 - B. Assign each company a **fraud estimate** from its transactions. ← correct
@@ -1038,7 +1037,7 @@ Participants can't advance until every question is answered correctly.
 ---
 
 ### Quiz Q2
-**Kicker:** `QUIZ: QUESTION 2 OF 14`
+**Kicker:** `QUIZ: QUESTION 2 OF 13`
 **Question:** How many transactions must a company send you?
 - A. 1. / B. 2. / C. 4. ← correct / D. All of them.
 **Explanation:** *Exactly 4. Set by law.*
@@ -1046,23 +1045,15 @@ Participants can't advance until every question is answered correctly.
 ---
 
 ### Quiz Q3
-**Kicker:** `QUIZ: QUESTION 3 OF 14`
+**Kicker:** `QUIZ: QUESTION 3 OF 13`
 **Question:** Who decides **how many** transactions are disclosed?
 - A. The law. ← correct / B. The manager. / C. You.
 **Explanation:** *The law. Fixed at 4; no one can change it.*
 
 ---
 
-### Quiz Q4
-**Kicker:** `QUIZ: QUESTION 4 OF 14`
-**Question:** Who decides **which** transactions get sent to you?
-- A. The law. / B. Random chance. / C. The manager. ← correct / D. You.
-**Explanation:** *The manager picks which 4 to disclose.*
-
----
-
-### Quiz Q5 — NEW
-**Kicker:** `QUIZ: QUESTION 5 OF 14`
+### Quiz Q4 — NEW
+**Kicker:** `QUIZ: QUESTION 4 OF 13`
 **Question (True/False):** The 4 transactions you receive from a
 company are **randomly picked** from all of its transactions.
 - A. True.
@@ -1076,16 +1067,16 @@ as a tight three-fact set.*
 
 ---
 
-### Quiz Q6
-**Kicker:** `QUIZ: QUESTION 6 OF 14`
+### Quiz Q5
+**Kicker:** `QUIZ: QUESTION 5 OF 13`
 **Question:** Can the manager turn a suspicious transaction into a clean one?
 - A. Yes. / B. No. ← correct
 **Explanation:** *No. The manager can only pick which ones get sent.*
 
 ---
 
-### Quiz Q7
-**Kicker:** `QUIZ: QUESTION 7 OF 14`
+### Quiz Q6
+**Kicker:** `QUIZ: QUESTION 6 OF 13`
 **Question:** Fraud estimate =
 - A. Your gut feeling, in percent.
 - B. The count of suspicious transactions.
@@ -1096,8 +1087,8 @@ as a tight three-fact set.*
 
 ---
 
-### Quiz Q8
-**Kicker:** `QUIZ: QUESTION 8 OF 14`
+### Quiz Q7
+**Kicker:** `QUIZ: QUESTION 7 OF 13`
 **Question:** What happens when you rate a company **high**?
 - A. They never get audited.
 - B. They get audited for sure.
@@ -1108,16 +1099,16 @@ of a full audit.*
 
 ---
 
-### Quiz Q9
-**Kicker:** `QUIZ: QUESTION 9 OF 14`
+### Quiz Q8
+**Kicker:** `QUIZ: QUESTION 8 OF 13`
 **Question:** Truth: **40%**. Your estimate: **46%**. Estimate bonus?
 - A. 0¢. / B. +10¢. ← correct / C. +6¢. / D. −10¢.
 **Explanation:** *46 is within 10 percentage points of 40. Pays the +10¢.*
 
 ---
 
-### Quiz Q10
-**Kicker:** `QUIZ: QUESTION 10 OF 14`
+### Quiz Q9
+**Kicker:** `QUIZ: QUESTION 9 OF 13`
 **Question:** Truth: **50%**. Estimate: **80%**. Bet: **7¢**. Total for
 this company?
 - A. +17¢. / B. +7¢. / C. 0¢. / D. −7¢. ← correct
@@ -1125,8 +1116,8 @@ this company?
 
 ---
 
-### Quiz Q11
-**Kicker:** `QUIZ: QUESTION 11 OF 14`
+### Quiz Q10
+**Kicker:** `QUIZ: QUESTION 10 OF 13`
 **Question:** If you lose several bets, can your **$3 base pay** drop
 below $3?
 - A. Yes, wrong answers cut into base pay.
@@ -1136,8 +1127,8 @@ below $3?
 
 ---
 
-### Quiz Q12 — NEW
-**Kicker:** `QUIZ: QUESTION 12 OF 14`
+### Quiz Q11 — NEW
+**Kicker:** `QUIZ: QUESTION 11 OF 13`
 **Question:** What's the probability that any given transaction is
 clean?
 - A. 0%. / B. 25%. / C. 50%. ← correct / D. 100%.
@@ -1146,8 +1137,8 @@ suspicious.*
 
 ---
 
-### Quiz Q13 — NEW
-**Kicker:** `QUIZ: QUESTION 13 OF 14`
+### Quiz Q12 — NEW
+**Kicker:** `QUIZ: QUESTION 12 OF 13`
 **Question:** Why doesn't the manager want a **high** fraud estimate?
 - A. A high estimate triggers a fine for the manager.
 - B. A high estimate makes a full audit likely, and a full audit costs
@@ -1159,8 +1150,8 @@ audit costs the manager their raise.*
 
 ---
 
-### Quiz Q14 — NEW
-**Kicker:** `QUIZ: QUESTION 14 OF 14`
+### Quiz Q13 — NEW
+**Kicker:** `QUIZ: QUESTION 13 OF 13`
 **Question:** If you are **not at all confident** in your fraud
 estimate, how much should you bet?
 - A. 10¢, the maximum.
