@@ -1324,6 +1324,7 @@
   //   data-explain="..."      -- shown after correct answer.
   //   data-hint-high / data-hint-low -- override default directional hint.
   SurveyEngine.prototype.attachPracticeButtons = function () {
+    var self = this;
     var groups = document.querySelectorAll('.practice-buttons');
     groups.forEach(function (group) {
       var correctAttr = group.getAttribute('data-correct');
@@ -1373,6 +1374,12 @@
             group.classList.add('locked');
             markFeedback('fb-correct',
               '<strong>Correct!</strong> ' + explain);
+            // Clear any remaining min-time countdown so Next unlocks
+            // immediately on a correct answer. The time lock's purpose
+            // is to slow down skimmers; a correct answer proves the
+            // participant read enough, so additional waiting is just
+            // friction. Applies to every retry/lock/directional check.
+            self.clearMinTime();
           } else if (mode === 'directional' && isNumeric) {
             // Directional mode (numeric only): keep others clickable, show hint
             btn.classList.add('practice-wrong');
@@ -1503,6 +1510,12 @@
       this.minTimeTimer = null;
     }
     this.elMinTimeOverlay.style.display = 'none';
+    // Also restore the ready-state and re-enable Next. This lets callers
+    // "short-circuit" the remaining wait (e.g., a correct quiz answer
+    // clears the lock immediately). The timer-completion path still
+    // sets these explicitly too, which is harmless.
+    this.minTimeReady = true;
+    if (this.elBtnNext) this.elBtnNext.disabled = false;
   };
 
   // ── Navigation ─────────────────────────────────────────────────────────
