@@ -1068,8 +1068,7 @@ company are **randomly picked** from all of its transactions.
 - A. True.
 - B. False. ← correct
 
-**Explanation:** *False. The manager picks which 4 to send, and the
-manager has an incentive to make the company look clean.*
+**Explanation:** *False. The manager picks which 4 to send.*
 
 *Placement: directly after Q4 so the manager-selection cluster (Q4
 "who picks?", Q5 "not random", Q6 "can't fake transactions") reads
