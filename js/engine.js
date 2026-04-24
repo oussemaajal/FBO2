@@ -322,18 +322,46 @@
           });
         }
 
-        // Randomize if requested
-        if (page.randomize && self.prolificPID) {
+        var isPractice = !!page.practice;
+
+        // Practice blocks: stratified sample so the participant sees one
+        // trial from each k value (number of suspicious transactions).
+        // Without stratification the shuffle sometimes produced
+        // "building up" k = 0,1,2,3,4 orderings or degenerate
+        // concentrations (e.g., all k=0 if unlucky). Stratifying
+        // guarantees diverse practice scenarios.
+        if (isPractice && page.practiceCount != null) {
+          // Group trials by k, then pick one from each group (random
+          // N within the group). If practiceCount doesn't match the
+          // number of distinct k values, fall back to a plain shuffle.
+          var byK = {};
+          trials.forEach(function (t) {
+            var k = (t.k != null) ? t.k : t.nFlagged;
+            if (!byK[k]) byK[k] = [];
+            byK[k].push(t);
+          });
+          var ks = Object.keys(byK).sort(function (a, b) { return +a - +b; });
+          var seed = self.prolificPID || 'preview';
+
+          if (ks.length === page.practiceCount) {
+            // Pick one trial per k (seeded for reproducibility per PID).
+            trials = ks.map(function (k, i) {
+              var bucket = byK[k];
+              var pickSeed = hashString(seed + '_practice_k' + k);
+              var shuffled = seededShuffle(bucket, pickSeed);
+              return shuffled[0];
+            });
+          } else {
+            // Fallback: full shuffle + slice.
+            trials = seededShuffle(trials, hashString(seed + '_practice'));
+            trials = trials.slice(0, page.practiceCount);
+          }
+          // Shuffle the ORDER so k isn't presented 0,1,2,3,4 monotonic.
+          trials = seededShuffle(trials, hashString(seed + '_practice_order'));
+        } else if (page.randomize && self.prolificPID) {
+          // Non-practice block: straight shuffle of the full filtered set.
           var baseSeed = hashString(self.prolificPID + '_trials_b' + block);
           trials = seededShuffle(trials, baseSeed);
-        }
-
-        // Practice blocks: take only the first `practiceCount` trials
-        // AFTER shuffling, so each participant sees a different random
-        // subset of the phase-1 pool.
-        var isPractice = !!page.practice;
-        if (isPractice && page.practiceCount != null) {
-          trials = trials.slice(0, page.practiceCount);
         }
 
         // Read DV flags from trial_block config
