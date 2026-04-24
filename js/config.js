@@ -2028,7 +2028,7 @@ var SURVEY_CONFIG = {
           "<strong>True or False:</strong> The 4 transactions you receive from a company are <strong>randomly picked</strong> from all of its transactions." +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='false' data-mode='retry' " +
-             "data-explain='False. The manager picks which 4 to send, and the manager has an incentive to make the company look clean.'>" +
+             "data-explain='False. The manager picks which 4 to send.'>" +
           "<button type='button' class='practice-btn' data-val='true'>True.</button>" +
           "<button type='button' class='practice-btn' data-val='false'>False.</button>" +
         "</div>" +
