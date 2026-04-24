@@ -1,17 +1,22 @@
 """
 Create and manage Prolific studies for the FBO 2 (Selection Neglect) experiment.
 
+Single-study design (v4.x): one Prolific study containing the full survey
+(instructions + quiz + 5 practice trials + 30 scored trials + debrief).
+No more Part 1 / Part 2 split, no participant group, no allowlist filter.
+
 Usage:
-    python RUN_PROLIFIC_STUDY.py create-two-part --pilot  # Create Part 1, group, Part 2 (pilot)
-    python RUN_PROLIFIC_STUDY.py create-two-part          # Create two-part study (full)
-    python RUN_PROLIFIC_STUDY.py publish STUDY_ID          # Publish a created study
-    python RUN_PROLIFIC_STUDY.py status STUDY_ID           # Check status & submissions
-    python RUN_PROLIFIC_STUDY.py submissions STUDY_ID      # List all submissions
-    python RUN_PROLIFIC_STUDY.py approve STUDY_ID          # Approve all awaiting submissions
-    python RUN_PROLIFIC_STUDY.py bonus STUDY_ID            # Pay bonuses (auto from Google Sheets)
-    python RUN_PROLIFIC_STUDY.py bonus STUDY_ID --csv FILE # Pay bonuses from manual CSV
-    python RUN_PROLIFIC_STUDY.py pause STUDY_ID            # Pause an active study
-    python RUN_PROLIFIC_STUDY.py list                      # List all studies
+    python RUN_PROLIFIC_STUDY.py create --pilot   # Create pilot study (default 20 participants)
+    python RUN_PROLIFIC_STUDY.py create            # Create full study (default 250 participants)
+    python RUN_PROLIFIC_STUDY.py create --n 50     # Override with custom count
+    python RUN_PROLIFIC_STUDY.py publish STUDY_ID  # Publish a created draft
+    python RUN_PROLIFIC_STUDY.py status STUDY_ID   # Check status & submissions
+    python RUN_PROLIFIC_STUDY.py submissions STUDY_ID  # List all submissions
+    python RUN_PROLIFIC_STUDY.py approve STUDY_ID  # Approve all awaiting submissions
+    python RUN_PROLIFIC_STUDY.py bonus STUDY_ID    # Pay bonuses (auto from Google Sheets)
+    python RUN_PROLIFIC_STUDY.py bonus STUDY_ID --csv FILE  # Pay bonuses from manual CSV
+    python RUN_PROLIFIC_STUDY.py pause STUDY_ID    # Pause an active study
+    python RUN_PROLIFIC_STUDY.py list              # List all studies
 
 Options:
     --pilot       Use pilot sample size (EXPERIMENT_PARAMS['default_n_pilot'])
@@ -32,42 +37,9 @@ from config import PATHS, EXPERIMENT_PARAMS, PROLIFIC_CONFIG, SURVEY_CONFIG
 from utils import ProlificClient, set_dry_run
 
 
-def patch_part2_study_url(study2_id: str) -> bool:
-    """Rewrite `part2StudyUrl` in survey/js/config.js to match the given
-    Part 2 study ID. Returns True if the file was modified.
-
-    This eliminates the historical footgun where re-running create-two-part
-    left the browser pointing at a stale (deleted) study ID. See
-    code/02_collect/CLAUDE.md 'Environment Lessons' #4.
-    """
-    config_js = PATHS['survey'] / 'js' / 'config.js'
-    if not config_js.exists():
-        print(f"  [patch-url] survey/js/config.js not found at {config_js} -- skipping.")
-        return False
-
-    new_url = f"https://app.prolific.com/studies/{study2_id}/start"
-    text = config_js.read_text(encoding='utf-8')
-
-    # Match: part2StudyUrl: "https://app.prolific.com/studies/<ANY>/start"
-    # Preserve whatever quote style and trailing comma / whitespace is there.
-    pattern = re.compile(
-        r'(part2StudyUrl\s*:\s*["\'])([^"\']*)(["\'])'
-    )
-    match = pattern.search(text)
-    if not match:
-        print(f"  [patch-url] Could not locate `part2StudyUrl` in {config_js.name}.")
-        print(f"             Patch in manually: {new_url}")
-        return False
-
-    if match.group(2) == new_url:
-        print(f"  [patch-url] {config_js.name} already points at study {study2_id} -- no change.")
-        return False
-
-    new_text = pattern.sub(lambda m: f'{m.group(1)}{new_url}{m.group(3)}', text, count=1)
-    config_js.write_text(new_text, encoding='utf-8')
-    print(f"  [patch-url] Updated survey/js/config.js -> part2StudyUrl = {new_url}")
-    print(f"             Commit + push (main and gh-pages) to deploy.")
-    return True
+# (patch_part2_study_url was removed with the single-study refactor.
+# There's no Part 2 URL to sync; the participant-facing survey URL is
+# static and built from SURVEY_CONFIG['survey_url'].)
 
 
 def ensure_dirs():
@@ -142,24 +114,23 @@ def get_recommended_filters(loose: bool = False) -> list:
     return filters
 
 
-def cmd_create_two_part(args):
-    """Create the two-part study: participant group, Part 1, Part 2."""
+def cmd_create(args):
+    """Create the single-study Prolific draft (NOT published)."""
     ensure_dirs()
     if args.dry_run:
         set_dry_run(True)
 
     mode = "PILOT" if args.pilot else "FULL"
 
-    # Within-subject design: use flat --n count, or fall back to defaults
     if args.n is not None:
         total = args.n
     else:
-        total = (EXPERIMENT_PARAMS.get('default_n_pilot', 60) if args.pilot
+        total = (EXPERIMENT_PARAMS.get('default_n_pilot', 20) if args.pilot
                  else EXPERIMENT_PARAMS.get('default_n_full', 250))
 
-    survey_url = SURVEY_CONFIG.get('survey_url', 'https://oussemaajal.github.io/FBO2/')
+    survey_url = SURVEY_CONFIG.get('survey_url', 'https://oussemaajal.github.io/FBO2/survey/')
 
-    # Build screener filter set
+    # Build the screener filter set (sampling methodology unchanged).
     if args.no_screeners:
         screeners = []
         print("Screeners: OFF (--no-screeners)")
@@ -179,118 +150,70 @@ def cmd_create_two_part(args):
 
     client = ProlificClient()
 
-    # Step 1: Create (or reuse) participant group
-    if args.group_id:
-        group_id = args.group_id
-        print(f"Step 1: Reusing existing participant group: {group_id}")
-    else:
-        print("Step 1: Creating participant group for Part 2 eligibility...")
-        group = client.create_participant_group(f"Decision Making Study {mode} - Part 1 Passed")
-        group_id = group.get('id', 'unknown')
-        print(f"  Group created: {group_id}")
+    study_url = (survey_url
+                 + "?PROLIFIC_PID={{%PROLIFIC_PID%}}"
+                 + "&STUDY_ID={{%STUDY_ID%}}"
+                 + "&SESSION_ID={{%SESSION_ID%}}")
 
-    # Step 2: Create Part 1 study
-    part1_url = (survey_url + "?part=1"
-                 "&PROLIFIC_PID={{%PROLIFIC_PID%}}"
-                 "&STUDY_ID={{%STUDY_ID%}}"
-                 "&SESSION_ID={{%SESSION_ID%}}")
+    reward = EXPERIMENT_PARAMS['reward_minor']              # base pay, minor units
+    bonus_max = EXPERIMENT_PARAMS.get('bonus_max_minor', 0)  # bonus cap on top of base
+    minutes = EXPERIMENT_PARAMS.get('estimated_time_min', 20)
+    code = EXPERIMENT_PARAMS.get('completion_code', 'COMP2SN')
+    reward_dollars = reward / 100
+    bonus_dollars = bonus_max / 100
 
-    part1_reward = EXPERIMENT_PARAMS['part1_reward_pence']
-    part1_minutes = EXPERIMENT_PARAMS['estimated_time_part1_min']
+    print(f"\nCreating study ({total} participants, mode={mode})...")
+    print(f"  Reward:    {reward} minor units  (${reward_dollars:.2f} base pay)")
+    print(f"  Bonus cap: {bonus_max} minor units  (${bonus_dollars:.2f} max)")
+    print(f"  Est time:  {minutes} min")
+    print(f"  Code:      {code}")
+    print(f"  URL:       {study_url}")
 
-    print(f"\nStep 2: Creating Part 1 study ({total} participants)...")
-    print(f"  Reward: {part1_reward} (minor units), Est. time: {part1_minutes} min")
-    study1 = client.create_study(
-        name=f"Decision Making Study -- Part 1 (Instructions + Quiz) [{mode}]",
+    study = client.create_study(
+        name=f"Decision-Making Study: Auditing [{mode}]",
         description=(
-            "A short study on decision-making under uncertainty. In Part 1 you will "
-            "learn the rules of a decision task and take a brief comprehension quiz. "
-            f"Takes about {part1_minutes} minutes. "
-            f"You will be paid ${part1_reward/100:.2f} for this part. "
-            "If you pass the quiz, you will be invited to Part 2 for base pay plus "
-            "an accuracy-based bonus."
+            "A short study on decision-making under uncertainty. You will play the role of "
+            "a government auditor reviewing companies' transactions and estimating their "
+            "fraud rate. "
+            f"Takes about {minutes} minutes. "
+            f"Base pay: ${reward_dollars:.2f}. Accuracy bonus: up to ${bonus_dollars:.2f}."
         ),
-        external_study_url=part1_url,
+        external_study_url=study_url,
         total_available_places=total,
-        reward=part1_reward,
-        estimated_completion_time=part1_minutes,
+        reward=reward,
+        estimated_completion_time=minutes,
         completion_codes=[
-            {"code": "PASS1SN", "code_type": "COMPLETED",
-             "actions": [{"action": "AUTOMATICALLY_APPROVE"}]},
-            {"code": "FAIL1SN", "code_type": "COMPLETED",
+            {"code": code, "code_type": "COMPLETED",
              "actions": [{"action": "AUTOMATICALLY_APPROVE"}]},
         ],
         filters=screeners,
     )
-    study1_id = study1.get('id', 'unknown')
-    print(f"  Part 1 created: {study1_id}")
+    study_id = study.get('id', 'unknown')
+    print(f"\n  Study created: {study_id}")
 
-    # Step 3: Create Part 2 study (filtered to group members only)
-    part2_url = (survey_url + "?part=2"
-                 "&PROLIFIC_PID={{%PROLIFIC_PID%}}"
-                 "&STUDY_ID={{%STUDY_ID%}}"
-                 "&SESSION_ID={{%SESSION_ID%}}")
-
-    part2_reward = EXPERIMENT_PARAMS['part2_reward_pence']
-    part2_minutes = EXPERIMENT_PARAMS['estimated_time_part2_min']
-
-    bonus_max_pence = EXPERIMENT_PARAMS.get('bonus_max_pence', 100)
-    bonus_max_gbp = bonus_max_pence / 100
-
-    print(f"\nStep 3: Creating Part 2 study (group-filtered)...")
-    print(f"  Reward: {part2_reward} (minor units), Est. time: {part2_minutes} min, "
-          f"Bonus: up to ${bonus_max_gbp:.2f}")
-    study2 = client.create_study(
-        name=f"Decision Making Study -- Part 2 (Main Task) [{mode}]",
-        description=(
-            "Part 2 of the decision-making study. You will review 9 scenarios and "
-            "assign a probability to each. "
-            f"Takes about {part2_minutes} minutes. "
-            f"You will receive ${part2_reward/100:.2f} base payment "
-            f"plus an accuracy bonus of up to ${bonus_max_gbp:.2f}."
-        ),
-        external_study_url=part2_url,
-        total_available_places=total,
-        reward=part2_reward,
-        estimated_completion_time=part2_minutes,
-        participant_group_id=group_id,
-        filters=screeners,
-    )
-    study2_id = study2.get('id', 'unknown')
-    print(f"  Part 2 created: {study2_id}")
-
-    # Auto-patch survey/js/config.js with the new Part 2 study URL.
-    # Skipped in dry-run (study2_id is the placeholder 'dry-run-study-id').
-    if not args.dry_run and study2_id and study2_id != 'unknown':
-        print(f"\nStep 3b: Syncing Part 2 URL into survey/js/config.js...")
-        patch_part2_study_url(study2_id)
-
-    # Save all IDs
     setup = {
         'mode': mode,
-        'group_id': group_id,
-        'part1_study_id': study1_id,
-        'part2_study_id': study2_id,
+        'study_id': study_id,
         'total_participants': total,
-        'design': 'within_subject_9_trials',
+        'reward_minor': reward,
+        'bonus_max_minor': bonus_max,
+        'completion_code': code,
+        'survey_url': survey_url,
+        'design': 'single_study_30_scored_trials_v4',
     }
-    info_path = PATHS['prolific_data'] / f"two_part_setup_{mode.lower()}.json"
+    info_path = PATHS['prolific_data'] / f"prolific_setup_{mode.lower()}.json"
     with open(info_path, 'w') as f:
         json.dump(setup, f, indent=2, default=str)
 
     print(f"\n{'='*60}")
-    print(f"Two-part study created successfully!")
-    print(f"  Group ID:      {group_id}")
-    print(f"  Part 1 Study:  {study1_id}")
-    print(f"  Part 2 Study:  {study2_id}")
-    print(f"  Setup saved:   {info_path}")
+    print(f"Study created (DRAFT, not published).")
+    print(f"  Study ID:     {study_id}")
+    print(f"  Participants: {total}")
+    print(f"  Setup saved:  {info_path}")
     print(f"\nNEXT STEPS:")
-    print(f"  1. Set PROLIFIC_GROUP_ID = {group_id} in Google Apps Script properties")
-    print(f"  2. survey/js/config.js was auto-patched with the new Part 2 URL.")
-    print(f"     Commit + push to main AND gh-pages, bump ?v= cache-buster in index.html.")
-    print(f"  3. Publish Part 2 first, then Part 1:")
-    print(f"     python RUN_PROLIFIC_STUDY.py publish {study2_id}")
-    print(f"     python RUN_PROLIFIC_STUDY.py publish {study1_id}")
+    print(f"  1. Preview in Prolific UI: https://app.prolific.com/researcher/studies/{study_id}")
+    print(f"  2. When ready to launch, publish:")
+    print(f"     python RUN_PROLIFIC_STUDY.py publish {study_id}")
 
 
 def cmd_list(args):
@@ -385,7 +308,7 @@ def cmd_bonus(args):
         print(f"Reading bonuses from CSV: {args.csv}")
         result = client.pay_bonuses_from_csv(args.study_id, args.csv)
         print(f"\nDone. Paid {result['total_paid']} bonuses, "
-              f"total GBP {result['total_amount_pence'] / 100:.2f}")
+              f"total ${result['total_amount_pence'] / 100:.2f}")
         return
 
     sheet_id = SURVEY_CONFIG.get('google_sheet_id')
@@ -407,9 +330,8 @@ def cmd_bonus(args):
         print(f"  Available: {[c for c in df.columns if 'bonus' in c.lower()]}")
         return
 
-    if 'part' in df.columns:
-        df = df[df['part'] == 2]
-        print(f"  Filtered to Part 2: {len(df)} rows")
+    # No Part 1 / Part 2 split in v4 -- every row that has a bonus.amount
+    # is a completed submission.
 
     df = df[[pid_col, bonus_col]].dropna()
     df[bonus_col] = pd.to_numeric(df[bonus_col], errors='coerce')
@@ -420,26 +342,27 @@ def cmd_bonus(args):
         print("No participants with positive bonus found.")
         return
 
-    df['bonus_pence'] = (df[bonus_col] * 100).round().astype(int)
+    # bonus.amount is in dollars; Prolific API expects minor units (cents).
+    df['bonus_minor'] = (df[bonus_col] * 100).round().astype(int)
 
     print(f"\nBonus summary ({len(df)} participants):")
-    print(f"  Mean: GBP {df[bonus_col].mean():.2f}")
-    print(f"  Min:  GBP {df[bonus_col].min():.2f}")
-    print(f"  Max:  GBP {df[bonus_col].max():.2f}")
-    print(f"  Total: GBP {df[bonus_col].sum():.2f}")
+    print(f"  Mean: ${df[bonus_col].mean():.2f}")
+    print(f"  Min:  ${df[bonus_col].min():.2f}")
+    print(f"  Max:  ${df[bonus_col].max():.2f}")
+    print(f"  Total: ${df[bonus_col].sum():.2f}")
 
     csv_path = PATHS['prolific_data'] / f"bonuses_{args.study_id}.csv"
     df.to_csv(csv_path, index=False)
     print(f"\n  Bonus CSV saved: {csv_path}")
 
-    confirm = input(f"\nPay {len(df)} bonuses totaling GBP {df[bonus_col].sum():.2f}? [y/N] ")
+    confirm = input(f"\nPay {len(df)} bonuses totaling ${df[bonus_col].sum():.2f}? [y/N] ")
     if confirm.lower() != 'y':
         print("Cancelled.")
         return
 
     paid = 0
     for _, row in df.iterrows():
-        client.pay_bonus(args.study_id, row[pid_col], int(row['bonus_pence']))
+        client.pay_bonus(args.study_id, row[pid_col], int(row['bonus_minor']))
         paid += 1
     print(f"\nPaid {paid} bonuses.")
 
@@ -448,8 +371,8 @@ def main():
     parser = argparse.ArgumentParser(description="FBO 2 Prolific Study Manager")
     subparsers = parser.add_subparsers(dest='command')
 
-    # create-two-part
-    p = subparsers.add_parser('create-two-part', help='Create two-part study')
+    # create (single study)
+    p = subparsers.add_parser('create', help='Create a single-study Prolific draft')
     p.add_argument('--pilot', action='store_true',
                    help='Use pilot default count (20) instead of full (250)')
     p.add_argument('--n', type=int, default=None,
@@ -458,8 +381,6 @@ def main():
                    help='Disable ALL pre-screen filters (open to every Prolific user)')
     p.add_argument('--loose', action='store_true',
                    help='Drop background filters (education + subject); keep only quality + language')
-    p.add_argument('--group-id', type=str, default=None,
-                   help='Reuse an existing participant group ID instead of creating a new one')
     p.add_argument('--dry-run', action='store_true')
 
     # list
@@ -502,7 +423,7 @@ def main():
     args = parser.parse_args()
 
     commands = {
-        'create-two-part': cmd_create_two_part,
+        'create': cmd_create,
         'list': cmd_list,
         'publish': cmd_publish,
         'pause': cmd_pause,

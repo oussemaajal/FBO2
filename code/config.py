@@ -61,11 +61,14 @@ def load_api_key(env_var):
 # =============================================================================
 
 SURVEY_CONFIG = {
-    'survey_url': 'https://oussemaajal.github.io/FBO2/',
-    # Google Apps Script web-app URL (same endpoint for POST writes & GET reads).
-    # GET requires ?token=<READ_TOKEN> matching the Script Property of the same name.
-    'data_endpoint': 'https://script.google.com/macros/s/AKfycbzRoZbHXjC_M_bvjMVcqMl8jdSdE3_80qV4srsAFB-JPLrAvBUuBN8SXr-9Fn6TBPYSEg/exec',
-    'google_sheet_id': '1VjaydQxm48KMjbsPUUA4t_qAY-88a-sieqpv6XqPS5U',
+    # Survey is hosted on GitHub Pages. The `/survey/` subpath is where the
+    # engine's index.html lives on the gh-pages branch.
+    'survey_url': 'https://oussemaajal.github.io/FBO2/survey/',
+    # Google Apps Script web-app URL (same endpoint for POST writes + GET reads).
+    # GET requires ?token=<READ_TOKEN> matching the Script Property of that name.
+    # v4 sheet created 2026-04-24 after the single-study refactor.
+    'data_endpoint': 'https://script.google.com/macros/s/AKfycbwUkl3FnttwsmkiQ0jRD_UOgyYSCwVERR2_2oTre_ib50bltFzTMk3TPuQdzefWy-OX/exec',
+    'google_sheet_id': '1xPCwJ4KEm0IOQEDNNmU4oU8iOYTj1pNVtG_8RiHy850',
     'sheet_read_token_env': 'FBO2_SHEET_READ_TOKEN',  # local env var holding the READ_TOKEN shared secret
 }
 
@@ -86,24 +89,23 @@ SURVEY_CONFIG = {
 # =============================================================================
 
 EXPERIMENT_PARAMS = {
-    # Payment (minor currency units; Prolific 'reward' field expects this)
-    # Account is GBP-denominated -- 100 = GBP 1.00, 200 = GBP 2.00.
-    'part1_reward_pence': 100,  # GBP 1.00
-    'part2_reward_pence': 200,  # GBP 2.00 base
-    'bonus_max_pence': 200,     # GBP 2.00 max accuracy bonus
-    'bonus_per_range_penalty_pence': 20,  # GBP 0.20 off per bucket away from Bayesian range
+    # Payment (minor currency units; Prolific 'reward' field expects this).
+    # Account is USD-denominated (per Oussema 2026-04-24): 300 = $3.00.
+    # `reward_minor` = base pay, guaranteed. `bonus_max_minor` = accuracy
+    # bonus cap on top of base. Matches survey copy: "$3 base + up to $6".
+    'reward_minor':     300,   # $3.00 base pay
+    'bonus_max_minor':  600,   # $6.00 max accuracy bonus (30 trials * 20 cents max)
 
-    # Estimated completion times (minutes) -- shown to participants on Prolific
-    'estimated_time_part1_min': 6,
-    'estimated_time_part2_min': 10,
+    # Estimated completion time shown to participants on Prolific.
+    # (Empirical minimum-time floor is ~14 min; give them ~20.)
+    'estimated_time_min': 20,
 
     # Default participant counts (within-subject design; no between-subject cells)
     'default_n_pilot': 20,
-    'default_n_full': 250,
+    'default_n_full':  250,
 
-    # Completion codes -- must match survey/js/config.js::SURVEY_CONFIG.prolific
+    # Completion code -- must match survey/js/config.js::SURVEY_CONFIG.prolific
     # and RUN_PROLIFIC_STUDY.py's create_study() completion_codes argument.
-    'pass_code_part1': 'PASS1SN',
-    'fail_code_part1': 'FAIL1SN',
-    'completion_code_part2': 'COMP2SN',
+    # Single-study design: one code for everyone who finishes the survey.
+    'completion_code': 'COMP2SN',
 }

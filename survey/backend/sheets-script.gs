@@ -70,16 +70,14 @@ function doPost(e) {
         rawSheet.appendRow([
           "submission_time_utc",
           "prolific_pid",
-          "part",
-          "comprehension_failed",
+          "bonus_amount",
           "raw_json"
         ]);
       }
       rawSheet.appendRow([
         data.submission_time_utc || "",
         data.prolific_pid || data.prolificPID || "",
-        data.part != null ? data.part : "",
-        data.comprehensionFailed === true,
+        data.bonus_amount != null ? data.bonus_amount : "",
         rawJson
       ]);
     } catch (rawErr) {
@@ -87,14 +85,8 @@ function doPost(e) {
       // Don't fail the submission if the raw write fails.
     }
 
-    // ── Part 1 → participant group gate for Part 2 ─────────
-    if (data.part === 1 && data.comprehensionFailed === false && data.prolificPID) {
-      try {
-        addToParticipantGroup(data.prolificPID);
-      } catch (groupErr) {
-        Logger.log("Prolific group error: " + groupErr.toString());
-      }
-    }
+    // (v3 Part-1 -> participant-group gate removed. This is now a
+    // single-study design; no allowlist group to populate.)
 
     return ContentService.createTextOutput(JSON.stringify({
       status: "success",
@@ -138,54 +130,10 @@ function flattenObject(obj, prefix, result) {
   return result;
 }
 
-// ── Prolific Participant Group Integration ──────────────────────────────
-// When a participant passes Part 1, add them to a Prolific participant
-// group so they become eligible for Part 2 (which uses the group as an
-// allowlist filter).
-//
-// SETUP:
-// 1. Go to Script Properties (Project Settings > Script Properties)
-// 2. Add: PROLIFIC_API_TOKEN = your Prolific API token
-// 3. Add: PROLIFIC_GROUP_ID = the participant group ID for Part 2 eligibility
-//
-// To create the participant group via Prolific API:
-//   POST https://api.prolific.com/api/v1/participant-groups/
-//   Body: { "name": "FBO Part 1 Passed" }
-//   Save the returned "id" as PROLIFIC_GROUP_ID.
-
-function addToParticipantGroup(prolificPID) {
-  var props = PropertiesService.getScriptProperties();
-  var token = props.getProperty("PROLIFIC_API_TOKEN");
-  var groupId = props.getProperty("PROLIFIC_GROUP_ID");
-
-  if (!token || !groupId) {
-    Logger.log("Prolific credentials not configured. Skipping group add for PID: " + prolificPID);
-    return;
-  }
-
-  var url = "https://api.prolific.com/api/v1/participant-groups/" + groupId + "/participants/";
-
-  var options = {
-    method: "post",
-    contentType: "application/json",
-    headers: {
-      "Authorization": "Token " + token
-    },
-    payload: JSON.stringify({
-      participant_ids: [prolificPID]
-    }),
-    muteHttpExceptions: true
-  };
-
-  var response = UrlFetchApp.fetch(url, options);
-  var code = response.getResponseCode();
-
-  if (code >= 200 && code < 300) {
-    Logger.log("Added PID " + prolificPID + " to group " + groupId);
-  } else {
-    Logger.log("Prolific API error (" + code + "): " + response.getContentText());
-  }
-}
+// (v3 Prolific participant-group integration removed. Single-study
+// design has no Part 1 -> Part 2 gating, so no Apps Script needs to
+// call the Prolific API. Script Properties no longer need
+// PROLIFIC_API_TOKEN or PROLIFIC_GROUP_ID.)
 
 /**
  * GET endpoint: returns survey data as JSON.

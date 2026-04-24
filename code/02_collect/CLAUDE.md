@@ -1,8 +1,8 @@
-# CLAUDE.md -- Prolific Setup for FBO 2
+# CLAUDE.md — Prolific Operator Runbook (single-study, v4)
 
-**READ THIS FIRST** before doing any Prolific work (creating studies, publishing,
-approving submissions, paying bonuses, editing screeners, debugging API errors).
-This file captures everything we worked out the hard way so we never repeat it.
+**READ THIS FIRST** before any Prolific work (creating studies, publishing,
+approving submissions, paying bonuses, editing screeners). Captures everything
+worked out the hard way.
 
 ---
 
@@ -10,320 +10,177 @@ This file captures everything we worked out the hard way so we never repeat it.
 
 ```
 FBO 2/
-  .env                         # PROLIFIC_API_TOKEN (gitignored)
+  .env                         # PROLIFIC_API_TOKEN, FBO2_SHEET_READ_TOKEN (gitignored)
   .env.template                # template reference (committed)
   code/
-    config.py                  # PROLIFIC_CONFIG, EXPERIMENT_PARAMS, load_api_key()
+    config.py                  # PROLIFIC_CONFIG, EXPERIMENT_PARAMS, SURVEY_CONFIG
     utils.py                   # ProlificClient class
     02_collect/
       CLAUDE.md                # ← this file
-      RUN_PROLIFIC_STUDY.py    # CLI for create/publish/approve/bonus
-      FETCH_RESPONSES.py       # CLI to pull responses from Google Sheet (token-gated)
+      RUN_PROLIFIC_STUDY.py    # CLI: create / publish / approve / bonus / etc.
+      FETCH_RESPONSES.py       # Download responses from the Google Sheet via READ_TOKEN
   survey/
-    js/config.js               # Completion codes + part2StudyUrl
+    js/config.js               # dataEndpoint + completionCode
     backend/
-      sheets-script.gs         # Google Apps Script -- receives survey data
-                               # + auto-adds PASS1SN participants to group
+      sheets-script.gs         # Google Apps Script (receives survey POST, writes to sheet)
 ```
 
 ---
 
 ## Credentials
 
-Only `PROLIFIC_API_TOKEN` is needed. Workspace and project IDs are **not
-required** for Oussema's Prolific account (it uses the "simple" structure,
-no workspaces visible in the UI). The Prolific web UI will not show
-"Workspace ID" or "Project ID" menu items for this account.
-
-**File:** `FBO 2/.env` (gitignored)
+Only `PROLIFIC_API_TOKEN` is needed in `.env`. Workspace/project IDs are auto-
+discovered — the account uses the "simple" structure and has no visible workspace
+dropdown in the Prolific UI.
 
 ```
+# FBO 2/.env (gitignored)
 PROLIFIC_API_TOKEN="<the token>"
+FBO2_SHEET_READ_TOKEN="<long random string, matches Apps Script READ_TOKEN>"
 ```
 
-**How the token is loaded:** `code/config.py::load_api_key()` first checks
-the environment variable, then falls back to reading `.env` at project root.
-**No manual `setx` / `export` needed** -- just keep the token in the `.env` file.
+The token is loaded by `code/config.py::load_api_key()` (env var, fallback to
+`.env` file). No manual `setx`/`export` needed.
 
-The same token was copied over from `../FBO/.env` on 2026-04-19.
-
-If the API ever returns 401 Unauthorized, the token rotated. Regenerate in
-Prolific UI → Settings → Go to API Token.
+If the API returns 401 Unauthorized, regenerate in Prolific UI →
+Settings → API Token.
 
 ---
 
-## The Critical Rule: workspace_id IS Required (auto-discovered)
+## Design: Single Study (v4.x)
 
-Prolific participant groups (and studies, in some account structures) must
-be associated with a **project, workspace, or organisation**. Even though
-Oussema's Prolific UI shows no workspace dropdown, a default workspace
-exists under the hood.
+One Prolific study. Participant opens URL → instructions → quiz (retry-mode,
+no fail) → 5 practice trials → 30 scored trials → demographics → debrief.
+Submits once. Gets paid base + accuracy bonus.
 
-`utils.py` auto-discovers it: `_discover_workspace_id()` calls
-`GET /api/v1/workspaces/` and uses the first workspace returned. The result
-is cached on the client instance.
-
-**If you re-introduce an unconditional `'project': self.project_id` without
-the workspace fallback, participant-group creation breaks with:**
-```
-"A participant group can only be associated with one of project,
- workspace or organisation."
-```
-
-The current pattern: "prefer project_id if set, else use auto-discovered
-workspace_id". Don't change this without testing.
-
-## Filter ID Translation: Labels → Numeric ChoiceIDs
-
-Prolific's filter API expects **numeric string ChoiceIDs**, not human-readable
-labels. E.g., `fluent-languages: ["English"]` must be sent as
-`fluent-languages: ["19"]`.
-
-`utils.py::_translate_filters()` auto-translates by fetching
-`GET /api/v1/filters/` metadata and building a `label → id` reverse lookup
-for each filter. It caches the result and runs transparently inside
-`create_study()`.
-
-**If you add a new ChoiceID-based filter:** just use the human-readable
-label string in `get_recommended_filters()`. The translator will convert.
-If the label doesn't match Prolific's catalog, translator raises
-`ValueError` with a helpful list of available options.
-
-Labels are **exact match, case-sensitive**. Example gotchas discovered:
-- "Business and administrative studies" → not a label. Use "Business".
-- "Mathematics or statistics" → not a label. Use "Mathematics".
-- The filter ID for education is `highest-education-level-completed`, not
-  `education`.
-
-## Completion Codes: Required `actions` Field
-
-Newer Prolific API requires every completion code to have a non-empty
-`actions` array with a valid action type. Example:
-
-```python
-completion_codes=[
-    {"code": "PASS1SN", "code_type": "COMPLETED",
-     "actions": [{"action": "AUTOMATICALLY_APPROVE"}]},
-    {"code": "FAIL1SN", "code_type": "COMPLETED",
-     "actions": [{"action": "AUTOMATICALLY_APPROVE"}]},
-]
-```
-
-**Do NOT use:**
-- Omitting `actions` entirely (400: "This field is required.")
-- `"action": "APPROVE"` (400: "Unknown action type. Please provide a valid
-  known fixed screen out payment action type.")
-
-The valid action for normal completion is `AUTOMATICALLY_APPROVE` (string,
-all caps). Screen-out actions (like `NO_CONSENT`) use different action
-types — consult docs if you add them.
+**Key differences from v3.x (two-part flow, archived 2026-04-24):**
+- No Part 1 / Part 2 split. No participant group. No allowlist filter.
+- Single completion code `COMP2SN` (participants who finish the full survey).
+- Bonus computed client-side and shipped as `bonus.amount` in the submission.
+- Google Apps Script just logs to Sheet; no Prolific API calls from it.
 
 ---
 
-## The Two-Part Flow
+## The One-Command Flow
 
-### One command sets up everything
+### Create a draft study (nothing published, nothing charged yet)
 
 ```powershell
 cd "C:\Users\ousse\OneDrive\RESEARCH\FBO 2"
 
-# Dry run first (ALWAYS):
-python code\02_collect\RUN_PROLIFIC_STUDY.py create-two-part --pilot --dry-run
+# Dry-run FIRST (always):
+python code\02_collect\RUN_PROLIFIC_STUDY.py create --pilot --dry-run
 
 # When happy, run for real:
-python code\02_collect\RUN_PROLIFIC_STUDY.py create-two-part --pilot
+python code\02_collect\RUN_PROLIFIC_STUDY.py create --pilot
 ```
 
-### What that command does (in order)
+What that does:
+1. Resolves a participant count (`--pilot` = 20, default = 250, `--n N` = custom).
+2. Builds the screener filter set (see `get_recommended_filters()` for the
+   baseline: approval rate, language, country, education, subject).
+3. Creates a single DRAFT study in your Prolific account.
+4. Saves the study ID to `data/raw/prolific/prolific_setup_<mode>.json`.
+5. Prints the Prolific URL for you to preview before publishing.
 
-1. **Creates participant group** "FBO2 PILOT - Part 1 Passed" -- this is
-   the allowlist for Part 2. Returns a group ID.
-
-2. **Creates Part 1 study** with TWO completion codes:
-   - `PASS1SN` -- participant passed the quiz. Apps Script will add them
-     to the participant group. Marked `APPROVE` in Prolific.
-   - `FAIL1SN` -- participant failed. Still `APPROVE` (they get the £1)
-     but they will NOT be added to the group, so Part 2 is unavailable.
-
-3. **Creates Part 2 study** filtered to the participant group (allowlist).
-   Only Part 1 passers can see/enter.
-
-4. **Saves study IDs** to `data/raw/prolific/two_part_setup_pilot.json`.
-
-5. **Prints next steps** -- including the Part 2 URL that has to go into
-   `survey/js/config.js` as `part2StudyUrl`.
-
-### After creation, manual steps
-
-1. Copy the Part 2 URL from the script output.
-2. Paste into `survey/js/config.js` in the `prolific` block:
-   ```js
-   part2StudyUrl: "https://app.prolific.com/studies/<STUDY2_ID>/start",
-   ```
-3. Deploy the updated config to GitHub Pages (commit both `main` and `gh-pages`,
-   bump cache-buster in `index.html` so browsers refresh).
-4. Set the group ID in Google Apps Script Script Properties (see below).
-5. **Publish Part 2 FIRST**, then Part 1:
-   ```powershell
-   python code\02_collect\RUN_PROLIFIC_STUDY.py publish <STUDY2_ID>
-   python code\02_collect\RUN_PROLIFIC_STUDY.py publish <STUDY1_ID>
-   ```
-   Reason: the moment Part 1 goes live, passers will hit the completion page
-   immediately. Part 2 must already exist or they see "study not available".
+**Publishing is separate — the `create` command never publishes.**
+To publish when ready:
+```powershell
+python code\02_collect\RUN_PROLIFIC_STUDY.py publish <STUDY_ID>
+```
 
 ---
 
-## Google Apps Script Integration (Sheets + Group-Add)
+## Screeners (`get_recommended_filters`)
 
-The survey POSTs each submission to a Google Apps Script endpoint that
-(a) appends the data to a Google Sheet and (b) calls the Prolific API
-to add Part 1 passers to the participant group.
+Baseline (applied unless `--loose` or `--no-screeners`):
 
-**Script file:** `survey/backend/sheets-script.gs`
-
-**Deploy steps** (one-time per new sheet):
-1. Create a Google Sheet named "FBO Survey Responses"
-2. Extensions → Apps Script → paste the `.gs` file
-3. Deploy → New deployment → Web app. Execute as Me. Access: Anyone
-4. Copy the Web App URL → paste into `survey/js/config.js` as `dataEndpoint`
-
-**Script Properties** (Project Settings → Script Properties):
-- `PROLIFIC_API_TOKEN` = same token as `.env`
-- `PROLIFIC_GROUP_ID` = the group ID printed by `create-two-part`
-
-The script auto-adds a PID to the group when it sees:
-```
-data.part === 1 && data.comprehensionFailed === false && data.prolificPID
-```
-
-**Important:** this Apps-Script-based group-add is the REAL mechanism.
-The Prolific completion-code `actions` field is only `APPROVE`; we do NOT
-use completion-code-based group-add. Don't attempt to switch to that
-without testing -- it's historically been unreliable.
-
----
-
-## Screeners (Pre-Screens)
-
-All configured in `get_recommended_filters()` in `RUN_PROLIFIC_STUDY.py`.
-
-### Baseline (always on unless `--loose` or `--no-screeners`)
-
-**Quality + language:**
-| Filter ID | Value | Why |
+| Filter | Value | Why |
 |---|---|---|
-| `approval_rate` | 95-100% | Standard quality |
-| `approval_numbers` | ≥ 100 | Experience; cuts newbies |
-| `first-language` | English | Native-level reading |
+| `approval_rate` | 95–100% | Quality |
+| `approval_numbers` | ≥ 100 | Experience |
+| `first-language` | English | Reading comprehension |
 | `fluent-languages` | English | Safety net |
 | `current-country-of-residence` | UK, US, CA, AU, IE, NZ | English pool |
 | `age` | 18+ | Adult sample |
+| `education` | Bachelor's+ | Numeracy proxy |
+| `subject` | Accounting, Business admin, Economics, Finance, Math/Stats | Setting familiarity |
 
-**Background + ability:**
-| Filter ID | Value | Why |
-|---|---|---|
-| `education` | Bachelor's+ | Reasoning / literacy / numeracy proxy |
-| `subject` | Accounting, Business admin, Economics, Finance, Math/Stats | Setting familiarity; Oussema's explicit requirement |
+`--loose` drops the background filters (education + subject), keeping only
+quality + language filters.
 
-### `--loose` drops the background + ability filters
+`--no-screeners` drops everything (use for maximum recruitment speed or
+generalizability sensitivity analysis; never for a pilot).
 
-Use if recruitment is too slow on full runs (250+ participants) or for a
-generalizability-focused sensitivity analysis. Only quality and language
-filters remain. **For pilots: always keep the default (stringent) set.**
+### Filter ID translation
 
-**Pool size:** baseline drops the eligible pool from ~300k to ~5-15k. That's
-plenty for a 30-person pilot. For the full 250-person run, plan for several
-days of recruitment (not hours).
+Prolific's filter API expects numeric `ChoiceID` strings. `utils.py::
+_translate_filters()` auto-translates human-readable labels to IDs by
+fetching `/api/v1/filters/` and building a reverse lookup. Labels are
+case-sensitive and exact-match. Gotchas discovered:
+- "Business and administrative studies" → use "Business"
+- "Mathematics or statistics" → use "Mathematics"
+- Education filter ID is `highest-education-level-completed`, not `education`.
 
-### Filter ID stability
-
-Prolific's `filter_id` strings (`"first-language"`, `"subject"`, etc.) are
-stable but not documented cleanly. If the API returns 400, the error body
-names the specific filter that failed. Fix that one, re-dry-run, then re-run.
-
-**Never introduce a filter without dry-running first.** A bad filter ID
-fails silently inside the print statements but hard-fails on the real
-POST, and then the group + Part 1 are already created -- you'd need to
-delete them manually before retrying.
+If a label doesn't match, the translator raises `ValueError` with the list
+of available options.
 
 ---
 
-## Completion Codes
+## Completion Code
 
-Defined in TWO places that must match:
+`COMP2SN` (the `comp2` code from v3) is the single completion code.
+Defined in three places that must match:
 
 **`survey/js/config.js`:**
 ```js
 prolific: {
-  completionCodes: { pass1: "PASS1SN", fail1: "FAIL1SN", comp2: "COMP2SN" },
-  completionUrls: {
-    pass1: "https://app.prolific.com/submissions/complete?cc=PASS1SN",
-    fail1: "https://app.prolific.com/submissions/complete?cc=FAIL1SN",
-    comp2: "https://app.prolific.com/submissions/complete?cc=COMP2SN"
-  }
+  completionCode: "COMP2SN",
+  completionUrl: "https://app.prolific.com/submissions/complete?cc=COMP2SN"
 }
 ```
 
-**`code/config.py EXPERIMENT_PARAMS`:**
+**`code/config.py::EXPERIMENT_PARAMS`:**
 ```python
-'pass_code_part1': 'PASS1SN',
-'fail_code_part1': 'FAIL1SN',
-'completion_code_part2': 'COMP2SN',
+'completion_code': 'COMP2SN',
 ```
 
-**`RUN_PROLIFIC_STUDY.py`** hard-codes the same `PASS1SN` / `FAIL1SN`
-in the `completion_codes=[]` argument to `client.create_study()`.
+**`RUN_PROLIFIC_STUDY.py::cmd_create`:** hard-codes the same `COMP2SN` in the
+`completion_codes=[]` argument to `client.create_study()`.
 
-If you ever rename the codes, update all four places.
+If you rename the code, update all three places.
 
 ---
 
-## Pay Amounts (as of v3.11 survey copy)
+## Pay Amounts
 
-| Field | Pence | GBP |
-|---|---|---|
-| `part1_reward_pence` | 100 | £1.00 |
-| `part2_reward_pence` | 150 | £1.50 base |
-| `bonus_max_pence` | 100 | £1.00 max accuracy bonus |
+| Field | Minor units | USD | Comment |
+|---|---|---|---|
+| `reward_minor` | 300 | $3.00 | Base pay, guaranteed |
+| `bonus_max_minor` | 600 | $6.00 | Max accuracy bonus (30 × 20¢ per-trial max) |
 
-**Keep these in sync** with the survey text in `survey/js/config.js`
-(Welcome pages, consent pages, debrief). If you change the pay in
-`config.py`, grep for "1.00", "1.50", "£" in `config.js` and update.
+**Keep in sync** with the survey copy in `survey/js/config.js` (welcome,
+consent, "You're ready", scored intro, debrief). If you change these, grep
+for "3.00", "6.00", "$" in `config.js` and update the copy.
 
-### Known discrepancy: bonus formula
-
-The actual bonus formula in `survey/js/config.js`:
-```js
-bonus: { baseAmount: 1.50, penaltyMultiplier: 3.00, selectionMethod: "random_trial" }
-```
-
-Under this formula, a perfect-accuracy answer earns `baseAmount` = £1.50 total.
-So the survey copy "£1.50 base + up to £1.00 bonus" is slightly misleading:
-the scoring is Brier-style (quadratic penalty from £1.50 base), not an
-additive bonus on top of £1.50.
-
-If you want the literal "base + bonus" framing to match the formula, EITHER:
-- Update the survey copy to "up to £1.50, reduced by inaccuracy"; OR
-- Rework the bonus formula to `base = 1.50; bonus = max(0, 1.00 - penalty * error)`.
-
-Not fixed as of 2026-04-19 -- flagged to Oussema.
+The minimum-time floor (sum of all time locks) is ~14 min. The survey copy
+says "about 20 minutes" on the consent page — realistic for an engaged
+participant.
 
 ---
 
 ## Useful Commands
 
 ```powershell
-# Create full two-part (baseline screeners):
-python code\02_collect\RUN_PROLIFIC_STUDY.py create-two-part --pilot
-python code\02_collect\RUN_PROLIFIC_STUDY.py create-two-part          # full (250 participants)
-python code\02_collect\RUN_PROLIFIC_STUDY.py create-two-part --n 30    # custom count
+# Create a draft (doesn't publish):
+python code\02_collect\RUN_PROLIFIC_STUDY.py create --pilot --dry-run
+python code\02_collect\RUN_PROLIFIC_STUDY.py create --pilot
+python code\02_collect\RUN_PROLIFIC_STUDY.py create --n 50
+python code\02_collect\RUN_PROLIFIC_STUDY.py create                  # full (250)
 
 # Variations:
-python code\02_collect\RUN_PROLIFIC_STUDY.py create-two-part --pilot --strict
-python code\02_collect\RUN_PROLIFIC_STUDY.py create-two-part --pilot --no-screeners
-
-# Dry-run ANYTHING first:
-python code\02_collect\RUN_PROLIFIC_STUDY.py create-two-part --pilot --dry-run
+python code\02_collect\RUN_PROLIFIC_STUDY.py create --pilot --loose       # drop bg filters
+python code\02_collect\RUN_PROLIFIC_STUDY.py create --pilot --no-screeners
 
 # Study management:
 python code\02_collect\RUN_PROLIFIC_STUDY.py list
@@ -332,79 +189,101 @@ python code\02_collect\RUN_PROLIFIC_STUDY.py pause <STUDY_ID>
 python code\02_collect\RUN_PROLIFIC_STUDY.py status <STUDY_ID>
 python code\02_collect\RUN_PROLIFIC_STUDY.py submissions <STUDY_ID>
 
-# Approvals + bonuses:
+# Approvals + bonuses (after submissions land):
 python code\02_collect\RUN_PROLIFIC_STUDY.py approve <STUDY_ID>
-python code\02_collect\RUN_PROLIFIC_STUDY.py bonus <STUDY2_ID>              # auto from Google Sheets
-python code\02_collect\RUN_PROLIFIC_STUDY.py bonus <STUDY2_ID> --csv F.csv  # manual CSV
+python code\02_collect\RUN_PROLIFIC_STUDY.py bonus <STUDY_ID>               # auto from Google Sheets
+python code\02_collect\RUN_PROLIFIC_STUDY.py bonus <STUDY_ID> --csv F.csv   # manual CSV
 ```
 
 ---
 
-## Debugging Checklist
+## Google Apps Script Setup (one time per new sheet)
+
+1. Create a Google Sheet (name: "FBO Survey Responses v4" or similar).
+2. Extensions → Apps Script → paste `survey/backend/sheets-script.gs`.
+3. Deploy → New deployment → Web app. Execute as Me. Access: Anyone.
+4. Copy the Web App URL → paste into `survey/js/config.js` as `dataEndpoint`.
+5. Copy the Sheet ID (long string in the URL) → paste into
+   `code/config.py::SURVEY_CONFIG['google_sheet_id']`.
+6. (Optional) Script Properties → add `READ_TOKEN = <long random string>`.
+   Use the same value in `.env` as `FBO2_SHEET_READ_TOKEN`. This lets
+   `FETCH_RESPONSES.py` download the sheet over HTTPS.
+
+**No Prolific API token or group ID is needed in Script Properties** (v3
+footgun — only needed for the participant-group gate, which is gone).
+
+### What the Apps Script does
+
+- Receives `POST` from the survey on submit.
+- Flattens the summary payload to dot-notation keys, appends as a row
+  on the active sheet. Auto-extends header row when new fields appear.
+- Appends the full nested JSON (`raw_json`) as one row on the `raw` tab,
+  with `submission_time_utc`, `prolific_pid`, `bonus_amount`, and the blob.
+- Serves a read-only `GET` endpoint (gated by `READ_TOKEN`) for
+  `FETCH_RESPONSES.py` to pull the latest data.
+
+---
+
+## Debugging
 
 **API returns 401 Unauthorized:**
-- Token expired or wrong. Regenerate in Prolific Settings → API Token.
-- Token not reaching `ProlificClient`. Check `load_api_key('PROLIFIC_API_TOKEN')`
-  returns non-empty when run from the project root.
+- Token expired. Regenerate in Prolific Settings → API Token.
+- Check that `load_api_key('PROLIFIC_API_TOKEN')` returns non-empty.
 
-**API returns 400 Bad Request on `create_study`:**
-- Most likely a bad `filter_id` in your screeners. Check response body;
-  remove or rename the offending filter; dry-run; retry.
-- Also check: `external_study_url` malformed, missing `{{%PROLIFIC_PID%}}`
-  placeholders. Prolific rejects URLs without them when
-  `prolific_id_option: 'url_parameters'`.
+**API returns 400 on `create_study`:**
+- Most likely a bad `filter_id` in screeners. Error body names the
+  offending filter.
+- Check `external_study_url` is well-formed + contains
+  `{{%PROLIFIC_PID%}}`, `{{%STUDY_ID%}}`, `{{%SESSION_ID%}}`.
 
-**API returns 400 on `create_participant_group`:**
-- Account probably doesn't use workspaces. Verify `utils.py` line
-  `data = {'name': name}` (nothing else unconditional).
+**Participants land on the survey but nothing submits to the sheet:**
+- Hit the Apps Script URL directly in a browser — should show
+  `{"status":"ok","message":"FBO Survey data endpoint is active."}`.
+  If not, the deployment is stale; re-deploy.
+- Check the browser's DevTools console for CORS or 404 errors.
 
-**Participants pass Part 1 but Part 2 doesn't appear:**
-- Apps Script not wired up. Check `survey/js/config.js::dataEndpoint` is
-  set to the deployed Web App URL.
-- Script Properties missing `PROLIFIC_API_TOKEN` or `PROLIFIC_GROUP_ID`.
-- Check Apps Script → Executions for error logs.
-
-**Participants see old v3.X survey after a deploy:**
-- Browser cache. Bump `?v=<timestamp>` in BOTH `index.html` and
-  `survey/index.html` on the gh-pages branch. Script:
+**Participants see the old survey:**
+- Browser cache. Bump `?v=<timestamp>` in `survey/index.html` on
+  `gh-pages` and redeploy. Script:
   ```python
   import re, time
   new = int(time.time())
-  for p in ['index.html', 'survey/index.html']:
-      with open(p) as f: c = f.read()
-      c = re.sub(r'\?v=\d+', f'?v={new}', c)
-      with open(p, 'w') as f: f.write(c)
+  p = 'survey/index.html'
+  with open(p) as f: c = f.read()
+  c = re.sub(r'\?v=\d+', f'?v={new}', c)
+  with open(p, 'w') as f: f.write(c)
   ```
 
-**Script says "Prolific API token not found":**
-- `.env` missing or has wrong key name. Must be `PROLIFIC_API_TOKEN=` (no
-  spaces around =). Supports optional quotes: `PROLIFIC_API_TOKEN="..."`.
+**`.env` not loading:**
+- File must be at project root (`FBO 2/.env`).
+- Key format: `PROLIFIC_API_TOKEN=...` or `PROLIFIC_API_TOKEN="..."`.
+  Both work; no spaces around `=`.
 
 ---
 
 ## Environment Lessons (don't repeat these)
 
 1. **Never commit `.env`** — it's in `.gitignore` for a reason.
-2. **Don't hardcode the API token** anywhere in code. Always via `.env`.
-3. **Don't create studies without `--dry-run` first.** A mis-typed filter
-   ID or wrong reward amount costs real money (you can't edit reward once
-   a study is ACTIVE; you'd have to pause, duplicate, republish).
-4. **The Part 2 study URL changes every time you recreate.** If you run
-   `create-two-part` twice, the `part2StudyUrl` in `config.js` will be
-   stale — update and redeploy.
-5. **Publishing is irreversible once participants submit.** You can pause,
-   but submissions that already came in cost whatever they cost.
-6. **Bonus payment is final.** Always `--dry-run` the bonus command and
-   sanity-check the CSV / Google Sheets data before paying.
+2. **Don't hardcode the API token** anywhere in code.
+3. **Always `--dry-run` first** when creating a study. A bad filter ID
+   or wrong reward amount costs real money once the study is ACTIVE
+   (you can't edit reward on an active study; you'd have to pause +
+   duplicate + republish).
+4. **Publishing is irreversible once participants submit.** You can
+   pause, but submissions already collected are billed.
+5. **Bonus payment is final.** Always `--dry-run` the `bonus` command
+   and sanity-check the CSV / Google Sheets data before paying.
+6. **The survey URL is static.** It never changes with a new study —
+   the same `survey_url` in `SURVEY_CONFIG` serves every study. Only
+   the study ID (which the URL doesn't need) changes.
 
 ---
 
 ## When To Update This File
 
-Update this CLAUDE.md whenever you:
-- Change completion codes
+Update whenever you:
+- Change the completion code
 - Change pay amounts
-- Add/remove a screener to the default set
-- Change the Apps Script group-add logic
-- Discover a new failure mode
-- Switch to a different Prolific account structure (workspaces, etc.)
+- Add/remove a screener
+- Change the Apps Script logic
+- Hit a new failure mode worth documenting
