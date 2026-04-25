@@ -216,7 +216,8 @@ body {
 
 /* ---------- Question Block ---------- */
 .question-block {
-  margin-bottom: 28px;
+  max-width: 620px;
+  margin: 0 auto 28px;
 }
 
 .question-prompt {
