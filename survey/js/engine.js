@@ -543,12 +543,29 @@
       var showNav = page.type !== 'debrief' && page.type !== 'completion';
       self.elNavButtons.style.display = showNav ? '' : 'none';
 
-      // Back button visibility
+      // Back button visibility.
+      //
+      // Hard rule: once the participant enters the trial flow (the
+      // first practice block), they cannot go back. This stops them
+      // from re-reading instructions to "fix" their estimate strategy
+      // mid-flight, or from navigating back into the demographics
+      // self-report after seeing their bonus on the debrief.
+      // blockBoundaryIndices[0] is the index of the first practice
+      // trial-intro page; any page at or after that index has Back
+      // hidden. (Debrief is always after that index, so it falls
+      // under the same rule; the explicit page.type check is kept
+      // as a safety net for other entry points.)
       var atBoundary = self.blockBoundaryIndices.indexOf(index) !== -1;
+      var trialFlowStart = self.blockBoundaryIndices.length > 0 ?
+                           self.blockBoundaryIndices[0] : Infinity;
+      var inTrialFlow = index >= trialFlowStart;
       var noBack = index === 0 || page.type === 'welcome' || page.type === 'debrief'
                    || page.type === 'comprehension' || page.type === 'transition'
                    || page.type === 'trial_attention' || page.type === 'trial_intro'
                    || page.type === 'quiz_question'
+                   || page.type === 'fraud_trial' || page.type === 'practice_summary'
+                   || page.type === 'questionnaire'
+                   || inTrialFlow
                    || atBoundary;
       self.elBtnBack.style.display = noBack ? 'none' : '';
 
