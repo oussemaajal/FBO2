@@ -322,17 +322,34 @@ def cmd_bonus(args):
     df = pd.read_csv(export_url)
     print(f"  Downloaded {len(df)} rows")
 
-    bonus_col = 'bonus.amount'
-    pid_col = 'prolificPID'
+    # The Apps Script flattens nested keys with underscores, so survey-side
+    # `bonus.amount` becomes column `bonus_amount` in the sheet. The PID is
+    # written under both `prolific_pid` (snake) and `prolificPID` (camel)
+    # — prefer the snake_case one which is the canonical column. Fall back
+    # to camel if the snake column is somehow absent.
+    bonus_col = 'bonus_amount'
+    pid_col = 'prolific_pid' if 'prolific_pid' in df.columns else 'prolificPID'
 
     if bonus_col not in df.columns:
         print(f"ERROR: Column '{bonus_col}' not found.")
-        print(f"  Available: {[c for c in df.columns if 'bonus' in c.lower()]}")
+        print(f"  Available bonus-like cols: {[c for c in df.columns if 'bonus' in c.lower()]}")
+        return
+    if pid_col not in df.columns:
+        print(f"ERROR: Neither 'prolific_pid' nor 'prolificPID' column found.")
         return
 
-    # No Part 1 / Part 2 split in v4 -- every row that has a bonus.amount
-    # is a completed submission.
+    # Filter out bot-detected submissions: those participants forfeited
+    # the survey on AI-honeypot trigger and don't get a completion code,
+    # so they shouldn't get a bonus either. The column is `bot_detected`
+    # (boolean) when the new abort path fires; absent or False otherwise.
+    n_before = len(df)
+    if 'bot_detected' in df.columns:
+        df = df[df['bot_detected'].fillna(False).astype(str).str.lower() != 'true']
+        n_filtered = n_before - len(df)
+        if n_filtered:
+            print(f"  Skipped {n_filtered} bot-detected submission(s) — no bonus paid.")
 
+    # Every row with a positive bonus is a completed submission worth paying.
     df = df[[pid_col, bonus_col]].dropna()
     df[bonus_col] = pd.to_numeric(df[bonus_col], errors='coerce')
     df = df.dropna()
@@ -342,7 +359,7 @@ def cmd_bonus(args):
         print("No participants with positive bonus found.")
         return
 
-    # bonus.amount is in dollars; Prolific API expects minor units (cents).
+    # bonus_amount is in dollars; Prolific API expects minor units (cents).
     df['bonus_minor'] = (df[bonus_col] * 100).round().astype(int)
 
     print(f"\nBonus summary ({len(df)} participants):")
