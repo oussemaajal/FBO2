@@ -899,7 +899,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:justify; font-size:22px; line-height:1.4; max-width:620px; margin:0 auto 18px;'>" +
-          "You only learn the nature (clean or suspicious) of those " +
+          "You only learn the nature (clean vs suspicious) of those " +
           "<strong>4 transactions.</strong>" +
         "</p>" +
         "<div class='doc-cluster'>" +
@@ -1055,11 +1055,8 @@ var SURVEY_CONFIG = {
       type: "instructions",
       title: "",
       body:
-        "<p style='text-align:justify; font-size:22px; line-height:1.4; max-width:620px; margin:0 auto 10px;'>" +
+        "<p style='text-align:justify; font-size:22px; line-height:1.4; max-width:620px; margin:0 auto 18px;'>" +
           "No. It could be <strong>any</strong> of these companies." +
-        "</p>" +
-        "<p style='text-align:justify; font-size:17px; max-width:620px; margin:0 auto 18px; color:#475569; line-height:1.55;'>" +
-          "A single suspicious transaction is consistent with a mostly-clean company, a half-and-half company, or a mostly-suspicious company." +
         "</p>" +
         "<div class='company-triple'>" +
           // Mostly clean (2 S, 18 C)
@@ -1142,7 +1139,7 @@ var SURVEY_CONFIG = {
           "</div>" +
         "</div>" +
         "<p style='text-align:center; font-size:25px; font-weight:800; max-width:620px; margin:22px auto 0; line-height:1.45;'>" +
-          "A single random transaction tells you very little about the rest." +
+          "The type of single randomly selected transaction tells you nothing about the nature of the rest of the company's transactions." +
         "</p>",
       minTimeSeconds: 8
     },
@@ -1220,7 +1217,7 @@ var SURVEY_CONFIG = {
           "<div class='manager-badge-label'>MANAGER</div>" +
         "</div>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto;'>" +
-          "The manager is responsible for sending you the company&apos;s transactions for the preliminary audit." +
+          "The manager is responsible for sending you the 4 transactions for the preliminary audit." +
         "</p>",
       minTimeSeconds: 7
     },
@@ -1402,7 +1399,7 @@ var SURVEY_CONFIG = {
         "</p>" +
         "<ol style='font-size:19px; max-width:620px; margin:0 auto 18px; line-height:1.6; padding-left:28px;'>" +
           "<li style='margin-bottom:10px;'>The manager sends <strong>exactly 4</strong> transactions. Not more, not fewer.</li>" +
-          "<li>The manager <strong>cannot falsify or forge transactions</strong> to change their type.</li>" +
+          "<li>The manager <strong>cannot falsify or forge transactions</strong> to change their types.</li>" +
         "</ol>",
       minTimeSeconds: 5
     },
