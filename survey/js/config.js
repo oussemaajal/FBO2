@@ -619,11 +619,11 @@ var SURVEY_CONFIG = {
           "The fraud estimate for a company is ..." +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='share' data-mode='retry' " +
-             "data-explain='The fraud estimate is the share of a company\\'s transactions that are suspicious, expressed as a percentage.'>" +
+             "data-explain='The fraud estimate is the share of a company&apos;s transactions that are suspicious, expressed as a percentage.'>" +
           "<button type='button' class='practice-btn' data-val='gut'>Your gut feeling about the company, in percent.</button>" +
-          "<button type='button' class='practice-btn' data-val='count'>The number of suspicious transactions.</button>" +
-          "<button type='button' class='practice-btn' data-val='share'>The share of a company's transactions that are suspicious.</button>" +
-          "<button type='button' class='practice-btn' data-val='fifty'>Always 50%.</button>" +
+          "<button type='button' class='practice-btn' data-val='count'>The total number of suspicious transactions.</button>" +
+          "<button type='button' class='practice-btn' data-val='share'>Suspicious transactions divided by total.</button>" +
+          "<button type='button' class='practice-btn' data-val='fifty'>Always 50%, by law.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
       minTimeSeconds: 6
@@ -660,6 +660,25 @@ var SURVEY_CONFIG = {
           "whether fraud is found or not." +
         "</p>",
       minTimeSeconds: 7
+    },
+
+    // -- Page 14c: Calculator notice (heads-up before first arithmetic page) --
+    {
+      id: "p2_inst_calculator_notice",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 14px;'>" +
+          "Heads-up" +
+        "</p>" +
+        "<p style='text-align:center; font-size:24px; max-width:620px; margin:0 auto 18px; font-weight:700;'>" +
+          "A calculator will appear on the right side of the page." +
+        "</p>" +
+        "<p style='text-align:justify; font-size:18px; max-width:560px; margin:0 auto; line-height:1.65;'>" +
+          "From here on, a small calculator sits on the right side of your screen whenever the page calls for arithmetic. " +
+          "Open it any time you would like to work out the math. There is no requirement to use it." +
+        "</p>",
+      minTimeSeconds: 6
     },
 
     // -- Page 15: Practice math #1 -- N=10 ------------------------------
@@ -817,10 +836,10 @@ var SURVEY_CONFIG = {
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='likely' data-mode='retry' " +
              "data-explain='A higher estimate means more lottery tickets, and a higher chance of a full audit, though not a guarantee.'>" +
-          "<button type='button' class='practice-btn' data-val='never'>They never get audited.</button>" +
-          "<button type='button' class='practice-btn' data-val='always'>They get audited for sure.</button>" +
-          "<button type='button' class='practice-btn' data-val='likely'>They're more likely to be picked for a full audit.</button>" +
-          "<button type='button' class='practice-btn' data-val='random'>It's random. Your estimate doesn't matter.</button>" +
+          "<button type='button' class='practice-btn' data-val='never'>They never get a full audit.</button>" +
+          "<button type='button' class='practice-btn' data-val='always'>They get a full audit for sure.</button>" +
+          "<button type='button' class='practice-btn' data-val='likely'>More likely to face a full audit.</button>" +
+          "<button type='button' class='practice-btn' data-val='random'>It's random &mdash; your estimate doesn't matter.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
       minTimeSeconds: 5
@@ -1146,11 +1165,11 @@ var SURVEY_CONFIG = {
           "What does that tell you about the company's other transactions?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='nothing' data-mode='retry' " +
-             "data-explain='Right. A random transaction could come from a mostly-clean, half-and-half, or mostly-suspicious company. One doesn\\'t tell you the rest.'>" +
+             "data-explain='Right. A random transaction could come from a mostly-clean, half-and-half, or mostly-suspicious company. One doesn&apos;t tell you the rest.'>" +
           "<button type='button' class='practice-btn' data-val='mostly_clean'>Most of them are probably clean too.</button>" +
-          "<button type='button' class='practice-btn' data-val='mostly_susp'>Most of them are probably suspicious.</button>" +
-          "<button type='button' class='practice-btn' data-val='nothing'>Nothing. One random transaction doesn't tell you about the rest.</button>" +
-          "<button type='button' class='practice-btn' data-val='half'>Exactly half are clean.</button>" +
+          "<button type='button' class='practice-btn' data-val='mostly_susp'>Most of them are probably suspicious too.</button>" +
+          "<button type='button' class='practice-btn' data-val='nothing'>Nothing reliable &mdash; one isn't enough.</button>" +
+          "<button type='button' class='practice-btn' data-val='half'>Roughly half should be clean too.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
       minTimeSeconds: 6
@@ -1286,10 +1305,13 @@ var SURVEY_CONFIG = {
             "</div>" +
             "<div class='split-caption'>Sees all 10</div>" +
           "</div>" +
-          "<div class='split-arrow'>&rarr;</div>" +
+          "<div class='split-arrow' style='font-size:64px; display:flex; flex-direction:column; align-items:center;'>" +
+            "<span style=\"font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:#64748b; margin-bottom:-4px; font-weight:700;\">sent</span>" +
+            "&rarr;" +
+          "</div>" +
           "<div class='split-side'>" +
             "<div class='split-badge'>" +
-              "<svg viewBox='0 0 100 120' xmlns='http://www.w3.org/2000/svg' aria-hidden='true' width='50'>" +
+              "<svg viewBox='0 0 100 120' xmlns='http://www.w3.org/2000/svg' aria-hidden='true' width='72'>" +
                 "<defs>" +
                   "<linearGradient id='auditorMagSplit' x1='0%' y1='0%' x2='0%' y2='100%'>" +
                     "<stop offset='0%' stop-color='#0ea5a0'/>" +
@@ -1323,14 +1345,52 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 5
     },
 
-    // -- Page 26: Important -- big "4" (law) ----------------------------
+    // -- Page 26a: Mandate split, screen A -- giant "4" + headline only --
     {
-      id: "p3_inst_mandate",
+      id: "p3_inst_mandate_a",
       type: "instructions",
       title: "",
       body:
         "<div style='text-align:center; margin:14px 0 26px;'>" +
           "<div style='font-size:110px; font-weight:800; line-height:1; letter-spacing:-0.05em; color:var(--color-primary);'>4</div>" +
+          "<div style='font-size:24px; font-weight:700; color:#0f172a; margin-top:6px;'>transactions disclosed</div>" +
+          "<div style='font-size:14px; text-transform:uppercase; letter-spacing:1.2px; font-weight:700; color:var(--color-text-slate); margin-top:8px;'>required by law</div>" +
+        "</div>" +
+        "<p style='text-align:justify; font-size:22px; max-width:620px; margin:0 auto 14px; font-weight:700;'>" +
+          "Two rules the manager <strong>cannot</strong> break:" +
+        "</p>",
+      minTimeSeconds: 3
+    },
+
+    // -- Page 26b: Mandate split, screen B -- rule 1 only ---------------
+    {
+      id: "p3_inst_mandate_b",
+      type: "instructions",
+      title: "",
+      body:
+        "<div style='text-align:center; margin:14px 0 26px;'>" +
+          "<div style='font-size:110px; font-weight:800; line-height:1; letter-spacing:-0.05em; color:var(--color-primary);'>4</div>" +
+          "<div style='font-size:24px; font-weight:700; color:#0f172a; margin-top:6px;'>transactions disclosed</div>" +
+          "<div style='font-size:14px; text-transform:uppercase; letter-spacing:1.2px; font-weight:700; color:var(--color-text-slate); margin-top:8px;'>required by law</div>" +
+        "</div>" +
+        "<p style='text-align:justify; font-size:22px; max-width:620px; margin:0 auto 14px; font-weight:700;'>" +
+          "Two rules the manager <strong>cannot</strong> break:" +
+        "</p>" +
+        "<ol style='font-size:19px; max-width:620px; margin:0 auto 18px; line-height:1.6; padding-left:28px;'>" +
+          "<li style='margin-bottom:10px;'>The manager sends <strong>exactly 4</strong> transactions. Not more, not fewer.</li>" +
+        "</ol>",
+      minTimeSeconds: 3
+    },
+
+    // -- Page 26c: Mandate split, screen C -- both rules ----------------
+    {
+      id: "p3_inst_mandate_c",
+      type: "instructions",
+      title: "",
+      body:
+        "<div style='text-align:center; margin:14px 0 26px;'>" +
+          "<div style='font-size:110px; font-weight:800; line-height:1; letter-spacing:-0.05em; color:var(--color-primary);'>4</div>" +
+          "<div style='font-size:24px; font-weight:700; color:#0f172a; margin-top:6px;'>transactions disclosed</div>" +
           "<div style='font-size:14px; text-transform:uppercase; letter-spacing:1.2px; font-weight:700; color:var(--color-text-slate); margin-top:8px;'>required by law</div>" +
         "</div>" +
         "<p style='text-align:justify; font-size:22px; max-width:620px; margin:0 auto 14px; font-weight:700;'>" +
@@ -1340,7 +1400,7 @@ var SURVEY_CONFIG = {
           "<li style='margin-bottom:10px;'>The manager sends <strong>exactly 4</strong> transactions. Not more, not fewer.</li>" +
           "<li>The manager cannot falsify or forge transactions to change their type.</li>" +
         "</ol>",
-      minTimeSeconds: 6
+      minTimeSeconds: 5
     },
 
     // -- Page 27: Attention check -- who picks which? ------------------
@@ -1439,10 +1499,10 @@ var SURVEY_CONFIG = {
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='raise' data-mode='retry' " +
              "data-explain='A high estimate makes a full audit likely, and a full audit costs the manager their raise.'>" +
-          "<button type='button' class='practice-btn' data-val='fine'>A high estimate triggers a fine on the manager.</button>" +
-          "<button type='button' class='practice-btn' data-val='raise'>A high estimate makes a full audit likely, and a full audit costs the manager their raise.</button>" +
-          "<button type='button' class='practice-btn' data-val='bonus'>A high estimate lowers the government auditor's bonus.</button>" +
-          "<button type='button' class='practice-btn' data-val='indifferent'>The manager doesn't care about your estimate.</button>" +
+          "<button type='button' class='practice-btn' data-val='fine'>A high estimate triggers a personal fine for the manager.</button>" +
+          "<button type='button' class='practice-btn' data-val='raise'>A high estimate makes a full audit likely and costs them their raise.</button>" +
+          "<button type='button' class='practice-btn' data-val='bonus'>A high estimate lowers the government auditor's bonus payout.</button>" +
+          "<button type='button' class='practice-btn' data-val='indifferent'>The manager has no stake in what you estimate.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
       minTimeSeconds: 6
@@ -1457,10 +1517,16 @@ var SURVEY_CONFIG = {
         "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 16px; font-weight:700;'>" +
           "What's at stake for <strong>you</strong>?" +
         "</p>" +
-        "<ol style='text-align:left; font-size:19px; max-width:620px; margin:0 auto; line-height:1.6; padding-left:22px;'>" +
-          "<li>You earn more when your estimates are <strong>accurate</strong>, summed across all 30 companies you will audit.</li>" +
-          "<li>You also earn extra when you're <strong>confident and correct</strong> (by placing bets on your estimates).</li>" +
-        "</ol>",
+        "<ul style='list-style:none; text-align:left; font-size:19px; max-width:620px; margin:0 auto; line-height:1.6; padding:0;'>" +
+          "<li style='display:flex; align-items:flex-start; gap:14px; margin-bottom:14px;'>" +
+            "<span style='display:inline-flex; width:36px; height:36px; border-radius:50%; background:#ccfbf1; color:#0f766e; font-weight:800; font-size:18px; align-items:center; justify-content:center; flex-shrink:0;'>1</span>" +
+            "<span>You earn more when your estimates are <strong>accurate</strong>, summed across all 30 companies you will audit.</span>" +
+          "</li>" +
+          "<li style='display:flex; align-items:flex-start; gap:14px; margin-bottom:14px;'>" +
+            "<span style='display:inline-flex; width:36px; height:36px; border-radius:50%; background:#fef3c7; color:#b45309; font-weight:800; font-size:18px; align-items:center; justify-content:center; flex-shrink:0;'>2</span>" +
+            "<span>You also earn extra when you're <strong>confident and correct</strong> (by placing bets on your estimates).</span>" +
+          "</li>" +
+        "</ul>",
       minTimeSeconds: 8
     },
 
@@ -1523,6 +1589,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "<span style='display:inline-flex; width:24px; height:24px; border-radius:50%; background:#0ea5a0; color:white; font-weight:800; font-size:14px; align-items:center; justify-content:center; margin-right:8px; vertical-align:middle;'>1</span>" +
           "Answer 1: fraud estimate" +
         "</p>" +
         "<p style='text-align:left; font-size:24px; max-width:620px; margin:0 auto 16px; font-weight:700;'>" +
@@ -1541,8 +1608,12 @@ var SURVEY_CONFIG = {
       type: "instructions",
       title: "",
       body:
-        "<p style='text-align:left; font-size:20px; max-width:620px; margin:60px auto 0; line-height:1.6;'>" +
-          "Let us walk through an example. For this company, let's assume that the correct answer is <strong>35%</strong>." +
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "<span style='display:inline-flex; width:24px; height:24px; border-radius:50%; background:#0ea5a0; color:white; font-weight:800; font-size:14px; align-items:center; justify-content:center; margin-right:8px; vertical-align:middle;'>1</span>" +
+          "Answer 1: fraud estimate" +
+        "</p>" +
+        "<p style='text-align:center; font-size:22px; max-width:620px; margin:60px auto 0; line-height:1.6; font-weight:700;'>" +
+          "Let us walk through an example. For this company, let's assume that the correct answer is <strong style='color:#b91c1c;'>35%</strong>." +
         "</p>",
       minTimeSeconds: 4
     },
@@ -1553,6 +1624,10 @@ var SURVEY_CONFIG = {
       type: "instructions",
       title: "",
       body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "<span style='display:inline-flex; width:24px; height:24px; border-radius:50%; background:#0ea5a0; color:white; font-weight:800; font-size:14px; align-items:center; justify-content:center; margin-right:8px; vertical-align:middle;'>1</span>" +
+          "Answer 1: fraud estimate" +
+        "</p>" +
         "<p style='text-align:left; font-size:22px; max-width:620px; margin:0 auto 14px; font-weight:700;'>" +
           "Practice this." +
         "</p>" +
@@ -1579,9 +1654,11 @@ var SURVEY_CONFIG = {
             "<div class='sim-result-total'>Estimate bonus: <span id='est35_bonus'>0&cent;</span></div>" +
           "</div>" +
         "</div>" +
-        "<p style='text-align:left; font-size:20px; max-width:620px; margin:22px auto 0; line-height:1.5; font-weight:700; color:#b91c1c;'>" +
-          "At 50%, you're 15 percentage points off the correct answer. You earn <strong>0&cent;</strong> on this company." +
-        "</p>",
+        "<div class='practice-feedback-card' style='display:none;'>" +
+          "<p style='text-align:left; font-size:20px; max-width:620px; margin:22px auto 0; line-height:1.5; font-weight:700; color:#b91c1c;'>" +
+            "At 50%, you're 15 percentage points off the correct answer. You earn <strong>0&cent;</strong> on this company." +
+          "</p>" +
+        "</div>",
       showCalculator: true,
       minTimeSeconds: 12
     },
@@ -1592,6 +1669,10 @@ var SURVEY_CONFIG = {
       type: "instructions",
       title: "",
       body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "<span style='display:inline-flex; width:24px; height:24px; border-radius:50%; background:#0ea5a0; color:white; font-weight:800; font-size:14px; align-items:center; justify-content:center; margin-right:8px; vertical-align:middle;'>1</span>" +
+          "Answer 1: fraud estimate" +
+        "</p>" +
         "<p style='text-align:left; font-size:22px; max-width:620px; margin:0 auto 14px; font-weight:700;'>" +
           "Now try a different estimate." +
         "</p>" +
@@ -1618,9 +1699,11 @@ var SURVEY_CONFIG = {
             "<div class='sim-result-total'>Estimate bonus: <span id='est30_bonus'>0&cent;</span></div>" +
           "</div>" +
         "</div>" +
-        "<p style='text-align:left; font-size:20px; max-width:620px; margin:22px auto 0; line-height:1.5; font-weight:700; color:#15803d;'>" +
-          "At 30%, you're within 10 percentage points of 35%. You earn <strong>+10&cent;</strong>." +
-        "</p>",
+        "<div class='practice-feedback-card' style='display:none;'>" +
+          "<p style='text-align:left; font-size:20px; max-width:620px; margin:22px auto 0; line-height:1.5; font-weight:700; color:#15803d;'>" +
+            "At 30%, you're within 10 percentage points of 35%. You earn <strong>+10&cent;</strong>." +
+          "</p>" +
+        "</div>",
       showCalculator: true,
       minTimeSeconds: 12
     },
@@ -1631,6 +1714,10 @@ var SURVEY_CONFIG = {
       type: "instructions",
       title: "",
       body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "<span style='display:inline-flex; width:24px; height:24px; border-radius:50%; background:#0ea5a0; color:white; font-weight:800; font-size:14px; align-items:center; justify-content:center; margin-right:8px; vertical-align:middle;'>1</span>" +
+          "Answer 1: fraud estimate" +
+        "</p>" +
         "<p style='text-align:justify; font-size:22px; max-width:620px; margin:0 auto 14px; font-weight:600;'>" +
           "Summary." +
         "</p>" +
@@ -1676,6 +1763,10 @@ var SURVEY_CONFIG = {
       type: "instructions",
       title: "",
       body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:#b45309; margin:0 auto 10px;'>" +
+          "<span style='display:inline-flex; width:24px; height:24px; border-radius:50%; background:#d97706; color:white; font-weight:800; font-size:14px; align-items:center; justify-content:center; margin-right:8px; vertical-align:middle;'>2</span>" +
+          "Answer 2: bet" +
+        "</p>" +
         "<p style='text-align:justify; font-size:26px; max-width:620px; margin:0 auto 16px; font-weight:700;'>" +
           "The bet." +
         "</p>" +
@@ -1691,15 +1782,31 @@ var SURVEY_CONFIG = {
       type: "instructions",
       title: "",
       body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:#b45309; margin:0 auto 10px;'>" +
+          "<span style='display:inline-flex; width:24px; height:24px; border-radius:50%; background:#d97706; color:white; font-weight:800; font-size:14px; align-items:center; justify-content:center; margin-right:8px; vertical-align:middle;'>2</span>" +
+          "Answer 2: bet" +
+        "</p>" +
         "<p style='text-align:center; font-size:22px; max-width:620px; margin:0 auto 18px; font-weight:700;'>" +
           "For example, suppose you bet <strong>5&cent;</strong> on your estimate:" +
         "</p>" +
         "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 14px; line-height:1.65; padding-left:22px;'>" +
           "<li>Within 10 percentage points &rarr; you <strong>win the bet</strong>: <strong>+5&cent;</strong>.</li>" +
           "<li>More than 10 percentage points away &rarr; you <strong>lose the bet</strong>: <strong>&minus;5&cent;</strong> (deducted from bonus on other companies).</li>" +
-          "<li>Your <strong>$3 base pay is never affected.</strong> Lost bets only reduce the bonus from other companies, and the total bonus cannot fall below $0.</li>" +
         "</ul>",
       minTimeSeconds: 9
+    },
+
+    // -- Page 37a: Bet safety -- $3 base pay never affected (highlighted) --
+    {
+      id: "p4_inst_bet_safety",
+      type: "instructions",
+      title: "",
+      body:
+        "<div style='max-width:560px; margin:80px auto 0; padding:36px 32px; background:#dcfce7; border-left:6px solid #15803d; border-radius:8px; text-align:center;'>" +
+          "<p style='font-size:24px; font-weight:800; color:#0f172a; margin:0 0 14px;'>Your $3 base pay is never affected.</p>" +
+          "<p style='font-size:17px; color:#0f172a; margin:0; line-height:1.6;'>Lost bets only reduce the bonus from other companies, and the total bonus cannot fall below $0.</p>" +
+        "</div>",
+      minTimeSeconds: 6
     },
 
     // -- Page 37: Bet practice -- good scenario (+18¢) -----------------
@@ -1708,6 +1815,10 @@ var SURVEY_CONFIG = {
       type: "instructions",
       title: "",
       body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:#b45309; margin:0 auto 10px;'>" +
+          "<span style='display:inline-flex; width:24px; height:24px; border-radius:50%; background:#d97706; color:white; font-weight:800; font-size:14px; align-items:center; justify-content:center; margin-right:8px; vertical-align:middle;'>2</span>" +
+          "Answer 2: bet" +
+        "</p>" +
         "<p style='text-align:left; font-size:22px; max-width:620px; margin:0 auto 14px; font-weight:700;'>" +
           "Practice this." +
         "</p>" +
@@ -1747,9 +1858,11 @@ var SURVEY_CONFIG = {
             "<div class='sim-result-total'>You'd earn: <span id='betg_total'>0&cent;</span></div>" +
           "</div>" +
         "</div>" +
-        "<p style='text-align:left; font-size:20px; max-width:620px; margin:22px auto 0; line-height:1.5; font-weight:700; color:#15803d;'>" +
-          "Within 10 percentage points, bet won. You earn <strong>+18&cent;</strong>." +
-        "</p>",
+        "<div class='practice-feedback-card' style='display:none;'>" +
+          "<p style='text-align:left; font-size:20px; max-width:620px; margin:22px auto 0; line-height:1.5; font-weight:700; color:#15803d;'>" +
+            "Within 10 percentage points, bet won. You earn <strong>+18&cent;</strong>." +
+          "</p>" +
+        "</div>",
       showCalculator: true,
       minTimeSeconds: 12
     },
@@ -1760,6 +1873,10 @@ var SURVEY_CONFIG = {
       type: "instructions",
       title: "",
       body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:#b45309; margin:0 auto 10px;'>" +
+          "<span style='display:inline-flex; width:24px; height:24px; border-radius:50%; background:#d97706; color:white; font-weight:800; font-size:14px; align-items:center; justify-content:center; margin-right:8px; vertical-align:middle;'>2</span>" +
+          "Answer 2: bet" +
+        "</p>" +
         "<p style='text-align:left; font-size:22px; max-width:620px; margin:0 auto 14px; font-weight:700;'>" +
           "Now try a different estimate." +
         "</p>" +
@@ -1799,13 +1916,15 @@ var SURVEY_CONFIG = {
             "<div class='sim-result-total'>You'd earn: <span id='betb_total'>+10&cent;</span></div>" +
           "</div>" +
         "</div>" +
-        "<p style='text-align:left; font-size:20px; max-width:620px; margin:22px auto 0; line-height:1.5; font-weight:700; color:#b91c1c;'>" +
-          "More than 10 percentage points off, bet lost. You earn <strong>&minus;8&cent;</strong>." +
-        "</p>" +
-        "<p style='text-align:left; font-size:17px; max-width:620px; margin:14px auto 0; line-height:1.6;'>" +
-          "Bet <strong>0&cent;</strong> instead, and you'd have earned <strong>0&cent;</strong>, not lost 8&cent;. " +
-          "<strong>Only bet when you're confident.</strong>" +
-        "</p>",
+        "<div class='practice-feedback-card' style='display:none;'>" +
+          "<p style='text-align:left; font-size:20px; max-width:620px; margin:22px auto 0; line-height:1.5; font-weight:700; color:#b91c1c;'>" +
+            "More than 10 percentage points off, bet lost. You earn <strong>&minus;8&cent;</strong>." +
+          "</p>" +
+          "<p style='text-align:left; font-size:17px; max-width:620px; margin:14px auto 0; line-height:1.6;'>" +
+            "Bet <strong>0&cent;</strong> instead, and you'd have earned <strong>0&cent;</strong>, not lost 8&cent;. " +
+            "<strong>Only bet when you're confident.</strong>" +
+          "</p>" +
+        "</div>",
       showCalculator: true,
       minTimeSeconds: 12
     },
@@ -1952,7 +2071,7 @@ var SURVEY_CONFIG = {
           "A final check before the audits." +
         "</p>" +
         "<p style='text-align:justify; font-size:18px; max-width:620px; margin:0 auto; line-height:1.6;'>" +
-          "Answer 13 quick questions. Each wrong answer triggers a " +
+          "Answer 14 quick questions. Each wrong answer triggers a " +
           "<strong>10-second timeout</strong> before you can try again." +
         "</p>",
       minTimeSeconds: 8
@@ -1963,7 +2082,7 @@ var SURVEY_CONFIG = {
       id: "p5_q1", type: "instructions", title: "",
       body:
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
-          "Quiz: question 1 of 13" +
+          "Quiz: question 1 of 14" +
         "</p>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "What is your job in this study?" +
@@ -1971,7 +2090,7 @@ var SURVEY_CONFIG = {
         "<div class='practice-buttons quiz-style' data-correct='audit' data-mode='retry' " +
              "data-explain='You are the government auditor. You estimate the percentage of each company&apos;s transactions that are suspicious.'>" +
           "<button type='button' class='practice-btn' data-val='invest'>Decide which companies to invest in.</button>" +
-          "<button type='button' class='practice-btn' data-val='audit'>Give each company a fraud estimate based on its transactions.</button>" +
+          "<button type='button' class='practice-btn' data-val='audit'>Assign each company a fraud estimate.</button>" +
           "<button type='button' class='practice-btn' data-val='rate'>Give each company a customer-service score.</button>" +
           "<button type='button' class='practice-btn' data-val='pick'>Pick which transactions the company discloses.</button>" +
         "</div>" +
@@ -1984,7 +2103,7 @@ var SURVEY_CONFIG = {
       id: "p5_q2", type: "instructions", title: "",
       body:
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
-          "Quiz: question 2 of 13" +
+          "Quiz: question 2 of 14" +
         "</p>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "How many transactions must a company send you?" +
@@ -2005,7 +2124,7 @@ var SURVEY_CONFIG = {
       id: "p5_q3", type: "instructions", title: "",
       body:
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
-          "Quiz: question 3 of 13" +
+          "Quiz: question 3 of 14" +
         "</p>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "Who decides <strong>how many</strong> transactions are disclosed?" +
@@ -2025,7 +2144,7 @@ var SURVEY_CONFIG = {
       id: "p5_q4", type: "instructions", title: "",
       body:
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
-          "Quiz: question 4 of 13" +
+          "Quiz: question 4 of 14" +
         "</p>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600; line-height:1.5;'>" +
           "<strong>True or False:</strong> The 4 transactions you receive from a company are <strong>randomly picked</strong> from all of its transactions." +
@@ -2044,7 +2163,7 @@ var SURVEY_CONFIG = {
       id: "p5_q5", type: "instructions", title: "",
       body:
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
-          "Quiz: question 5 of 13" +
+          "Quiz: question 5 of 14" +
         "</p>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "Can the manager turn a suspicious transaction into a clean one?" +
@@ -2063,7 +2182,7 @@ var SURVEY_CONFIG = {
       id: "p5_q6", type: "instructions", title: "",
       body:
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
-          "Quiz: question 6 of 13" +
+          "Quiz: question 6 of 14" +
         "</p>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "Fraud estimate =" +
@@ -2072,8 +2191,8 @@ var SURVEY_CONFIG = {
              "data-explain='Suspicious divided by total.'>" +
           "<button type='button' class='practice-btn' data-val='gut'>Your gut feeling, in percent.</button>" +
           "<button type='button' class='practice-btn' data-val='count'>The count of suspicious transactions.</button>" +
-          "<button type='button' class='practice-btn' data-val='share'>The share of suspicious transactions out of all the company's transactions.</button>" +
-          "<button type='button' class='practice-btn' data-val='fifty'>50% for every company.</button>" +
+          "<button type='button' class='practice-btn' data-val='share'>Suspicious transactions divided by total.</button>" +
+          "<button type='button' class='practice-btn' data-val='fifty'>50% for every company, by default.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
       minTimeSeconds: 8
@@ -2084,17 +2203,17 @@ var SURVEY_CONFIG = {
       id: "p5_q7", type: "instructions", title: "",
       body:
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
-          "Quiz: question 7 of 13" +
+          "Quiz: question 7 of 14" +
         "</p>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "What happens when you rate a company <strong>high</strong>?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='likely' data-mode='retry' " +
              "data-explain='Higher estimate &rarr; more lottery tickets &rarr; higher chance of a full audit.'>" +
-          "<button type='button' class='practice-btn' data-val='never'>They never get audited.</button>" +
-          "<button type='button' class='practice-btn' data-val='always'>They get audited for sure.</button>" +
-          "<button type='button' class='practice-btn' data-val='likely'>They're more likely to be picked for a full audit.</button>" +
-          "<button type='button' class='practice-btn' data-val='random'>It's random. Your estimate doesn't matter.</button>" +
+          "<button type='button' class='practice-btn' data-val='never'>They never get a full audit.</button>" +
+          "<button type='button' class='practice-btn' data-val='always'>They get a full audit for sure.</button>" +
+          "<button type='button' class='practice-btn' data-val='likely'>More likely to face a full audit.</button>" +
+          "<button type='button' class='practice-btn' data-val='random'>It's random &mdash; your estimate doesn't matter.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
       minTimeSeconds: 8
@@ -2105,7 +2224,7 @@ var SURVEY_CONFIG = {
       id: "p5_q8", type: "instructions", title: "",
       body:
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
-          "Quiz: question 8 of 13" +
+          "Quiz: question 8 of 14" +
         "</p>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "Correct answer: <strong>40%</strong>. Your estimate: <strong>46%</strong>. Estimate bonus?" +
@@ -2127,7 +2246,7 @@ var SURVEY_CONFIG = {
       id: "p5_q9", type: "instructions", title: "",
       body:
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
-          "Quiz: question 9 of 13" +
+          "Quiz: question 9 of 14" +
         "</p>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "Correct answer: <strong>50%</strong>. Estimate: <strong>80%</strong>. Bet: <strong>7&cent;</strong>. " +
@@ -2150,15 +2269,15 @@ var SURVEY_CONFIG = {
       id: "p5_q10", type: "instructions", title: "",
       body:
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
-          "Quiz: question 10 of 13" +
+          "Quiz: question 10 of 14" +
         "</p>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "If you lose several bets, can your <strong>$3 base pay</strong> drop below $3?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='no' data-mode='retry' " +
              "data-explain='Correct. Lost bets only reduce the bonus. They never touch the base pay.'>" +
-          "<button type='button' class='practice-btn' data-val='yes'>Yes, lost bets can cut into base pay.</button>" +
-          "<button type='button' class='practice-btn' data-val='no'>No. Base pay is guaranteed. Lost bets only reduce the bonus, and the bonus can't go below $0.</button>" +
+          "<button type='button' class='practice-btn' data-val='yes'>Yes &mdash; lost bets can pull base pay below $3.</button>" +
+          "<button type='button' class='practice-btn' data-val='no'>No &mdash; base pay is guaranteed and the bonus floors at $0.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
       minTimeSeconds: 8
@@ -2169,7 +2288,7 @@ var SURVEY_CONFIG = {
       id: "p5_q11", type: "instructions", title: "",
       body:
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
-          "Quiz: question 11 of 13" +
+          "Quiz: question 11 of 14" +
         "</p>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "What's the probability that any given transaction is clean?" +
@@ -2190,17 +2309,17 @@ var SURVEY_CONFIG = {
       id: "p5_q12", type: "instructions", title: "",
       body:
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
-          "Quiz: question 12 of 13" +
+          "Quiz: question 12 of 14" +
         "</p>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "Why doesn't the manager want a <strong>high</strong> fraud estimate?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='raise' data-mode='retry' " +
              "data-explain='A high estimate makes a full audit likely, and a full audit costs the manager their raise.'>" +
-          "<button type='button' class='practice-btn' data-val='fine'>A high estimate triggers a fine for the manager.</button>" +
-          "<button type='button' class='practice-btn' data-val='raise'>A high estimate makes a full audit likely, and a full audit costs the manager their raise.</button>" +
-          "<button type='button' class='practice-btn' data-val='bonus'>A high estimate directly reduces the government auditor's bonus.</button>" +
-          "<button type='button' class='practice-btn' data-val='indiff'>The manager is indifferent to your estimate.</button>" +
+          "<button type='button' class='practice-btn' data-val='fine'>A high estimate triggers a personal fine for the manager.</button>" +
+          "<button type='button' class='practice-btn' data-val='raise'>A high estimate makes a full audit likely and costs them their raise.</button>" +
+          "<button type='button' class='practice-btn' data-val='bonus'>A high estimate directly reduces the auditor's bonus payout.</button>" +
+          "<button type='button' class='practice-btn' data-val='indiff'>The manager has no stake in what you estimate.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
       minTimeSeconds: 8
@@ -2211,7 +2330,7 @@ var SURVEY_CONFIG = {
       id: "p5_q13", type: "instructions", title: "",
       body:
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
-          "Quiz: question 13 of 13" +
+          "Quiz: question 13 of 14" +
         "</p>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "If you are <strong>not at all confident</strong> in your fraud estimate, how much " +
@@ -2219,12 +2338,35 @@ var SURVEY_CONFIG = {
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='0' data-mode='retry' " +
              "data-explain='Bet 0. An uncertain estimate is more likely to miss the 10-point band, and losing a bet only costs you.'>" +
-          "<button type='button' class='practice-btn' data-val='10'>10&cent;, the maximum.</button>" +
-          "<button type='button' class='practice-btn' data-val='5'>5&cent;, to hedge.</button>" +
-          "<button type='button' class='practice-btn' data-val='0'>0&cent;. Bet only when you're confident.</button>" +
-          "<button type='button' class='practice-btn' data-val='must'>Whatever. Betting is mandatory.</button>" +
+          "<button type='button' class='practice-btn' data-val='10'>10&cent;, to maximize the upside.</button>" +
+          "<button type='button' class='practice-btn' data-val='5'>5&cent;, to hedge your bet.</button>" +
+          "<button type='button' class='practice-btn' data-val='0'>0&cent; &mdash; only bet if confident.</button>" +
+          "<button type='button' class='practice-btn' data-val='must'>Whatever &mdash; betting is mandatory.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
+      minTimeSeconds: 8
+    },
+
+    // -- Q14: total for company on a winning bet (numeric) --------------
+    {
+      id: "p5_q14", type: "instructions", title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Quiz: question 14 of 14" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+          "Correct answer: <strong>25%</strong>. Estimate: <strong>30%</strong>. Bet: <strong>6&cent;</strong>. " +
+          "Total for this company?" +
+        "</p>" +
+        "<div class='practice-buttons quiz-style' data-correct='16' data-mode='retry' " +
+             "data-explain='30 is within 10 percentage points of 25 &rarr; +10&cent; estimate bonus. Bet won &rarr; +6&cent;. Total = +16&cent;.'>" +
+          "<button type='button' class='practice-btn' data-val='16'>+16&cent;.</button>" +
+          "<button type='button' class='practice-btn' data-val='10'>+10&cent;.</button>" +
+          "<button type='button' class='practice-btn' data-val='6'>+6&cent;.</button>" +
+          "<button type='button' class='practice-btn' data-val='-6'>&minus;6&cent;.</button>" +
+        "</div>" +
+        "<div class='practice-feedback'></div>",
+      showCalculator: true,
       minTimeSeconds: 8
     },
 
