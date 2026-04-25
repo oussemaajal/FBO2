@@ -629,7 +629,7 @@ var SURVEY_CONFIG = {
              "data-explain='The fraud estimate is the share of a company&apos;s transactions that are suspicious, expressed as a percentage.'>" +
           "<button type='button' class='practice-btn' data-val='gut'>Your gut feeling about the company, in percent.</button>" +
           "<button type='button' class='practice-btn' data-val='count'>The total number of suspicious transactions.</button>" +
-          "<button type='button' class='practice-btn' data-val='share'>Suspicious transactions divided by total transactions.</button>" +
+          "<button type='button' class='practice-btn' data-val='share'>The share of suspicious transactions out of all its transactions.</button>" +
           "<button type='button' class='practice-btn' data-val='fifty'>Always 50%, set by law for every company.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
@@ -2189,10 +2189,10 @@ var SURVEY_CONFIG = {
           "Fraud estimate =" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='share' data-mode='retry' " +
-             "data-explain='Suspicious divided by total.'>" +
+             "data-explain='The fraud estimate is the share of a company&apos;s transactions that are suspicious.'>" +
           "<button type='button' class='practice-btn' data-val='gut'>Your gut feeling about the company, in percent.</button>" +
           "<button type='button' class='practice-btn' data-val='count'>The total count of suspicious transactions.</button>" +
-          "<button type='button' class='practice-btn' data-val='share'>Suspicious transactions divided by total transactions.</button>" +
+          "<button type='button' class='practice-btn' data-val='share'>The share of suspicious transactions out of all its transactions.</button>" +
           "<button type='button' class='practice-btn' data-val='fifty'>Always 50% by default, the same for every company.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
