@@ -629,8 +629,8 @@ var SURVEY_CONFIG = {
              "data-explain='The fraud estimate is the share of a company&apos;s transactions that are suspicious, expressed as a percentage.'>" +
           "<button type='button' class='practice-btn' data-val='gut'>Your gut feeling about the company, in percent.</button>" +
           "<button type='button' class='practice-btn' data-val='count'>The total number of suspicious transactions.</button>" +
-          "<button type='button' class='practice-btn' data-val='share'>Suspicious transactions divided by total.</button>" +
-          "<button type='button' class='practice-btn' data-val='fifty'>Always 50%, by law.</button>" +
+          "<button type='button' class='practice-btn' data-val='share'>Suspicious transactions divided by total transactions.</button>" +
+          "<button type='button' class='practice-btn' data-val='fifty'>Always 50%, set by law for every company.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
       minTimeSeconds: 6
@@ -843,10 +843,10 @@ var SURVEY_CONFIG = {
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='likely' data-mode='retry' " +
              "data-explain='A higher estimate means more lottery tickets, and a higher chance of a full audit, though not a guarantee.'>" +
-          "<button type='button' class='practice-btn' data-val='never'>They never get a full audit.</button>" +
-          "<button type='button' class='practice-btn' data-val='always'>They get a full audit for sure.</button>" +
-          "<button type='button' class='practice-btn' data-val='likely'>More likely to face a full audit.</button>" +
-          "<button type='button' class='practice-btn' data-val='random'>It&apos;s random &mdash; your estimate doesn&apos;t matter.</button>" +
+          "<button type='button' class='practice-btn' data-val='never'>They never face a full audit.</button>" +
+          "<button type='button' class='practice-btn' data-val='always'>They face a full audit for sure.</button>" +
+          "<button type='button' class='practice-btn' data-val='likely'>They are more likely to face a full audit.</button>" +
+          "<button type='button' class='practice-btn' data-val='random'>Audits are random &mdash; your estimate doesn&apos;t matter.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
       minTimeSeconds: 5
@@ -1169,8 +1169,8 @@ var SURVEY_CONFIG = {
              "data-explain='Right. A random transaction could come from a mostly-clean, half-and-half, or mostly-suspicious company. One doesn&apos;t tell you the rest.'>" +
           "<button type='button' class='practice-btn' data-val='mostly_clean'>Most of them are probably clean too.</button>" +
           "<button type='button' class='practice-btn' data-val='mostly_susp'>Most of them are probably suspicious too.</button>" +
-          "<button type='button' class='practice-btn' data-val='nothing'>Nothing reliable &mdash; one isn&apos;t enough.</button>" +
-          "<button type='button' class='practice-btn' data-val='half'>Roughly half should be clean too.</button>" +
+          "<button type='button' class='practice-btn' data-val='nothing'>Nothing reliable &mdash; one transaction isn&apos;t enough.</button>" +
+          "<button type='button' class='practice-btn' data-val='half'>Roughly half of them should be clean too.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
       minTimeSeconds: 6
@@ -2190,10 +2190,10 @@ var SURVEY_CONFIG = {
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='share' data-mode='retry' " +
              "data-explain='Suspicious divided by total.'>" +
-          "<button type='button' class='practice-btn' data-val='gut'>Your gut feeling, in percent.</button>" +
-          "<button type='button' class='practice-btn' data-val='count'>The count of suspicious transactions.</button>" +
-          "<button type='button' class='practice-btn' data-val='share'>Suspicious transactions divided by total.</button>" +
-          "<button type='button' class='practice-btn' data-val='fifty'>50% for every company, by default.</button>" +
+          "<button type='button' class='practice-btn' data-val='gut'>Your gut feeling about the company, in percent.</button>" +
+          "<button type='button' class='practice-btn' data-val='count'>The total count of suspicious transactions.</button>" +
+          "<button type='button' class='practice-btn' data-val='share'>Suspicious transactions divided by total transactions.</button>" +
+          "<button type='button' class='practice-btn' data-val='fifty'>Always 50% by default, the same for every company.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
       minTimeSeconds: 8
@@ -2211,10 +2211,10 @@ var SURVEY_CONFIG = {
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='likely' data-mode='retry' " +
              "data-explain='Higher estimate &rarr; more lottery tickets &rarr; higher chance of a full audit.'>" +
-          "<button type='button' class='practice-btn' data-val='never'>They never get a full audit.</button>" +
-          "<button type='button' class='practice-btn' data-val='always'>They get a full audit for sure.</button>" +
-          "<button type='button' class='practice-btn' data-val='likely'>More likely to face a full audit.</button>" +
-          "<button type='button' class='practice-btn' data-val='random'>It&apos;s random &mdash; your estimate doesn&apos;t matter.</button>" +
+          "<button type='button' class='practice-btn' data-val='never'>They never face a full audit.</button>" +
+          "<button type='button' class='practice-btn' data-val='always'>They face a full audit for sure.</button>" +
+          "<button type='button' class='practice-btn' data-val='likely'>They are more likely to face a full audit.</button>" +
+          "<button type='button' class='practice-btn' data-val='random'>Audits are random &mdash; your estimate doesn&apos;t matter.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
       minTimeSeconds: 8
@@ -2341,8 +2341,8 @@ var SURVEY_CONFIG = {
              "data-explain='Bet 0. An uncertain estimate is more likely to miss the 10-point band, and losing a bet only costs you.'>" +
           "<button type='button' class='practice-btn' data-val='10'>10&cent;, to maximize the upside.</button>" +
           "<button type='button' class='practice-btn' data-val='5'>5&cent;, to hedge your bet.</button>" +
-          "<button type='button' class='practice-btn' data-val='0'>0&cent; &mdash; only bet if confident.</button>" +
-          "<button type='button' class='practice-btn' data-val='must'>Whatever &mdash; betting is mandatory.</button>" +
+          "<button type='button' class='practice-btn' data-val='0'>0&cent;, since you only bet if confident.</button>" +
+          "<button type='button' class='practice-btn' data-val='must'>Any amount, since betting is mandatory.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
       minTimeSeconds: 8
