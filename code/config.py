@@ -1,10 +1,16 @@
 """
 FBO 2 -- Project Configuration
 Selection Neglect and Strategic Non-Disclosure
+
+Design v3.1: Within-subject, 9 trials
+  N = total signals in pool: {10, 20, 50}
+  D = disclosed signals: 4 (fixed)
+  d_N = Normal among disclosed: {0, D-1=3, D=4}
 """
 
 import os
 from pathlib import Path
+from math import lgamma, log, exp
 
 # =============================================================================
 # PATHS
