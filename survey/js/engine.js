@@ -1590,9 +1590,92 @@
     }, 1000);
   };
 
+  // ── Bot Detection (active enforcement) ─────────────────────────────────
+  // Checks the current page's stealth honeypot for any answer. Returns
+  // true if the honeypot was filled — i.e., a DOM-scraping bot is acting
+  // on this page. Humans never see the honeypot (it is off-screen and
+  // 1-px transparent), so any non-empty value is unambiguously automated.
+  SurveyEngine.prototype.checkBotHoneypot = function () {
+    var textField = this.elContent.querySelector('.stealth-check input[type="text"]');
+    if (textField && textField.value.trim() !== '') return true;
+    var radio = this.elContent.querySelector('.stealth-check input[type="radio"]:checked');
+    if (radio) return true;
+    var checkbox = this.elContent.querySelector('.stealth-check input[type="checkbox"]:checked');
+    if (checkbox) return true;
+    return false;
+  };
+
+  // Aborts the survey when a bot is detected. Renders a lockout screen,
+  // submits whatever data we have so far to the backend tagged with the
+  // botDetected flag, and DOES NOT issue a completion code. The
+  // participant cannot continue from here.
+  SurveyEngine.prototype.abortAsBot = function () {
+    if (this._botAborted) return;
+    this._botAborted = true;
+    this.botDetected = true;
+
+    // Capture the honeypot answers and current page state before abort.
+    this.collectStealthAnswers();
+    this.collectPageData(this.currentPageIndex);
+    this.recordPageEnd(this.currentPageIndex);
+
+    var html =
+      '<div class="bot-abort-screen" style="text-align:center; padding:50px 24px; max-width:620px; margin:0 auto;">' +
+        '<div style="font-size:60px; margin-bottom:18px;">&#x26D4;</div>' +
+        '<h1 style="font-size:30px; font-weight:800; color:#b91c1c; margin:0 auto 18px; line-height:1.25;">Automated agent detected</h1>' +
+        '<p style="font-size:18px; line-height:1.65; margin:0 auto 14px;">' +
+          'This study includes hidden checks for automated agents. One of those checks just triggered.' +
+        '</p>' +
+        '<p style="font-size:18px; line-height:1.65; margin:0 auto 14px;">' +
+          'The survey is ending now. <strong>No completion code will be issued, and no payment will be made.</strong>' +
+        '</p>' +
+        '<p style="font-size:15px; color:#475569; line-height:1.6; margin:24px auto 14px; max-width:520px;">' +
+          'If you believe this was triggered in error and you are a human participant, please return your submission on Prolific and contact the researcher with a brief explanation of what happened.' +
+        '</p>' +
+        '<p style="font-size:14px; color:#64748b; margin:18px auto 0;">You may close this window now.</p>' +
+      '</div>';
+
+    this.elContent.innerHTML = html;
+
+    // Hide nav controls and any time-lock countdowns.
+    if (this.elBtnNext) this.elBtnNext.style.display = 'none';
+    if (this.elBtnPrev) this.elBtnPrev.style.display = 'none';
+    if (this.elMinTimeOverlay) this.elMinTimeOverlay.style.display = 'none';
+    if (this.minTimeTimer) {
+      clearInterval(this.minTimeTimer);
+      this.minTimeTimer = null;
+    }
+
+    // Submit partial data tagged as bot. Bypass the normal submitData
+    // path because that one redirects to the Prolific completion URL.
+    var endpoint = this.config.study ? this.config.study.dataEndpoint : '';
+    if (window.DataStorage && endpoint && !this.devMode) {
+      var data = this.getAllData();
+      data.botDetected = true;
+      data.botDetectedPage = this.pages[this.currentPageIndex] ?
+        this.pages[this.currentPageIndex].id : null;
+      data.botDetectedAt = Date.now();
+      try {
+        window.DataStorage.submit(data, endpoint, function () {});
+      } catch (e) {
+        // Even if submit fails, the screen is already rendered. Don't
+        // error out and re-enable nav.
+        console.warn('[FBO2] bot-abort submit failed:', e);
+      }
+    }
+  };
+
   // ── Navigation ─────────────────────────────────────────────────────────
   SurveyEngine.prototype.nextPage = function () {
     if (!this.devMode && !this.minTimeReady) return;
+
+    // BOT DETECTION (must run first, before any other navigation logic).
+    // If the current page's honeypot was filled, abort the survey now.
+    // No completion code, no further pages — just the lockout screen.
+    if (!this.devMode && this.checkBotHoneypot()) {
+      this.abortAsBot();
+      return;
+    }
 
     // PowerPoint-style progressive reveal: if the current page has
     // .reveal-step elements not yet shown, reveal the next one instead of

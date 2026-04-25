@@ -220,7 +220,14 @@ var SURVEY_CONFIG = {
         "<p style='text-align:justify;'><strong>Confidentiality.</strong> Anonymous. We " +
         "collect your Prolific ID only for payment.</p>" +
         "<p style='text-align:justify;'><strong>Voluntary.</strong> You may withdraw at " +
-        "any time by closing this window.</p>",
+        "any time by closing this window.</p>" +
+        "<p style='text-align:justify; margin-top:14px; padding:12px 14px; " +
+        "background:#fee2e2; border-left:4px solid #b91c1c; border-radius:4px;'>" +
+        "<strong style='color:#b91c1c; text-transform:uppercase; letter-spacing:0.5px;'>Important.</strong> " +
+        "This study includes hidden checks for automated agents (e.g., AI assistants " +
+        "completing the form on your behalf). If detected, the survey will end " +
+        "immediately. <strong>No completion code will be issued, and no payment will " +
+        "be made.</strong> Please complete the study yourself.</p>",
       mustAgree: true,
       declineMessage: "You must agree to participate in order to continue.",
       minTimeSeconds: 15
