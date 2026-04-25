@@ -2721,7 +2721,6 @@
     // backward compat; the UI presents it as "your bet."
     html += '<div class="dv-card">';
     html += '<div class="question-prompt">Your bet on being within 10 percentage points of the correct answer.<span class="question-required">*</span></div>';
-    html += '<div class="slider-sub-prompt">Win what you bet if you\'re right. Lose what you bet if you\'re wrong. Default: <strong>0&cent;</strong> (no bet).</div>';
     html += '<div class="slider-sentence">You bet: <span class="slider-sentence-value" id="confidence_display">0&cent;</span></div>';
     // Bet-slider endpoint labels removed (the 0¢/10¢ numbers under the
     // slider track already carry the range). Less visual noise on trial pages.

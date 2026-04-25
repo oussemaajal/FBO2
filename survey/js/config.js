@@ -16,7 +16,7 @@
      ACT VII  -- Demographics + debrief
 
    Bonus rule:
-     base = $3.00, guaranteed.
+     base = $4.00, guaranteed.
      per company:
        within 10 percentage points of truth  :  +10¢ answer  +  bet_cents (win bet)
        outside                                :   0¢         -  bet_cents (lose bet)
@@ -50,7 +50,7 @@ var SURVEY_CONFIG = {
   bonus: {
     enabled: true,
     currency: "USD",
-    fixedBase: 3.00,          // guaranteed base pay (untouched by penalties)
+    fixedBase: 4.00,          // guaranteed base pay (untouched by penalties)
     answerCents: 10,          // 10¢ if estimate is within threshold
     betMaxCents: 10,          // bet slider 0..10 cents
     accuracyThreshold: 0.10,  // "within 10 percentage points"
@@ -213,7 +213,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:justify;'><strong>What you'll do.</strong> Learn a simple " +
         "auditing task, then go through 30 auditing rounds.</p>" +
         "<p style='text-align:justify;'><strong>Time.</strong> About 20 minutes.</p>" +
-        "<p style='text-align:justify;'><strong>Pay.</strong> $3.00 base + up to $6.00 " +
+        "<p style='text-align:justify;'><strong>Pay.</strong> $4.00 base + up to $6.00 " +
         "performance bonus. Base pay is <strong>guaranteed</strong>; no penalty can " +
         "reduce it.</p>" +
         "<p style='text-align:justify;'><strong>Risks.</strong> None beyond everyday life.</p>" +
@@ -839,7 +839,7 @@ var SURVEY_CONFIG = {
           "<button type='button' class='practice-btn' data-val='never'>They never get a full audit.</button>" +
           "<button type='button' class='practice-btn' data-val='always'>They get a full audit for sure.</button>" +
           "<button type='button' class='practice-btn' data-val='likely'>More likely to face a full audit.</button>" +
-          "<button type='button' class='practice-btn' data-val='random'>It's random &mdash; your estimate doesn't matter.</button>" +
+          "<button type='button' class='practice-btn' data-val='random'>It&apos;s random &mdash; your estimate doesn&apos;t matter.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
       minTimeSeconds: 5
@@ -855,8 +855,8 @@ var SURVEY_CONFIG = {
       type: "instructions",
       title: "",
       body:
-        "<p style='text-align:justify; font-size:22px; max-width:620px; margin:0 auto 12px;'>" +
-          "Here's the catch." +
+        "<p style='text-align:justify; font-size:22px; max-width:620px; margin:0 auto 12px; font-weight:700;'>" +
+          "Here&apos;s the catch." +
         "</p>" +
         "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 18px; font-weight:700;'>" +
           "A company has many transactions, but the law requires it to send you, the auditor, only " +
@@ -1168,7 +1168,7 @@ var SURVEY_CONFIG = {
              "data-explain='Right. A random transaction could come from a mostly-clean, half-and-half, or mostly-suspicious company. One doesn&apos;t tell you the rest.'>" +
           "<button type='button' class='practice-btn' data-val='mostly_clean'>Most of them are probably clean too.</button>" +
           "<button type='button' class='practice-btn' data-val='mostly_susp'>Most of them are probably suspicious too.</button>" +
-          "<button type='button' class='practice-btn' data-val='nothing'>Nothing reliable &mdash; one isn't enough.</button>" +
+          "<button type='button' class='practice-btn' data-val='nothing'>Nothing reliable &mdash; one isn&apos;t enough.</button>" +
           "<button type='button' class='practice-btn' data-val='half'>Roughly half should be clean too.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
@@ -1215,8 +1215,8 @@ var SURVEY_CONFIG = {
           "</svg>" +
           "<div class='manager-badge-label'>MANAGER</div>" +
         "</div>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto;'>" +
-          "The manager is responsible for sending you the company's transactions for the preliminary audit." +
+        "<p style='text-align:justify; font-size:24px; max-width:620px; margin:0 auto; font-weight:700;'>" +
+          "The manager is responsible for sending you the company&apos;s transactions for the preliminary audit." +
         "</p>",
       minTimeSeconds: 7
     },
@@ -1228,7 +1228,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:justify; font-size:24px; line-height:1.35; max-width:620px; margin:0 auto 18px; font-weight:700;'>" +
-          "Here's the catch: the manager knows the type of every transaction in the company, and " +
+          "<strong>Here&apos;s the catch:</strong> the manager knows the type of every transaction in the company, and " +
           "decides <strong>which 4</strong> are sent for the preliminary audit." +
         "</p>" +
         "<div class='manager-above-wrap'>" +
@@ -1501,7 +1501,7 @@ var SURVEY_CONFIG = {
              "data-explain='A high estimate makes a full audit likely, and a full audit costs the manager their raise.'>" +
           "<button type='button' class='practice-btn' data-val='fine'>A high estimate triggers a personal fine for the manager.</button>" +
           "<button type='button' class='practice-btn' data-val='raise'>A high estimate makes a full audit likely and costs them their raise.</button>" +
-          "<button type='button' class='practice-btn' data-val='bonus'>A high estimate lowers the government auditor's bonus payout.</button>" +
+          "<button type='button' class='practice-btn' data-val='bonus'>A high estimate lowers the government auditor&apos;s bonus payout.</button>" +
           "<button type='button' class='practice-btn' data-val='indifferent'>The manager has no stake in what you estimate.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
@@ -1561,7 +1561,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 26px; font-weight:700;'>" +
-          "For each company, you give <strong>two</strong> answers." +
+          "For each audited company, you are required to provide <strong>two</strong> answers." +
         "</p>" +
         "<div class='two-answers-row'>" +
           "<div class='answer-card'>" +
@@ -1656,7 +1656,7 @@ var SURVEY_CONFIG = {
         "</div>" +
         "<div class='practice-feedback-card' style='display:none;'>" +
           "<p style='text-align:left; font-size:20px; max-width:620px; margin:22px auto 0; line-height:1.5; font-weight:700; color:#b91c1c;'>" +
-            "At 50%, you're 15 percentage points off the correct answer. You earn <strong>0&cent;</strong> on this company." +
+            "At 50%, you&apos;re 15 percentage points off the correct answer. You earn <strong>0&cent;</strong> on this company." +
           "</p>" +
         "</div>",
       showCalculator: true,
@@ -1701,7 +1701,7 @@ var SURVEY_CONFIG = {
         "</div>" +
         "<div class='practice-feedback-card' style='display:none;'>" +
           "<p style='text-align:left; font-size:20px; max-width:620px; margin:22px auto 0; line-height:1.5; font-weight:700; color:#15803d;'>" +
-            "At 30%, you're within 10 percentage points of 35%. You earn <strong>+10&cent;</strong>." +
+            "At 30%, you&apos;re within 10 percentage points of 35%. You earn <strong>+10&cent;</strong>." +
           "</p>" +
         "</div>",
       showCalculator: true,
@@ -1787,7 +1787,7 @@ var SURVEY_CONFIG = {
           "Answer 2: bet" +
         "</p>" +
         "<p style='text-align:center; font-size:22px; max-width:620px; margin:0 auto 18px; font-weight:700;'>" +
-          "For example, suppose you bet <strong>5&cent;</strong> on your estimate:" +
+          "For example, suppose <strong>you bet 5&cent;</strong> on your estimate:" +
         "</p>" +
         "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 14px; line-height:1.65; padding-left:22px;'>" +
           "<li>Within 10 percentage points &rarr; you <strong>win the bet</strong>: <strong>+5&cent;</strong>.</li>" +
@@ -1796,14 +1796,14 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 9
     },
 
-    // -- Page 37a: Bet safety -- $3 base pay never affected (highlighted) --
+    // -- Page 37a: Bet safety -- $4 base pay never affected (highlighted) --
     {
       id: "p4_inst_bet_safety",
       type: "instructions",
       title: "",
       body:
         "<div style='max-width:560px; margin:80px auto 0; padding:36px 32px; background:#dcfce7; border-left:6px solid #15803d; border-radius:8px; text-align:center;'>" +
-          "<p style='font-size:24px; font-weight:800; color:#0f172a; margin:0 0 14px;'>Your $3 base pay is never affected.</p>" +
+          "<p style='font-size:24px; font-weight:800; color:#0f172a; margin:0 0 14px;'>Your $4 base pay is never affected.</p>" +
           "<p style='font-size:17px; color:#0f172a; margin:0; line-height:1.6;'>Lost bets only reduce the bonus from other companies, and the total bonus cannot fall below $0.</p>" +
         "</div>",
       minTimeSeconds: 6
@@ -2147,7 +2147,7 @@ var SURVEY_CONFIG = {
           "Quiz: question 4 of 14" +
         "</p>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600; line-height:1.5;'>" +
-          "<strong>True or False:</strong> The 4 transactions you receive from a company are <strong>randomly picked</strong> from all of its transactions." +
+          "The 4 transactions you receive from a company are <strong>randomly picked</strong> from all of its transactions." +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='false' data-mode='retry' " +
              "data-explain='False. The manager picks which 4 to send.'>" +
@@ -2213,7 +2213,7 @@ var SURVEY_CONFIG = {
           "<button type='button' class='practice-btn' data-val='never'>They never get a full audit.</button>" +
           "<button type='button' class='practice-btn' data-val='always'>They get a full audit for sure.</button>" +
           "<button type='button' class='practice-btn' data-val='likely'>More likely to face a full audit.</button>" +
-          "<button type='button' class='practice-btn' data-val='random'>It's random &mdash; your estimate doesn't matter.</button>" +
+          "<button type='button' class='practice-btn' data-val='random'>It&apos;s random &mdash; your estimate doesn&apos;t matter.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
       minTimeSeconds: 8
@@ -2272,11 +2272,11 @@ var SURVEY_CONFIG = {
           "Quiz: question 10 of 14" +
         "</p>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
-          "If you lose several bets, can your <strong>$3 base pay</strong> drop below $3?" +
+          "If you lose several bets, can your <strong>$4 base pay</strong> drop below $4?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='no' data-mode='retry' " +
              "data-explain='Correct. Lost bets only reduce the bonus. They never touch the base pay.'>" +
-          "<button type='button' class='practice-btn' data-val='yes'>Yes &mdash; lost bets can pull base pay below $3.</button>" +
+          "<button type='button' class='practice-btn' data-val='yes'>Yes &mdash; lost bets can pull base pay below $4.</button>" +
           "<button type='button' class='practice-btn' data-val='no'>No &mdash; base pay is guaranteed and the bonus floors at $0.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
@@ -2318,7 +2318,7 @@ var SURVEY_CONFIG = {
              "data-explain='A high estimate makes a full audit likely, and a full audit costs the manager their raise.'>" +
           "<button type='button' class='practice-btn' data-val='fine'>A high estimate triggers a personal fine for the manager.</button>" +
           "<button type='button' class='practice-btn' data-val='raise'>A high estimate makes a full audit likely and costs them their raise.</button>" +
-          "<button type='button' class='practice-btn' data-val='bonus'>A high estimate directly reduces the auditor's bonus payout.</button>" +
+          "<button type='button' class='practice-btn' data-val='bonus'>A high estimate directly reduces the auditor&apos;s bonus payout.</button>" +
           "<button type='button' class='practice-btn' data-val='indiff'>The manager has no stake in what you estimate.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
