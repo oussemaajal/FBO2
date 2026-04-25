@@ -2733,7 +2733,7 @@ var SURVEY_CONFIG = {
         },
         {
           id: "finance_familiarity",
-          prompt: "How familiar are you with how companies disclose financial information (for example, earnings reports or audits)?",
+          prompt: "How familiar are you with how companies share information about themselves (for example, earnings reports or audits)?",
           type: "likert", required: true, min: 1, max: 5,
           minLabel: "Not at all", maxLabel: "Very familiar"
         },
@@ -2751,7 +2751,7 @@ var SURVEY_CONFIG = {
         },
         {
           id: "manager_strategic_belief",
-          prompt: "How strongly did you believe the manager picked transactions strategically rather than randomly?",
+          prompt: "How strongly did you believe the manager picked transactions to make the company look cleaner than it really is?",
           type: "likert", required: true, min: 1, max: 5,
           minLabel: "Not at all", maxLabel: "Very strongly"
         }
