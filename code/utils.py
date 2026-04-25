@@ -95,6 +95,18 @@ class ProlificClient:
         resp.raise_for_status()
         return resp.json()
 
+    def _patch(self, endpoint: str, data: dict = None) -> dict:
+        """Partial update. Used for editing existing studies (description,
+        reward, places, filters, etc.) without recreating them."""
+        url = f"{self.base_url}/{endpoint}"
+        resp = requests.patch(url, headers=self._headers(), json=data)
+        if resp.status_code >= 400:
+            print(f"\n[Prolific API error {resp.status_code}] PATCH {endpoint}")
+            print(f"  Request body: {data}")
+            print(f"  Response: {resp.text[:2000]}\n")
+        resp.raise_for_status()
+        return resp.json()
+
     # ── Study Management ──────────────────────────────────────────────
 
     def list_studies(self) -> list:
