@@ -63,6 +63,11 @@
     // participant divided 4 / 20 (selection-neglect -> the ratio among
     // the 4 shown) vs 4 / N (awareness of the full set).
     this.calculatorEvents = [];
+    // Every click on a .practice-buttons option (attention checks,
+    // quiz questions, math practice). Captures wrong attempts that
+    // happen before the participant lands on the correct answer in
+    // retry / directional / lock modes. Persisted in raw_json.
+    this.practiceButtonEvents = [];
     // Slider trajectory log. Every 'input' event on the fraud-estimate
     // and bet sliders during a trial is recorded with timestamp + value.
     // Adjacent events with small ts gaps reconstruct drag sessions;
@@ -149,6 +154,7 @@
           this.trialResponses = saved.trialResponses || {};
           this.practiceResponses = saved.practiceResponses || {};
           this.calculatorEvents = saved.calculatorEvents || [];
+          this.practiceButtonEvents = saved.practiceButtonEvents || [];
           this.sliderEvents = saved.sliderEvents || [];
           this.navEvents = saved.navEvents || [];
           this.comprehensionAttempts = saved.comprehensionAttempts || 0;
@@ -1426,6 +1432,21 @@
           if (btn.disabled || group.classList.contains('locked')) return;
           var ok = matches(btn);
 
+          // Log every click (including the wrong ones in retry mode that
+          // would otherwise vanish into nothing). With this, downstream
+          // analysis can count how many wrong attempts each participant
+          // made on every quiz question / attention check / practice
+          // math item before reaching the correct answer. Stored in
+          // raw_json.practiceButtonEvents.
+          var pageNow = self.pages[self.currentPageIndex];
+          self.practiceButtonEvents.push({
+            ts: Date.now(),
+            pageId: pageNow ? pageNow.id : null,
+            value: btn.getAttribute('data-val'),
+            correct: ok,
+            mode: mode
+          });
+
           if (ok) {
             // Lock everything on correct
             buttons.forEach(function (b) {
@@ -2295,6 +2316,13 @@
       // with the trial it happened on. Useful for diagnosing which
       // divisor participants used (4 vs N).
       calculatorEvents: this.calculatorEvents,
+      // Every click on a .practice-buttons option (attention checks,
+      // quiz questions, practice math, retry-mode instructional items).
+      // Each event is {ts, pageId, value, correct, mode}. Captures
+      // wrong attempts before the participant gets the right answer.
+      // Lets us count "Q9 needed 5 retries" as a difficulty/numeracy
+      // signal, distinct from the time-on-page proxy.
+      practiceButtonEvents: this.practiceButtonEvents,
       // Per-integer slider movement events on fraud-trial sliders.
       // Reconstructs drag trajectories + hesitations + reversals.
       sliderEvents: this.sliderEvents,
@@ -2332,6 +2360,7 @@
       trialResponses: this.trialResponses,
       practiceResponses: this.practiceResponses,
       calculatorEvents: this.calculatorEvents,
+      practiceButtonEvents: this.practiceButtonEvents,
       sliderEvents: this.sliderEvents,
       navEvents: this.navEvents,
       comprehensionAttempts: this.comprehensionAttempts,

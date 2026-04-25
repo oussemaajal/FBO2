@@ -16,7 +16,7 @@
      ACT VII  -- Demographics + debrief
 
    Bonus rule:
-     base = $4.00, guaranteed.
+     base = $5.00, guaranteed.
      per company:
        within 10 percentage points of truth  :  +10¢ answer  +  bet_cents (win bet)
        outside                                :   0¢         -  bet_cents (lose bet)
@@ -50,7 +50,7 @@ var SURVEY_CONFIG = {
   bonus: {
     enabled: true,
     currency: "USD",
-    fixedBase: 4.00,          // guaranteed base pay (untouched by penalties)
+    fixedBase: 5.00,          // guaranteed base pay (untouched by penalties)
     answerCents: 10,          // 10¢ if estimate is within threshold
     betMaxCents: 10,          // bet slider 0..10 cents
     accuracyThreshold: 0.10,  // "within 10 percentage points"
@@ -212,8 +212,8 @@ var SURVEY_CONFIG = {
       body:
         "<p style='text-align:justify;'><strong>What you'll do.</strong> Learn a simple " +
         "auditing task, then go through 30 auditing rounds.</p>" +
-        "<p style='text-align:justify;'><strong>Time.</strong> About 20 minutes.</p>" +
-        "<p style='text-align:justify;'><strong>Pay.</strong> $4.00 base + up to $6.00 " +
+        "<p style='text-align:justify;'><strong>Time.</strong> About 25 minutes.</p>" +
+        "<p style='text-align:justify;'><strong>Pay.</strong> $5.00 base + up to $6.00 " +
         "performance bonus. Base pay is <strong>guaranteed</strong>; no penalty can " +
         "reduce it.</p>" +
         "<p style='text-align:justify;'><strong>Risks.</strong> None beyond everyday life.</p>" +
@@ -1797,14 +1797,14 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 9
     },
 
-    // -- Page 37a: Bet safety -- $4 base pay never affected (highlighted) --
+    // -- Page 37a: Bet safety -- $5 base pay never affected (highlighted) --
     {
       id: "p4_inst_bet_safety",
       type: "instructions",
       title: "",
       body:
         "<div style='max-width:560px; margin:80px auto 0; padding:36px 32px; background:#dcfce7; border-left:6px solid #15803d; border-radius:8px; text-align:center;'>" +
-          "<p style='font-size:24px; font-weight:800; color:#0f172a; margin:0 0 14px;'>Your $4 base pay is never affected.</p>" +
+          "<p style='font-size:24px; font-weight:800; color:#0f172a; margin:0 0 14px;'>Your $5 base pay is never affected.</p>" +
           "<p style='font-size:17px; color:#0f172a; margin:0; line-height:1.6;'>Lost bets only reduce the bonus from other companies, and the total bonus cannot fall below $0.</p>" +
         "</div>",
       minTimeSeconds: 6
@@ -2273,11 +2273,11 @@ var SURVEY_CONFIG = {
           "Quiz: question 10 of 14" +
         "</p>" +
         "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
-          "If you lose several bets, can your <strong>$4 base pay</strong> drop below $4?" +
+          "If you lose several bets, can your <strong>$5 base pay</strong> drop below $5?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='no' data-mode='retry' " +
              "data-explain='Correct. Lost bets only reduce the bonus. They never touch the base pay.'>" +
-          "<button type='button' class='practice-btn' data-val='yes'>Yes &mdash; lost bets can pull base pay below $4.</button>" +
+          "<button type='button' class='practice-btn' data-val='yes'>Yes &mdash; lost bets can pull base pay below $5.</button>" +
           "<button type='button' class='practice-btn' data-val='no'>No &mdash; base pay is guaranteed and the bonus floors at $0.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",

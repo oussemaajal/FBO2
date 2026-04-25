@@ -75,7 +75,7 @@
   containers: practice, K=4, K=8).
 - **Comprehension quiz:** **14 questions** (Q1 through Q14, each
   kickered "Quiz: question X of 14"). All retry-with-10s-timeout.
-- **Base pay:** $4.00, guaranteed; never reduced.
+- **Base pay:** $5.00, guaranteed; never reduced.
 - **Performance bonus:** up to **$6.00**, accumulated across 30 companies.
   - Per company: **+10¢** if your estimate is within **10 percentage
     points** of the correct answer, **± your bet** (0–10¢) on the same
@@ -83,7 +83,7 @@
   - Best case per company: +20¢. Worst case per company: −10¢.
   - Summed across all 30 companies, floored at $0. Losses on one company
     eat into gains on another, never into base pay.
-- **Pay range:** $4.00 to $10.00 ($4 base + up to $6 bonus).
+- **Pay range:** $5.00 to $10.00 ($5 base + up to $6 bonus).
 - **Total survey time floor:** **16 minutes** in aggregate (sum of every
   page's `minTimeSeconds` before any thinking time).
 - **Bonus benchmark (piecewise):** the "correct answer" used for payout
@@ -189,8 +189,8 @@
 **BODY:**
 - **What you'll do.** Learn a simple auditing task, then go through 30
   auditing rounds.
-- **Time.** About 20 minutes.
-- **Pay.** $4.00 base + up to $6.00 performance bonus. Base pay is
+- **Time.** About 25 minutes.
+- **Pay.** $5.00 base + up to $6.00 performance bonus. Base pay is
   **guaranteed**; no penalty can reduce it.
 - **Risks.** None beyond everyday life.
 - **Confidentiality.** Anonymous. We collect your Prolific ID only for
@@ -1107,11 +1107,11 @@ estimate **55%**. How much would you earn from the estimate?
 **ID:** `p4_inst_bet_safety`
 **Time lock:** 6 s
 
-**Standalone callout page** reassuring participants that the $4 base pay
+**Standalone callout page** reassuring participants that the $5 base pay
 is never reduced by lost bets, before any bet practice begins.
 
 **VISUALS (centered green callout, soft border, light-green background):**
-- **Headline** (24 px, extra-bold): `Your $4 base pay is never affected.`
+- **Headline** (24 px, extra-bold): `Your $5 base pay is never affected.`
 - **Sub** (17 px): *Lost bets only reduce the bonus from other
   companies, and the total bonus cannot fall below $0.*
 
@@ -1431,11 +1431,11 @@ bonus. Bet lost → −7¢.*
 
 **Kicker:** `QUIZ: QUESTION 10 OF 14`
 
-**Question:** If you lose several bets, can your **$4 base pay** drop
-below $4?
+**Question:** If you lose several bets, can your **$5 base pay** drop
+below $5?
 
 **Answers (A / B):**
-- A. Yes — lost bets can pull base pay below $4.
+- A. Yes — lost bets can pull base pay below $5.
 - B. No — base pay is guaranteed and the bonus floors at $0. ← correct
 
 **Behavior:** `retry`.
