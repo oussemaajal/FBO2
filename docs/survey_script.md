@@ -198,7 +198,8 @@
 - **Voluntary.** You may withdraw at any time by closing this window.
 
 **RED IMPORTANT NOTE** (light-red background, red left border, uppercase
-"IMPORTANT." prefix):
+"IMPORTANT." prefix — bot-detection warning, no completion code if
+triggered):
 - This study includes hidden checks for automated agents (e.g., AI
   assistants completing the form on your behalf). If detected, the
   survey will end immediately. **No completion code will be issued, and
@@ -396,8 +397,8 @@ background panel).
 **Answers (A / B / C / D):**
 - A. Your gut feeling about the company, in percent.
 - B. The total number of suspicious transactions.
-- C. Suspicious transactions divided by total. ← correct
-- D. Always 50%, by law.
+- C. The share of suspicious transactions out of all its transactions. ← correct
+- D. Always 50%, set by law for every company.
 
 **Behavior:** `retry` mode.
 
@@ -522,10 +523,10 @@ company's transactions that are suspicious, expressed as a percentage.*
 **high**?
 
 **Answers (A / B / C / D):**
-- A. They never get a full audit.
-- B. They get a full audit for sure.
-- C. More likely to face a full audit. ← correct
-- D. It's random — your estimate doesn't matter.
+- A. They never face a full audit.
+- B. They face a full audit for sure.
+- C. They are more likely to face a full audit. ← correct
+- D. Audits are random — your estimate doesn't matter.
 
 **Behavior:** `retry` mode.
 
@@ -687,8 +688,8 @@ company's other transactions?
 **Answers (A / B / C / D):**
 - A. Most of them are probably clean too.
 - B. Most of them are probably suspicious too.
-- C. Nothing reliable — one isn't enough. ← correct
-- D. Roughly half should be clean too.
+- C. Nothing — the type of one transaction tells you nothing about the type of another. ← correct
+- D. Roughly half of them should be clean too.
 
 **Behavior:** `retry` mode.
 
@@ -763,6 +764,9 @@ box):
 **ID:** `p3_inst_mandate_a`
 **Time lock:** 3 s
 
+**(3-page progressive sequence: Pages 37–39 share the same headline
+visual; rules are revealed one at a time across the three screens.)**
+
 **VISUALS (centered, top of page):**
 - A massive `4` (110 px, extra-bold, primary blue).
 - Subtitle: `transactions disclosed` (24 px, bold).
@@ -780,6 +784,8 @@ next two pages.)
 **ID:** `p3_inst_mandate_b`
 **Time lock:** 3 s
 
+**(3-page progressive sequence, screen 2 of 3.)**
+
 **VISUALS (centered):**
 - Same `4` + `transactions disclosed` + `REQUIRED BY LAW` block as
   Page 37.
@@ -794,6 +800,8 @@ next two pages.)
 ### PAGE 39 — Mandate split C: rule 1 + rule 2
 **ID:** `p3_inst_mandate_c`
 **Time lock:** 5 s
+
+**(3-page progressive sequence, screen 3 of 3.)**
 
 **VISUALS (centered):**
 - Same `4` + `transactions disclosed` + `REQUIRED BY LAW` block.
@@ -987,7 +995,7 @@ placeholder):**
 - [headline, 22 px, bold] Practice this.
 - [unordered list, 18 px]:
   - The correct answer for this company is **35%**.
-  - Move your estimate to **50%**.
+  - Move your estimate to **60%**.
 
 **INTERACTIVE:**
 - Estimate slider (0%–100%, default 50). Coverage band moves with the
@@ -996,9 +1004,9 @@ placeholder):**
 - Live readouts: `Within 10 percentage points of the correct answer?`
   (Yes/No flag), `Estimate bonus:` (in ¢).
 
-**Closing line** (revealed only after slider hits target; 5s read lock
-follows; 10s cooldown if Next clicked early):
-- [p, 20 px, bold, red] At 50%, you're 15 percentage points off the
+**Closing line** (hidden until target reached; 5s read lock follows;
+10s cooldown if Next clicked early):
+- [p, 20 px, bold, red] At 60%, you're 25 percentage points off the
   correct answer. You earn **0¢** on this company.
 
 ---
@@ -1019,8 +1027,8 @@ follows; 10s cooldown if Next clicked early):
 
 **INTERACTIVE:** identical slider widget to Page 49, target = 30.
 
-**Closing line** (revealed only after slider hits target; 5s read lock
-follows; 10s cooldown if Next clicked early):
+**Closing line** (hidden until target reached; 5s read lock follows;
+10s cooldown if Next clicked early):
 - [p, 20 px, bold, green] At 30%, you're within 10 percentage points
   of 35%. You earn **+10¢**.
 
@@ -1095,9 +1103,12 @@ estimate **55%**. How much would you earn from the estimate?
 
 ---
 
-### PAGE 55 — Bet safety (highlighted callout)
+### PAGE 55 — Bet safety (standalone callout)
 **ID:** `p4_inst_bet_safety`
 **Time lock:** 6 s
+
+**Standalone callout page** reassuring participants that the $4 base pay
+is never reduced by lost bets, before any bet practice begins.
 
 **VISUALS (centered green callout, soft border, light-green background):**
 - **Headline** (24 px, extra-bold): `Your $4 base pay is never affected.`
@@ -1127,8 +1138,8 @@ estimate **55%**. How much would you earn from the estimate?
 - Live readouts: within-band flag, estimate bonus, bet outcome,
   total earned.
 
-**Closing line** (revealed only after both sliders hit target; 5s
-read lock follows; 10s cooldown if Next clicked early):
+**Closing line** (hidden until target reached; 5s read lock follows;
+10s cooldown if Next clicked early):
 - [p, 20 px, bold, green] Within 10 percentage points, bet won. You
   earn **+18¢**.
 
@@ -1152,8 +1163,8 @@ read lock follows; 10s cooldown if Next clicked early):
 **INTERACTIVE:** same two-slider widget, default estimate 30%, target
 50%; default bet 0¢, target 8¢.
 
-**Closing line** (revealed only after both sliders hit target; 5s
-read lock follows; 10s cooldown if Next clicked early):
+**Closing line** (hidden until target reached; 5s read lock follows;
+10s cooldown if Next clicked early):
 - [p, 20 px, bold, red] More than 10 percentage points off, bet lost.
   You earn **−8¢**.
 - [p, 17 px] Bet **0¢** instead, and you'd have earned **0¢**, not
@@ -1231,7 +1242,7 @@ read lock follows; 10s cooldown if Next clicked early):
 
 **Kicker** (centered, small caps, primary blue): `QUIZ: QUESTION 1 OF 14`
 
-**Question** (20 px, semibold): What is your job in this study?
+**Question** (20 px, semibold): What is your task in this study?
 
 **Answers (A / B / C / D):**
 - A. Decide which companies to invest in.
@@ -1336,14 +1347,15 @@ ones get sent.*
 **Question:** Fraud estimate =
 
 **Answers (A / B / C / D):**
-- A. Your gut feeling, in percent.
-- B. The count of suspicious transactions.
-- C. Suspicious transactions divided by total. ← correct
-- D. 50% for every company, by default.
+- A. Your gut feeling about the company, in percent.
+- B. The total count of suspicious transactions.
+- C. The share of suspicious transactions out of all its transactions. ← correct
+- D. Always 50% by default, the same for every company.
 
 **Behavior:** `retry`.
 
-**Explanation when correct:** *Suspicious divided by total.*
+**Explanation when correct:** *The fraud estimate is the share of a
+company's transactions that are suspicious.*
 
 ---
 
@@ -1356,10 +1368,10 @@ ones get sent.*
 **Question:** What happens when you rate a company **high**?
 
 **Answers (A / B / C / D):**
-- A. They never get a full audit.
-- B. They get a full audit for sure.
-- C. More likely to face a full audit. ← correct
-- D. It's random — your estimate doesn't matter.
+- A. They never face a full audit.
+- B. They face a full audit for sure.
+- C. They are more likely to face a full audit. ← correct
+- D. Audits are random — your estimate doesn't matter.
 
 **Behavior:** `retry`.
 
@@ -1375,8 +1387,7 @@ ones get sent.*
 
 **Kicker:** `QUIZ: QUESTION 8 OF 14`
 
-**Question:** Correct answer: **40%**. Your estimate: **46%**.
-Estimate bonus?
+**Question:** Correct answer: **40%**. Your estimate: **46%**. You bet **0¢**. Total bonus?
 
 **Answers (A / B / C / D):**
 - A. 0¢.
@@ -1490,8 +1501,8 @@ estimate, how much should you bet?
 **Answers (A / B / C / D):**
 - A. 10¢, to maximize the upside.
 - B. 5¢, to hedge your bet.
-- C. 0¢ — only bet if confident. ← correct
-- D. Whatever — betting is mandatory.
+- C. 0¢, since you only bet if confident. ← correct
+- D. Any amount, since betting is mandatory.
 
 **Behavior:** `retry`.
 
