@@ -33,7 +33,7 @@ import argparse
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from config import PATHS, EXPERIMENT_PARAMS, PROLIFIC_CONFIG, SURVEY_CONFIG
+from config import PATHS, EXPERIMENT_PARAMS, PROLIFIC_CONFIG, SURVEY_CONFIG, load_api_key
 from utils import ProlificClient, set_dry_run
 
 
@@ -298,6 +298,7 @@ def cmd_approve(args):
 def cmd_bonus(args):
     """Pay bonuses -- auto-download from Google Sheets or use a CSV file."""
     import pandas as pd
+    import io
 
     if args.dry_run:
         set_dry_run(True)
@@ -311,16 +312,27 @@ def cmd_bonus(args):
               f"total ${result['total_amount_pence'] / 100:.2f}")
         return
 
-    sheet_id = SURVEY_CONFIG.get('google_sheet_id')
-    if not sheet_id:
-        print("ERROR: google_sheet_id not set in config.py SURVEY_CONFIG.")
-        print("  Either set it or provide --csv with a manual file.")
+    # Pull the sheet data through the Apps Script web app (gated by
+    # READ_TOKEN), same as FETCH_RESPONSES.py. The earlier implementation
+    # tried `https://docs.google.com/.../export?format=csv` directly, which
+    # returns HTTP 401 because the sheet isn't publicly viewable on purpose
+    # (responses contain Prolific PIDs).
+    sys.path.insert(0, str(Path(__file__).parent))
+    from FETCH_RESPONSES import fetch_sheet  # noqa: E402
+
+    token = load_api_key(SURVEY_CONFIG.get('sheet_read_token_env',
+                                          'FBO2_SHEET_READ_TOKEN'))
+    if not token:
+        print("ERROR: FBO2_SHEET_READ_TOKEN not set in .env.")
+        print("  Required for reading the Google Sheet via the Apps Script endpoint.")
+        print("  Either set it (matching the Apps Script Script Properties value)")
+        print("  or provide --csv with a manual file dump.")
         return
 
-    print(f"Downloading response data from Google Sheets...")
-    export_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
-    df = pd.read_csv(export_url)
-    print(f"  Downloaded {len(df)} rows")
+    print(f"Downloading response data via Apps Script endpoint...")
+    csv_text = fetch_sheet(token, fmt="csv")
+    df = pd.read_csv(io.StringIO(csv_text))
+    print(f"  Downloaded {len(df)} rows, {len(df.columns)} columns")
 
     # The Apps Script flattens nested keys with underscores, so survey-side
     # `bonus.amount` becomes column `bonus_amount` in the sheet. The PID is
