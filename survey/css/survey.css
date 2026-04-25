@@ -177,6 +177,16 @@ body {
   margin-bottom: 22px;
   text-align: justify;
   text-justify: inter-word;
+  /* Constrain reading width so prose stays at a comfortable measure
+     even when the survey card scales up to ~1080px. Without this, body
+     paragraphs sometimes hug the far-left edge of the wide card, which
+     looks unbalanced; with it, every paragraph is centered with equal
+     margins on both sides. Individual `<p style='max-width:...'>` rules
+     already set tighter widths and override this on the pages that need
+     them. */
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
   /* No auto-hyphenation anywhere: browsers were splitting words like
      "regardless" -> "regard-less" at line ends, which reads as an error. */
   hyphens: none;
@@ -1020,7 +1030,14 @@ body {
 .nav-buttons {
   display: flex;
   align-items: center;
+  /* Constrained width + centered so Back/Next sit toward the middle of
+     the card instead of hugging the corners. The floating calculator
+     widget docks on the right at ~16px from the viewport edge; pulling
+     Next inward keeps it from being covered. */
+  max-width: 720px;
   margin-top: 32px;
+  margin-left: auto;
+  margin-right: auto;
   padding-top: 24px;
   border-top: 1px solid var(--color-border);
 }
