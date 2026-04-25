@@ -1004,7 +1004,11 @@ body {
   background: var(--color-input-bg);
   border-radius: var(--radius-md);
   border: 2px solid var(--color-border);
-  margin-top: 16px;
+  /* Match the unified 620px column used by .page-body, .page-title,
+     and .nav-buttons so the consent checkbox box sits inside the same
+     centered column instead of spanning the full card width. */
+  max-width: 620px;
+  margin: 16px auto 0;
   cursor: pointer;
   transition: border-color var(--transition);
 }
@@ -1103,7 +1107,8 @@ body {
 .field-error {
   font-size: 13px;
   color: var(--color-error);
-  margin-top: 6px;
+  margin: 6px auto 0;
+  max-width: 620px;
   display: none;
 }
 
