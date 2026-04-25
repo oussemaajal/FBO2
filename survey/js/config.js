@@ -1166,10 +1166,10 @@ var SURVEY_CONFIG = {
           "What does that tell you about the company's other transactions?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='nothing' data-mode='retry' " +
-             "data-explain='Right. A random transaction could come from a mostly-clean, half-and-half, or mostly-suspicious company. One doesn&apos;t tell you the rest.'>" +
+             "data-explain='Right. The type of one transaction doesn&apos;t tell you anything about the type of any other. They are independent.'>" +
           "<button type='button' class='practice-btn' data-val='mostly_clean'>Most of them are probably clean too.</button>" +
           "<button type='button' class='practice-btn' data-val='mostly_susp'>Most of them are probably suspicious too.</button>" +
-          "<button type='button' class='practice-btn' data-val='nothing'>Nothing reliable &mdash; one transaction isn&apos;t enough.</button>" +
+          "<button type='button' class='practice-btn' data-val='nothing'>Nothing &mdash; the type of one transaction tells you nothing about the type of another.</button>" +
           "<button type='button' class='practice-btn' data-val='half'>Roughly half of them should be clean too.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
