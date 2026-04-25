@@ -278,7 +278,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quick attention check" +
         "</p>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
           "In this study, what is your task?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='audit' data-mode='retry' " +
@@ -413,7 +413,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quick attention check" +
         "</p>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
           "What's the probability that any given transaction is <strong>clean</strong>?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='fifty' data-mode='retry' " +
@@ -622,7 +622,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quick attention check" +
         "</p>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
           "The fraud estimate for a company is ..." +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='share' data-mode='retry' " +
@@ -838,7 +838,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quick attention check" +
         "</p>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
           "What happens when you rate a company <strong>high</strong>?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='likely' data-mode='retry' " +
@@ -940,7 +940,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quick attention check" +
         "</p>" +
-        "<p style='text-align:justify; font-size:22px; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
+        "<p style='text-align:center; font-size:22px; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
           "When you audit a company, do you see <strong>all</strong> of its transactions?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='no' data-mode='retry' " +
@@ -961,7 +961,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quick attention check" +
         "</p>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
           "Who decides <strong>how many</strong> transactions you see?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='law' data-mode='retry' " +
@@ -1156,13 +1156,13 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quick attention check" +
         "</p>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 14px; font-weight:700; line-height:1.5;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 14px; font-weight:700; line-height:1.5;'>" +
           "You grab one random transaction from a company. It's <strong>clean</strong>." +
         "</p>" +
         "<div class='random-single-slot' style='margin:10px auto 18px;'>" +
           "<div class='transaction-doc large clean'>C</div>" +
         "</div>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:700; line-height:1.5;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:700; line-height:1.5;'>" +
           "What does that tell you about the company's other transactions?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='nothing' data-mode='retry' " +
@@ -1413,7 +1413,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quick attention check" +
         "</p>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
           "Who picks <strong>which</strong> transactions you see?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='manager' data-mode='retry' " +
@@ -1435,7 +1435,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quick attention check" +
         "</p>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
           "The manager can turn a suspicious transaction into a clean one." +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='false' data-mode='retry' " +
@@ -1495,7 +1495,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quick attention check" +
         "</p>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
           "Why does the manager <strong>not</strong> want a high fraud estimate?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='raise' data-mode='retry' " +
@@ -1741,7 +1741,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quick attention check" +
         "</p>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:700; line-height:1.5;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:700; line-height:1.5;'>" +
           "The correct answer is <strong>60%</strong>. You estimate <strong>55%</strong>. " +
           "How much would you earn from the estimate?" +
         "</p>" +
@@ -2085,7 +2085,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quiz: question 1 of 14" +
         "</p>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "What is your task in this study?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='audit' data-mode='retry' " +
@@ -2106,7 +2106,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quiz: question 2 of 14" +
         "</p>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "How many transactions must a company send you?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='4' data-mode='retry' " +
@@ -2127,7 +2127,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quiz: question 3 of 14" +
         "</p>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "Who decides <strong>how many</strong> transactions are disclosed?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='law' data-mode='retry' " +
@@ -2147,7 +2147,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quiz: question 4 of 14" +
         "</p>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600; line-height:1.5;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600; line-height:1.5;'>" +
           "The 4 transactions you receive from a company are <strong>randomly picked</strong> from all of its transactions." +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='false' data-mode='retry' " +
@@ -2166,7 +2166,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quiz: question 5 of 14" +
         "</p>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "Can the manager turn a suspicious transaction into a clean one?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='no' data-mode='retry' " +
@@ -2185,7 +2185,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quiz: question 6 of 14" +
         "</p>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "Fraud estimate =" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='share' data-mode='retry' " +
@@ -2206,7 +2206,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quiz: question 7 of 14" +
         "</p>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "What happens when you rate a company <strong>high</strong>?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='likely' data-mode='retry' " +
@@ -2227,7 +2227,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quiz: question 8 of 14" +
         "</p>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "Correct answer: <strong>40%</strong>. Your estimate: <strong>46%</strong>. You bet <strong>0&cent;</strong>. Total bonus?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='10' data-mode='retry' " +
@@ -2249,7 +2249,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quiz: question 9 of 14" +
         "</p>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "Correct answer: <strong>50%</strong>. Estimate: <strong>80%</strong>. Bet: <strong>7&cent;</strong>. " +
           "Total for this company?" +
         "</p>" +
@@ -2272,7 +2272,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quiz: question 10 of 14" +
         "</p>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "If you lose several bets, can your <strong>$4 base pay</strong> drop below $4?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='no' data-mode='retry' " +
@@ -2291,7 +2291,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quiz: question 11 of 14" +
         "</p>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "What's the probability that any given transaction is clean?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='50' data-mode='retry' " +
@@ -2312,7 +2312,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quiz: question 12 of 14" +
         "</p>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "Why doesn't the manager want a <strong>high</strong> fraud estimate?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='raise' data-mode='retry' " +
@@ -2333,7 +2333,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quiz: question 13 of 14" +
         "</p>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "If you are <strong>not at all confident</strong> in your fraud estimate, how much " +
           "should you bet?" +
         "</p>" +
@@ -2355,7 +2355,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Quiz: question 14 of 14" +
         "</p>" +
-        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
+        "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
           "Correct answer: <strong>25%</strong>. Estimate: <strong>30%</strong>. Bet: <strong>6&cent;</strong>. " +
           "Total for this company?" +
         "</p>" +
