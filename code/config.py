@@ -99,7 +99,7 @@ EXPERIMENT_PARAMS = {
     # Account is USD-denominated (per Oussema 2026-04-24): 300 = $3.00.
     # `reward_minor` = base pay, guaranteed. `bonus_max_minor` = accuracy
     # bonus cap on top of base. Matches survey copy: "$3 base + up to $6".
-    'reward_minor':     300,   # $3.00 base pay
+    'reward_minor':     400,   # $4.00 base pay
     'bonus_max_minor':  600,   # $6.00 max accuracy bonus (30 trials * 20 cents max)
 
     # Estimated completion time shown to participants on Prolific.
