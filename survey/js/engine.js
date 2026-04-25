@@ -3080,8 +3080,8 @@
       html += '<div class="bonus-amount-sub">' + pctOfMax + '% of the maximum</div>';
       html += '<div class="bonus-detail">Fixed base: ' + this.bonusInfo.currency + ' $' + fixedBase.toFixed(2) +
               ' &nbsp;|&nbsp; Performance bonus: ' + this.bonusInfo.currency + ' $' + this.bonusInfo.amount.toFixed(2) + '</div>';
-      html += '<div class="bonus-detail">Point-estimate bonus: $' + pointSum.toFixed(2) +
-              ' &nbsp;|&nbsp; Calibration bonus: $' + calibSum.toFixed(2) +
+      html += '<div class="bonus-detail">Estimate bonus: $' + pointSum.toFixed(2) +
+              ' &nbsp;|&nbsp; Betting bonus: $' + calibSum.toFixed(2) +
               ' &nbsp;|&nbsp; Trials within 10 points: ' + cc + ' / ' + tt + '</div>';
       html += '</div>';
     }

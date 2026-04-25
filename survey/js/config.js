@@ -2705,33 +2705,17 @@ var SURVEY_CONFIG = {
     // ==================================================================
 
     // -- Demographics ---------------------------------------------------
+    // Age, sex, country of residence, fluent languages, education, and
+    // employment are all pulled from Prolific's pre-screener data (API +
+    // dashboard demographics CSV) and merged in via FETCH_RESPONSES.py
+    // --merge-prolific. We only ask for things Prolific can't tell us and
+    // that may explain individual variation in estimate-and-bet behavior.
     {
       id: "demographics",
       type: "questionnaire",
       title: "About You",
-      minTimeSeconds: 10,
+      minTimeSeconds: 8,
       questions: [
-        {
-          id: "age", prompt: "Age", type: "dropdown", required: true,
-          options: [
-            { value: "18-24", label: "18-24" },
-            { value: "25-34", label: "25-34" },
-            { value: "35-44", label: "35-44" },
-            { value: "45-54", label: "45-54" },
-            { value: "55-64", label: "55-64" },
-            { value: "65+",   label: "65 or older" }
-          ]
-        },
-        {
-          id: "gender", prompt: "Gender", type: "dropdown", required: true,
-          options: [
-            { value: "male",       label: "Male" },
-            { value: "female",     label: "Female" },
-            { value: "nonbinary",  label: "Non-binary" },
-            { value: "other",      label: "Other" },
-            { value: "prefer_not", label: "Prefer not to say" }
-          ]
-        },
         {
           id: "stats_comfort",
           prompt: "How comfortable are you with probability and statistics?",
