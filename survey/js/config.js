@@ -2086,7 +2086,7 @@ var SURVEY_CONFIG = {
           "Quiz: question 1 of 14" +
         "</p>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
-          "What is your job in this study?" +
+          "What is your task in this study?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='audit' data-mode='retry' " +
              "data-explain='You are the government auditor. You estimate the percentage of each company&apos;s transactions that are suspicious.'>" +
@@ -2191,9 +2191,9 @@ var SURVEY_CONFIG = {
         "<div class='practice-buttons quiz-style' data-correct='share' data-mode='retry' " +
              "data-explain='The fraud estimate is the share of a company&apos;s transactions that are suspicious.'>" +
           "<button type='button' class='practice-btn' data-val='gut'>Your gut feeling about the company, in percent.</button>" +
-          "<button type='button' class='practice-btn' data-val='count'>The total count of suspicious transactions.</button>" +
+          "<button type='button' class='practice-btn' data-val='count'>The total number of suspicious transactions.</button>" +
           "<button type='button' class='practice-btn' data-val='share'>The share of suspicious transactions out of all its transactions.</button>" +
-          "<button type='button' class='practice-btn' data-val='fifty'>Always 50% by default, the same for every company.</button>" +
+          "<button type='button' class='practice-btn' data-val='fifty'>Always 50%, set by law for every company.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
       minTimeSeconds: 8
@@ -2228,10 +2228,10 @@ var SURVEY_CONFIG = {
           "Quiz: question 8 of 14" +
         "</p>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
-          "Correct answer: <strong>40%</strong>. Your estimate: <strong>46%</strong>. Estimate bonus?" +
+          "Correct answer: <strong>40%</strong>. Your estimate: <strong>46%</strong>. You bet <strong>0&cent;</strong>. Total bonus?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='10' data-mode='retry' " +
-             "data-explain='46 is within 10 percentage points of 40. Pays the +10&cent;.'>" +
+             "data-explain='46 is within 10 percentage points of 40, so the estimate bonus is +10&cent;. Bet 0&cent; means no bet contribution. Total +10&cent;.'>" +
           "<button type='button' class='practice-btn' data-val='0'>0&cent;.</button>" +
           "<button type='button' class='practice-btn' data-val='10'>+10&cent;.</button>" +
           "<button type='button' class='practice-btn' data-val='6'>+6&cent;.</button>" +
@@ -2319,7 +2319,7 @@ var SURVEY_CONFIG = {
              "data-explain='A high estimate makes a full audit likely, and a full audit costs the manager their raise.'>" +
           "<button type='button' class='practice-btn' data-val='fine'>A high estimate triggers a personal fine for the manager.</button>" +
           "<button type='button' class='practice-btn' data-val='raise'>A high estimate makes a full audit likely and costs them their raise.</button>" +
-          "<button type='button' class='practice-btn' data-val='bonus'>A high estimate directly reduces the auditor&apos;s bonus payout.</button>" +
+          "<button type='button' class='practice-btn' data-val='bonus'>A high estimate lowers the government auditor&apos;s bonus payout.</button>" +
           "<button type='button' class='practice-btn' data-val='indiff'>The manager has no stake in what you estimate.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
