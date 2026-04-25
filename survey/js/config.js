@@ -63,10 +63,20 @@ var SURVEY_CONFIG = {
   //
   // Each trial:
   //   id, phase, K, k, N, nClean=K-k, hidden=N-K,
-  //   thetaTrue  = (k + N - K)/N       (payment target under unraveling)
   //   thetaSN    = k / K               (selection-neglect prediction)
-  //   thetaNV    = (k + 0.5*(N-K))/N   (naive/mean-reverting prediction)
-  //   thetaRB    = thetaTrue           (rational benchmark)
+  //   thetaNV    = (k + 0.5*(N-K))/N   (naive / uniform-prior prediction)
+  //   thetaTrue  = payment benchmark, PIECEWISE under strategic disclosure:
+  //                  k = 0:  thetaTrue = (N-K)/(2*N)  = thetaNV
+  //                            (manager who hid 0 disclosed-suspicious is
+  //                             consistent with any s in {0,...,N-K};
+  //                             under uniform prior, posterior mean is the
+  //                             midpoint of that range. Same number as the
+  //                             "naive" formula, but for a Bayesian reason.)
+  //                  k >= 1: thetaTrue = (k + N - K)/N
+  //                            (strategic-K disclosure with k>=1 forced
+  //                             implies s = N-K+k uniquely, so all hidden
+  //                             transactions are suspicious -- unraveling.)
+  //   thetaRB    = thetaTrue           (rational benchmark, alias)
   //
   // Legacy aliases kept for engine.js plumbing:
   //   D = K, dN = K-k, nFlagged = k,
@@ -78,8 +88,8 @@ var SURVEY_CONFIG = {
   //   1 C & k-1 S, all S.
   stimuli: [
     // ── Phase 1: K=4, N in {10,20,30}, k in {0,1,2,3,4} ─────────
-    { id: "p1t01", phase: 1, K: 4, k: 0, N: 10, nClean: 4, hidden:  6, thetaTrue: 0.600, thetaSN: 0.000, thetaNV: 0.300, thetaRB: 0.600,
-      D: 4, dN: 4, nFlagged: 0, bayesPosterior: 0.600, snPosterior: 0.000, mrPosterior: 0.300 },
+    { id: "p1t01", phase: 1, K: 4, k: 0, N: 10, nClean: 4, hidden:  6, thetaTrue: 0.300, thetaSN: 0.000, thetaNV: 0.300, thetaRB: 0.300,
+      D: 4, dN: 4, nFlagged: 0, bayesPosterior: 0.300, snPosterior: 0.000, mrPosterior: 0.300 },
     { id: "p1t02", phase: 1, K: 4, k: 1, N: 10, nClean: 3, hidden:  6, thetaTrue: 0.700, thetaSN: 0.250, thetaNV: 0.400, thetaRB: 0.700,
       D: 4, dN: 3, nFlagged: 1, bayesPosterior: 0.700, snPosterior: 0.250, mrPosterior: 0.400 },
     { id: "p1t03", phase: 1, K: 4, k: 2, N: 10, nClean: 2, hidden:  6, thetaTrue: 0.800, thetaSN: 0.500, thetaNV: 0.500, thetaRB: 0.800,
@@ -88,8 +98,8 @@ var SURVEY_CONFIG = {
       D: 4, dN: 1, nFlagged: 3, bayesPosterior: 0.900, snPosterior: 0.750, mrPosterior: 0.600 },
     { id: "p1t05", phase: 1, K: 4, k: 4, N: 10, nClean: 0, hidden:  6, thetaTrue: 1.000, thetaSN: 1.000, thetaNV: 0.700, thetaRB: 1.000,
       D: 4, dN: 0, nFlagged: 4, bayesPosterior: 1.000, snPosterior: 1.000, mrPosterior: 0.700 },
-    { id: "p1t06", phase: 1, K: 4, k: 0, N: 20, nClean: 4, hidden: 16, thetaTrue: 0.800, thetaSN: 0.000, thetaNV: 0.400, thetaRB: 0.800,
-      D: 4, dN: 4, nFlagged: 0, bayesPosterior: 0.800, snPosterior: 0.000, mrPosterior: 0.400 },
+    { id: "p1t06", phase: 1, K: 4, k: 0, N: 20, nClean: 4, hidden: 16, thetaTrue: 0.400, thetaSN: 0.000, thetaNV: 0.400, thetaRB: 0.400,
+      D: 4, dN: 4, nFlagged: 0, bayesPosterior: 0.400, snPosterior: 0.000, mrPosterior: 0.400 },
     { id: "p1t07", phase: 1, K: 4, k: 1, N: 20, nClean: 3, hidden: 16, thetaTrue: 0.850, thetaSN: 0.250, thetaNV: 0.450, thetaRB: 0.850,
       D: 4, dN: 3, nFlagged: 1, bayesPosterior: 0.850, snPosterior: 0.250, mrPosterior: 0.450 },
     { id: "p1t08", phase: 1, K: 4, k: 2, N: 20, nClean: 2, hidden: 16, thetaTrue: 0.900, thetaSN: 0.500, thetaNV: 0.500, thetaRB: 0.900,
@@ -98,8 +108,8 @@ var SURVEY_CONFIG = {
       D: 4, dN: 1, nFlagged: 3, bayesPosterior: 0.950, snPosterior: 0.750, mrPosterior: 0.550 },
     { id: "p1t10", phase: 1, K: 4, k: 4, N: 20, nClean: 0, hidden: 16, thetaTrue: 1.000, thetaSN: 1.000, thetaNV: 0.600, thetaRB: 1.000,
       D: 4, dN: 0, nFlagged: 4, bayesPosterior: 1.000, snPosterior: 1.000, mrPosterior: 0.600 },
-    { id: "p1t11", phase: 1, K: 4, k: 0, N: 30, nClean: 4, hidden: 26, thetaTrue: 0.867, thetaSN: 0.000, thetaNV: 0.433, thetaRB: 0.867,
-      D: 4, dN: 4, nFlagged: 0, bayesPosterior: 0.867, snPosterior: 0.000, mrPosterior: 0.433 },
+    { id: "p1t11", phase: 1, K: 4, k: 0, N: 30, nClean: 4, hidden: 26, thetaTrue: 0.433, thetaSN: 0.000, thetaNV: 0.433, thetaRB: 0.433,
+      D: 4, dN: 4, nFlagged: 0, bayesPosterior: 0.433, snPosterior: 0.000, mrPosterior: 0.433 },
     { id: "p1t12", phase: 1, K: 4, k: 1, N: 30, nClean: 3, hidden: 26, thetaTrue: 0.900, thetaSN: 0.250, thetaNV: 0.467, thetaRB: 0.900,
       D: 4, dN: 3, nFlagged: 1, bayesPosterior: 0.900, snPosterior: 0.250, mrPosterior: 0.467 },
     { id: "p1t13", phase: 1, K: 4, k: 2, N: 30, nClean: 2, hidden: 26, thetaTrue: 0.933, thetaSN: 0.500, thetaNV: 0.500, thetaRB: 0.933,
@@ -110,8 +120,8 @@ var SURVEY_CONFIG = {
       D: 4, dN: 0, nFlagged: 4, bayesPosterior: 1.000, snPosterior: 1.000, mrPosterior: 0.567 },
 
     // ── Phase 2: K=8, N in {10,20,30}, k in {0,1,4,7,8} ─────────
-    { id: "p2t01", phase: 2, K: 8, k: 0, N: 10, nClean: 8, hidden:  2, thetaTrue: 0.200, thetaSN: 0.000, thetaNV: 0.100, thetaRB: 0.200,
-      D: 8, dN: 8, nFlagged: 0, bayesPosterior: 0.200, snPosterior: 0.000, mrPosterior: 0.100 },
+    { id: "p2t01", phase: 2, K: 8, k: 0, N: 10, nClean: 8, hidden:  2, thetaTrue: 0.100, thetaSN: 0.000, thetaNV: 0.100, thetaRB: 0.100,
+      D: 8, dN: 8, nFlagged: 0, bayesPosterior: 0.100, snPosterior: 0.000, mrPosterior: 0.100 },
     { id: "p2t02", phase: 2, K: 8, k: 1, N: 10, nClean: 7, hidden:  2, thetaTrue: 0.300, thetaSN: 0.125, thetaNV: 0.200, thetaRB: 0.300,
       D: 8, dN: 7, nFlagged: 1, bayesPosterior: 0.300, snPosterior: 0.125, mrPosterior: 0.200 },
     { id: "p2t03", phase: 2, K: 8, k: 4, N: 10, nClean: 4, hidden:  2, thetaTrue: 0.600, thetaSN: 0.500, thetaNV: 0.500, thetaRB: 0.600,
@@ -120,8 +130,8 @@ var SURVEY_CONFIG = {
       D: 8, dN: 1, nFlagged: 7, bayesPosterior: 0.900, snPosterior: 0.875, mrPosterior: 0.800 },
     { id: "p2t05", phase: 2, K: 8, k: 8, N: 10, nClean: 0, hidden:  2, thetaTrue: 1.000, thetaSN: 1.000, thetaNV: 0.900, thetaRB: 1.000,
       D: 8, dN: 0, nFlagged: 8, bayesPosterior: 1.000, snPosterior: 1.000, mrPosterior: 0.900 },
-    { id: "p2t06", phase: 2, K: 8, k: 0, N: 20, nClean: 8, hidden: 12, thetaTrue: 0.600, thetaSN: 0.000, thetaNV: 0.300, thetaRB: 0.600,
-      D: 8, dN: 8, nFlagged: 0, bayesPosterior: 0.600, snPosterior: 0.000, mrPosterior: 0.300 },
+    { id: "p2t06", phase: 2, K: 8, k: 0, N: 20, nClean: 8, hidden: 12, thetaTrue: 0.300, thetaSN: 0.000, thetaNV: 0.300, thetaRB: 0.300,
+      D: 8, dN: 8, nFlagged: 0, bayesPosterior: 0.300, snPosterior: 0.000, mrPosterior: 0.300 },
     { id: "p2t07", phase: 2, K: 8, k: 1, N: 20, nClean: 7, hidden: 12, thetaTrue: 0.650, thetaSN: 0.125, thetaNV: 0.350, thetaRB: 0.650,
       D: 8, dN: 7, nFlagged: 1, bayesPosterior: 0.650, snPosterior: 0.125, mrPosterior: 0.350 },
     { id: "p2t08", phase: 2, K: 8, k: 4, N: 20, nClean: 4, hidden: 12, thetaTrue: 0.800, thetaSN: 0.500, thetaNV: 0.500, thetaRB: 0.800,
@@ -130,8 +140,8 @@ var SURVEY_CONFIG = {
       D: 8, dN: 1, nFlagged: 7, bayesPosterior: 0.950, snPosterior: 0.875, mrPosterior: 0.650 },
     { id: "p2t10", phase: 2, K: 8, k: 8, N: 20, nClean: 0, hidden: 12, thetaTrue: 1.000, thetaSN: 1.000, thetaNV: 0.700, thetaRB: 1.000,
       D: 8, dN: 0, nFlagged: 8, bayesPosterior: 1.000, snPosterior: 1.000, mrPosterior: 0.700 },
-    { id: "p2t11", phase: 2, K: 8, k: 0, N: 30, nClean: 8, hidden: 22, thetaTrue: 0.733, thetaSN: 0.000, thetaNV: 0.367, thetaRB: 0.733,
-      D: 8, dN: 8, nFlagged: 0, bayesPosterior: 0.733, snPosterior: 0.000, mrPosterior: 0.367 },
+    { id: "p2t11", phase: 2, K: 8, k: 0, N: 30, nClean: 8, hidden: 22, thetaTrue: 0.367, thetaSN: 0.000, thetaNV: 0.367, thetaRB: 0.367,
+      D: 8, dN: 8, nFlagged: 0, bayesPosterior: 0.367, snPosterior: 0.000, mrPosterior: 0.367 },
     { id: "p2t12", phase: 2, K: 8, k: 1, N: 30, nClean: 7, hidden: 22, thetaTrue: 0.767, thetaSN: 0.125, thetaNV: 0.400, thetaRB: 0.767,
       D: 8, dN: 7, nFlagged: 1, bayesPosterior: 0.767, snPosterior: 0.125, mrPosterior: 0.400 },
     { id: "p2t13", phase: 2, K: 8, k: 4, N: 30, nClean: 4, hidden: 22, thetaTrue: 0.867, thetaSN: 0.500, thetaNV: 0.500, thetaRB: 0.867,
@@ -151,38 +161,47 @@ var SURVEY_CONFIG = {
     //  ACT I -- CONSENT & OVERVIEW
     // ==================================================================
 
-    // -- Page 1: Consent (decision-making framing) ----------------------
+    // -- Page 1: Welcome (decision-making framing) ----------------------
     {
       id: "p1_intro_decisions",
       type: "instructions",
-      title: "Consent",
+      title: "Welcome to our Study",
       body:
-        "<p style='text-align:justify;'>This is a research study about " +
+        "<p style='text-align:justify;'>This is a study about " +
         "<strong>decision-making</strong>. You'll face a series of " +
-        "<strong>hypothetical scenarios</strong>, but your decisions still " +
-        "count. <strong>The better your decisions, the more you earn.</strong></p>",
-      minTimeSeconds: 10
+        "<strong>hypothetical scenarios</strong> where you make decisions. " +
+        "<strong>The better your decisions, the more you earn.</strong></p>",
+      minTimeSeconds: 5
     },
 
-    // -- Page 2: Consent (role + attention checks) ----------------------
+    // -- Page 2: Role only (no auditing background) ---------------------
     {
       id: "p1_intro_role",
       type: "instructions",
-      title: "Consent",
+      title: "What the Study is About",
       body:
         "<p style='text-align:justify;'>You'll play the role of a " +
-        "<strong>government auditor</strong> screening companies for fraud. No " +
-        "auditing background is needed. The scenario is simplified.</p>" +
-        "<p style='text-align:justify;'>What we ask is that you " +
+        "<strong>government auditor</strong> screening companies for fraud. " +
+        "<strong>No auditing background is needed. The scenario is simplified.</strong></p>",
+      minTimeSeconds: 5
+    },
+
+    // -- Page 2b: Introduction (read carefully + attention checks) ------
+    {
+      id: "p1_intro_attention",
+      type: "instructions",
+      title: "Introduction",
+      body:
+        "<p style='text-align:justify;'>Please " +
         "<strong>read the instructions carefully</strong>. Throughout the study " +
-        "you'll see short attention checks. You can try each one as many " +
-        "times as you need.</p>" +
+        "you'll see short attention checks and quizzes to test your understanding " +
+        "of your task. You can try each one as many times as you need.</p>" +
         "<p style='text-align:justify; margin-top:14px; padding:12px 14px; " +
         "background:#fee2e2; border-left:4px solid #b91c1c; border-radius:4px;'>" +
         "<strong style='color:#b91c1c; text-transform:uppercase; letter-spacing:0.5px;'>Important.</strong> " +
-        "Every wrong answer triggers a <strong>10-second pause</strong> before " +
-        "you can try again.</p>",
-      minTimeSeconds: 12
+        "Every wrong answer triggers a <strong>10-second timeout</strong> before " +
+        "you can try again. <strong>Think carefully about your answers.</strong></p>",
+      minTimeSeconds: 10
     },
 
     // -- Page 3: IRB consent (checkbox) ---------------------------------
@@ -234,11 +253,11 @@ var SURVEY_CONFIG = {
         "</div>" +
         "<p style='text-align:justify; font-size:18px; max-width:620px; margin:0 auto; line-height:1.65;'>" +
           "You play the role of a <strong>government auditor</strong>. For each company, you review its " +
-          "transactions and provide a <strong>fraud estimate</strong>." +
+          "transactions and provide a preliminary <strong>fraud estimate</strong>." +
         "</p>" +
         "<p style='text-align:justify; font-size:18px; max-width:620px; margin:18px auto 0; line-height:1.65;'>" +
-          "At the end of the study, we reveal each company's <strong>actual fraud rate</strong> (the real percentage of its transactions that were suspicious). " +
-          "<strong>The closer your estimate, the more you earn.</strong>" +
+          "At the end of the study, we reveal each company's <strong>correct answer</strong>. " +
+          "<strong>The closer your estimate to the correct answer, the more you earn.</strong>" +
         "</p>",
       minTimeSeconds: 10
     },
@@ -262,7 +281,7 @@ var SURVEY_CONFIG = {
           "<button type='button' class='practice-btn' data-val='rate'>Give each company a customer-service score.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
-      minTimeSeconds: 10
+      minTimeSeconds: 8
     },
 
     // -- Page 6: Transition -- "now the details" ------------------------
@@ -275,7 +294,7 @@ var SURVEY_CONFIG = {
           "What follows: the details." +
         "</p>" +
         "<p style='text-align:justify; font-size:17px; max-width:620px; margin:0 auto; line-height:1.6;'>" +
-          "The next section explains the auditing process, the two kinds of transactions, " +
+          "The next section explains the auditing process, the two types of transactions, " +
           "and how the bonus is calculated." +
         "</p>",
       minTimeSeconds: 5
@@ -292,7 +311,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:justify; font-size:24px; max-width:620px; margin:0 auto 8px; font-weight:600;'>" +
-          "How do you assess a company's fraud rate?" +
+          "How do you assess a company for fraud?" +
         "</p>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px;'>" +
           "By examining the company's <strong>transactions</strong>." +
@@ -302,9 +321,9 @@ var SURVEY_CONFIG = {
         "</div>" +
         "<p style='text-align:justify; font-size:17px; max-width:620px; margin:18px auto 0; line-height:1.6;'>" +
           "This is a single transaction. You will not need to read its contents. " +
-          "You only need to know <strong>what kind</strong> of transaction it is." +
+          "You only need to know <strong>what type</strong> of transaction it is." +
         "</p>",
-      minTimeSeconds: 7
+      minTimeSeconds: 8
     },
 
     // -- Page 8: Clean transaction --------------------------------------
@@ -314,7 +333,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:justify; font-size:24px; margin:0 auto 28px; font-weight:600;'>" +
-          "Each transaction is one of two kinds." +
+          "Each transaction is one of two types." +
         "</p>" +
         "<div class='two-types-row'>" +
           "<div class='transaction-doc-wrap'>" +
@@ -326,7 +345,7 @@ var SURVEY_CONFIG = {
             "<div class='transaction-doc-caption'>&nbsp;</div>" +
           "</div>" +
         "</div>",
-      minTimeSeconds: 2
+      minTimeSeconds: 3
     },
 
     // -- Page 9: Clean AND Suspicious transactions ----------------------
@@ -336,7 +355,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:justify; font-size:24px; margin:0 auto 28px; font-weight:600;'>" +
-          "Each transaction is one of two kinds." +
+          "Each transaction is one of two types." +
         "</p>" +
         "<div class='two-types-row'>" +
           "<div class='transaction-doc-wrap'>" +
@@ -348,7 +367,7 @@ var SURVEY_CONFIG = {
             "<div class='transaction-doc-caption' style='color:#b91c1c;'>Suspicious</div>" +
           "</div>" +
         "</div>",
-      minTimeSeconds: 3
+      minTimeSeconds: 2
     },
 
     // -- Page 10: 50/50 coin flip ---------------------------------------
@@ -433,7 +452,7 @@ var SURVEY_CONFIG = {
           "<div class='cluster-doc' style='top:18%; left:88%;'></div>" +
           "<div class='cluster-doc' style='top:70%; left:8%;'></div>" +
         "</div>",
-      minTimeSeconds: 5
+      minTimeSeconds: 3
     },
 
     // -- Page 12: Different mixes ---------------------------------------
@@ -506,7 +525,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:justify; font-size:19px; max-width:620px; margin:22px auto 0;'>" +
           "Your task is to distinguish them by providing a <strong>fraud estimate</strong>." +
         "</p>",
-      minTimeSeconds: 12
+      minTimeSeconds: 10
     },
 
     // -- Page 13: Fraud estimate = share suspicious ---------------------
@@ -622,7 +641,7 @@ var SURVEY_CONFIG = {
         "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto; line-height:1.65; padding-left:22px;'>" +
           "<li>Your estimates feed a <strong>lottery</strong>.</li>" +
           "<li>A higher estimate means <strong>more lottery tickets</strong> for that company.</li>" +
-          "<li>Companies drawn in the lottery face a <strong>full audit</strong>, which is costly for them.</li>" +
+          "<li>Companies drawn in the lottery face a <strong>full audit</strong>, which is very costly for them.</li>" +
         "</ul>",
       minTimeSeconds: 10
     },
@@ -634,7 +653,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:justify; font-size:24px; max-width:620px; margin:0 auto 16px; font-weight:700; line-height:1.35;'>" +
-          "The higher your estimate, the more likely a full audit." +
+          "The higher your estimate, the more likely the assessed company will face a full audit." +
         "</p>" +
         "<p style='text-align:justify; font-size:19px; max-width:620px; margin:0 auto; line-height:1.65;'>" +
           "A full audit reviews every transaction. It's costly for the company " +
@@ -821,8 +840,8 @@ var SURVEY_CONFIG = {
           "Here's the catch." +
         "</p>" +
         "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 18px; font-weight:700;'>" +
-          "A company has many transactions, but the law lets it send you only " +
-          "<strong style='color:#b91c1c; font-size:44px; line-height:1; padding:0 4px;'>4</strong>." +
+          "A company has many transactions, but the law requires it to send you, the auditor, only " +
+          "<strong style='color:#b91c1c; font-size:44px; line-height:1; padding:0 4px;'>4</strong> transactions for the preliminary audit." +
         "</p>" +
         "<div class='doc-cluster'>" +
           // Same 20 positions as before, but 4 are highlighted
@@ -858,7 +877,7 @@ var SURVEY_CONFIG = {
       body:
         "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 18px; font-weight:700;'>" +
           "You only learn the nature (clean or suspicious) of those " +
-          "<strong>4</strong>." +
+          "<strong>4</strong> transactions." +
         "</p>" +
         "<div class='doc-cluster'>" +
           // 4 highlighted with C/S labels, the rest with ? marks
@@ -884,7 +903,7 @@ var SURVEY_CONFIG = {
           "<div class='cluster-doc hidden-q' style='top:70%; left:8%;'>?</div>" +
         "</div>" +
         "<p style='text-align:center; font-size:24px; max-width:620px; margin:28px auto 0; line-height:1.5; font-weight:800;'>" +
-          "Your view of the company is always <strong>incomplete</strong>." +
+          "This means that your view of the company's overall transactions in this preliminary audit is <strong>always incomplete</strong>." +
         "</p>",
       minTimeSeconds: 5
     },
@@ -1102,7 +1121,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:22px; font-weight:800; max-width:620px; margin:22px auto 0; line-height:1.45;'>" +
           "A single random transaction tells you very little about the rest." +
         "</p>",
-      minTimeSeconds: 5
+      minTimeSeconds: 8
     },
 
     // -- Page 18f: Attention check -- flipped to clean -----------------
@@ -1148,9 +1167,9 @@ var SURVEY_CONFIG = {
       body:
         "<p style='text-align:center; font-size:28px; line-height:1.4; max-width:620px; margin:80px auto 0; font-weight:700; color:#0f172a;'>" +
           "In this study, however, the 4 transactions you see about a company are " +
-          "<strong style='color:#b91c1c;'>not selected at random</strong>." +
+          "<strong style='color:#b91c1c;'>NOT selected at random</strong> from all of its transactions." +
         "</p>",
-      minTimeSeconds: 5
+      minTimeSeconds: 6
     },
 
     // -- Page 23: Meet the manager -------------------------------------
@@ -1160,7 +1179,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
-          "Now consider the <strong>manager</strong> of the company you are auditing." +
+          "Meet the <strong>manager</strong> of the company you are auditing." +
         "</p>" +
         "<div class='manager-badge'>" +
           "<svg viewBox='0 0 120 140' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
@@ -1178,7 +1197,7 @@ var SURVEY_CONFIG = {
           "<div class='manager-badge-label'>MANAGER</div>" +
         "</div>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto;'>" +
-          "The manager sends you the 4 transactions you'll see." +
+          "The manager is responsible for sending you the company's transactions for the preliminary audit." +
         "</p>",
       minTimeSeconds: 7
     },
@@ -1190,8 +1209,8 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:justify; font-size:24px; line-height:1.35; max-width:620px; margin:0 auto 18px; font-weight:700;'>" +
-          "The manager knows <strong>all</strong> of the company's transactions, and " +
-          "decides <strong>which 4</strong> you see." +
+          "Here's the catch: the manager knows the type of every transaction in the company, and " +
+          "decides <strong>which 4</strong> are sent for the preliminary audit." +
         "</p>" +
         "<div class='manager-above-wrap'>" +
           "<div class='manager-badge-mini'>" +
@@ -1223,7 +1242,7 @@ var SURVEY_CONFIG = {
             "<div class='transaction-doc suspicious rule-small'>S</div>" +
           "</div>" +
         "</div>",
-      minTimeSeconds: 6
+      minTimeSeconds: 5
     },
 
     // -- Page 25: Split view -- manager picks 4, auditor sees 4 --------
@@ -1301,7 +1320,7 @@ var SURVEY_CONFIG = {
             "<div class='split-caption'>Sees 4 (manager's pick)</div>" +
           "</div>" +
         "</div>",
-      minTimeSeconds: 6
+      minTimeSeconds: 5
     },
 
     // -- Page 26: Important -- big "4" (law) ----------------------------
@@ -1318,12 +1337,9 @@ var SURVEY_CONFIG = {
           "Two rules the manager <strong>cannot</strong> break:" +
         "</p>" +
         "<ol style='font-size:19px; max-width:620px; margin:0 auto 18px; line-height:1.6; padding-left:28px;'>" +
-          "<li style='margin-bottom:10px;'>Send <strong>exactly 4</strong> transactions. Not more, not fewer.</li>" +
-          "<li>Send them as they are. A suspicious transaction stays suspicious; a clean one stays clean.</li>" +
-        "</ol>" +
-        "<p style='text-align:justify; font-size:17px; max-width:620px; margin:0 auto; line-height:1.6;'>" +
-          "A manager who breaks either rule is flagged as fraudulent." +
-        "</p>",
+          "<li style='margin-bottom:10px;'>The manager sends <strong>exactly 4</strong> transactions. Not more, not fewer.</li>" +
+          "<li>The manager cannot falsify or forge transactions to change their type.</li>" +
+        "</ol>",
       minTimeSeconds: 6
     },
 
@@ -1359,8 +1375,7 @@ var SURVEY_CONFIG = {
           "Quick attention check" +
         "</p>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
-          "True or false: the manager can turn a suspicious transaction into a " +
-          "clean one." +
+          "The manager can turn a suspicious transaction into a clean one." +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='false' data-mode='retry' " +
              "data-explain='The manager can&apos;t fake transactions. They can only pick which ones get sent.'>" +
@@ -1382,7 +1397,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 14px; font-weight:700;'>" +
-          "What's at stake for the manager?" +
+          "What's at stake for the manager? Their raise!" +
         "</p>" +
         "<p style='text-align:justify; font-size:18px; max-width:620px; margin:0 auto 22px; line-height:1.6;'>" +
           "A full audit is costly for the company. And if it happens, the manager " +
@@ -1405,7 +1420,7 @@ var SURVEY_CONFIG = {
           "</div>" +
         "</div>" +
         "<p style='text-align:justify; font-size:18px; max-width:620px; margin:22px auto 0; line-height:1.6;'>" +
-          "The manager therefore prefers a <strong>low</strong> estimate." +
+          "The manager therefore wants a <strong>low</strong> fraud estimate." +
         "</p>",
       minTimeSeconds: 6
     },
@@ -1443,7 +1458,7 @@ var SURVEY_CONFIG = {
           "What's at stake for <strong>you</strong>?" +
         "</p>" +
         "<ol style='text-align:left; font-size:19px; max-width:620px; margin:0 auto; line-height:1.6; padding-left:22px;'>" +
-          "<li>You earn more when your estimates are <strong>accurate</strong>, summed across all 30 companies.</li>" +
+          "<li>You earn more when your estimates are <strong>accurate</strong>, summed across all 30 companies you will audit.</li>" +
           "<li>You also earn extra when you're <strong>confident and correct</strong> (by placing bets on your estimates).</li>" +
         "</ol>",
       minTimeSeconds: 8
@@ -1456,13 +1471,13 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 26px; font-weight:700;'>" +
-          "For each company, you give <strong>two</strong> answers." +
+          "For each audited company, you are required to provide <strong>two</strong> answers." +
         "</p>" +
         "<div class='two-answers-row'>" +
           "<div class='answer-card'>" +
             "<div class='answer-num'>1</div>" +
             "<div class='answer-title'>Fraud estimate</div>" +
-            "<div class='answer-sub'>Your best guess. Be as <strong>precise</strong> as you can.</div>" +
+            "<div class='answer-sub'>Your best guess of the share of the company's transactions that are suspicious. Be as <strong>precise</strong> as you can.</div>" +
           "</div>" +
           "<div class='answer-card' style='visibility:hidden;' aria-hidden='true'>" +
             "<div class='answer-num'>2</div>" +
@@ -1470,7 +1485,7 @@ var SURVEY_CONFIG = {
             "<div class='answer-sub'>&nbsp;</div>" +
           "</div>" +
         "</div>",
-      minTimeSeconds: 2
+      minTimeSeconds: 5
     },
 
     // -- Page 31b: Your task has two answers -- reveal Answer 2 --------
@@ -1486,7 +1501,7 @@ var SURVEY_CONFIG = {
           "<div class='answer-card'>" +
             "<div class='answer-num'>1</div>" +
             "<div class='answer-title'>Fraud estimate</div>" +
-            "<div class='answer-sub'>Your best guess. Be as <strong>precise</strong> as you can.</div>" +
+            "<div class='answer-sub'>Your best guess of the share of the company's transactions that are suspicious. Be as <strong>precise</strong> as you can.</div>" +
           "</div>" +
           "<div class='answer-card'>" +
             "<div class='answer-num'>2</div>" +
@@ -1516,11 +1531,20 @@ var SURVEY_CONFIG = {
         "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 18px; line-height:1.65; padding-left:22px;'>" +
           "<li>If your estimate is <strong>within 10 percentage points</strong> of the correct answer, you earn <strong>+10&cent;</strong>.</li>" +
           "<li>If your estimate is <strong>more than 10 percentage points</strong> away from the correct answer, you earn <strong>0&cent;</strong>.</li>" +
-        "</ul>" +
-        "<p style='text-align:left; font-size:17px; max-width:620px; margin:18px auto 0; line-height:1.6;'>" +
-          "Let us walk through an example. For this company, the correct answer is <strong>35%</strong>." +
-        "</p>",
+        "</ul>",
       minTimeSeconds: 8
+    },
+
+    // -- Page 32b: Walk-through example intro (own page) ----------------
+    {
+      id: "p4_inst_estimate_example_intro",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:left; font-size:20px; max-width:620px; margin:60px auto 0; line-height:1.6;'>" +
+          "Let us walk through an example. For this company, let's assume that the correct answer is <strong>35%</strong>." +
+        "</p>",
+      minTimeSeconds: 4
     },
 
     // -- Page 33: Estimate practice -- move to 50% (wrong, 0¢) ----------
@@ -1929,9 +1953,9 @@ var SURVEY_CONFIG = {
         "</p>" +
         "<p style='text-align:justify; font-size:18px; max-width:620px; margin:0 auto; line-height:1.6;'>" +
           "Answer 13 quick questions. Each wrong answer triggers a " +
-          "<strong>10-second pause</strong> before you can try again." +
+          "<strong>10-second timeout</strong> before you can try again." +
         "</p>",
-      minTimeSeconds: 5
+      minTimeSeconds: 8
     },
 
     // -- Q1 -------------------------------------------------------------
@@ -2015,7 +2039,7 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 8
     },
 
-    // -- Q5 (was Q5) ----------------------------------------------------
+    // -- Q5: manager can't fake -----------------------------------------
     {
       id: "p5_q5", type: "instructions", title: "",
       body:
@@ -2034,7 +2058,7 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 8
     },
 
-    // -- Q5 -------------------------------------------------------------
+    // -- Q6: fraud estimate definition ----------------------------------
     {
       id: "p5_q6", type: "instructions", title: "",
       body:
@@ -2055,7 +2079,7 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 8
     },
 
-    // -- Q6 -------------------------------------------------------------
+    // -- Q7: high estimate consequence ----------------------------------
     {
       id: "p5_q7", type: "instructions", title: "",
       body:
@@ -2076,7 +2100,7 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 8
     },
 
-    // -- Q7 -------------------------------------------------------------
+    // -- Q8: estimate bonus (numeric) -----------------------------------
     {
       id: "p5_q8", type: "instructions", title: "",
       body:
@@ -2098,7 +2122,7 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 8
     },
 
-    // -- Q8 -------------------------------------------------------------
+    // -- Q9: total for the company (numeric) ----------------------------
     {
       id: "p5_q9", type: "instructions", title: "",
       body:
@@ -2121,7 +2145,7 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 8
     },
 
-    // -- Q9 ------------------------------------------------------------
+    // -- Q10: base pay floor --------------------------------------------
     {
       id: "p5_q10", type: "instructions", title: "",
       body:
@@ -2140,7 +2164,7 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 8
     },
 
-    // -- Q10 ------------------------------------------------------------
+    // -- Q11: probability transaction is clean --------------------------
     {
       id: "p5_q11", type: "instructions", title: "",
       body:
@@ -2161,7 +2185,7 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 8
     },
 
-    // -- Q11 ------------------------------------------------------------
+    // -- Q12: why manager dislikes high estimate ------------------------
     {
       id: "p5_q12", type: "instructions", title: "",
       body:
@@ -2182,7 +2206,7 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 8
     },
 
-    // -- Q12 ------------------------------------------------------------
+    // -- Q13: when to bet 0 --------------------------------------------
     {
       id: "p5_q13", type: "instructions", title: "",
       body:
@@ -2433,7 +2457,7 @@ var SURVEY_CONFIG = {
       filterPhase: 1,
       randomize: true,
       askFlaggedEstimate: false,
-      minTimePerTrial: 8
+      minTimePerTrial: 10
     },
 
     // -- Practice summary ----------------------------------------------
@@ -2473,7 +2497,7 @@ var SURVEY_CONFIG = {
       filterPhase: 1,
       randomize: true,
       askFlaggedEstimate: false,
-      minTimePerTrial: 8
+      minTimePerTrial: 10
     },
 
     // -- Rule change (K=4 -> K=8), Page A: announcement ------------------
@@ -2504,7 +2528,7 @@ var SURVEY_CONFIG = {
           "<strong style='color:#15803d;'>8</strong> transactions, " +
           "not <strong style='color:#b91c1c; text-decoration:line-through;'>4</strong>." +
         "</p>",
-      minTimeSeconds: 8
+      minTimeSeconds: 10
     },
 
     // -- Rule change, Page B: everything else stays the same -------------
@@ -2530,7 +2554,7 @@ var SURVEY_CONFIG = {
       filterPhase: 2,
       randomize: true,
       askFlaggedEstimate: false,
-      minTimePerTrial: 8
+      minTimePerTrial: 10
     },
 
     // ==================================================================
