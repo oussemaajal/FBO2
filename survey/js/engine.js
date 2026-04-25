@@ -841,7 +841,7 @@
       var hasTarget = !isNaN(targetEst) || !isNaN(targetBet);
       sim.setAttribute('data-target-reached', hasTarget ? '0' : '1');
 
-      function update() {
+      function update(isInitial) {
         var pHat = parseFloat(estSlider.value);
         var bet = confSlider ? parseFloat(confSlider.value) : 0;
         var within = Math.abs(pHat - truth) <= 10;
@@ -873,9 +873,11 @@
         //
         // First-time-reached side effect: reveal any
         // .practice-feedback-card blocks (the takeaway line, hidden until
-        // compliance) and apply a 5-second post-compliance read lock so the
-        // participant has time to absorb the feedback before clicking Next.
-        if (hasTarget) {
+        // compliance). Skip on the initial render \u2014 even if slider's
+        // default value happens to equal the target, the participant
+        // hasn't actually demonstrated the action yet, so we don't show
+        // them the feedback. Only user-driven 'input' events count.
+        if (hasTarget && !isInitial) {
           var estOK = isNaN(targetEst) || pHat === targetEst;
           var betOK = isNaN(targetBet) || (confSlider && bet === targetBet);
           var wasReached = sim.getAttribute('data-target-reached') === '1';
@@ -884,15 +886,20 @@
             if (!wasReached) {
               var cards = document.querySelectorAll('#pageContent .practice-feedback-card');
               cards.forEach(function (c) { c.style.display = ''; });
-              self.lockNextForSeconds(5);
+              // No read-lock here \u2014 once they've hit the target, the
+              // feedback card is visible and they can advance immediately.
+              // If the page had a min-time lock from the page-load
+              // countdown, clear it (the comply-action proves they read
+              // enough; further waiting is just friction).
+              self.clearMinTime();
             }
           }
         }
       }
 
-      estSlider.addEventListener('input', update);
-      if (confSlider) confSlider.addEventListener('input', update);
-      update();
+      estSlider.addEventListener('input', function () { update(false); });
+      if (confSlider) confSlider.addEventListener('input', function () { update(false); });
+      update(true);  // initial paint only — does not trigger reveal/target-reached
     });
   };
 
