@@ -2709,18 +2709,51 @@ var SURVEY_CONFIG = {
     // employment are all pulled from Prolific's pre-screener data (API +
     // dashboard demographics CSV) and merged in via FETCH_RESPONSES.py
     // --merge-prolific. We only ask for things Prolific can't tell us and
-    // that may explain individual variation in estimate-and-bet behavior.
+    // that may explain individual variation in estimate-and-bet behavior:
+    //   stats_comfort           - numeracy proxy
+    //   finance_familiarity     - domain expertise (companies / disclosure)
+    //   risk_tolerance          - general risk preference; helps decompose
+    //                             bet behavior into confidence vs. risk
+    //   considered_hidden       - direct self-report on selection-neglect
+    //                             engagement (did you think about the
+    //                             undisclosed transactions?)
+    //   manager_strategic_belief - did the participant internalize that the
+    //                              manager chooses strategically?
     {
       id: "demographics",
       type: "questionnaire",
       title: "About You",
-      minTimeSeconds: 8,
+      minTimeSeconds: 12,
       questions: [
         {
           id: "stats_comfort",
           prompt: "How comfortable are you with probability and statistics?",
           type: "likert", required: true, min: 1, max: 5,
           minLabel: "Not at all", maxLabel: "Very comfortable"
+        },
+        {
+          id: "finance_familiarity",
+          prompt: "How familiar are you with how companies disclose financial information (for example, earnings reports or audits)?",
+          type: "likert", required: true, min: 1, max: 5,
+          minLabel: "Not at all", maxLabel: "Very familiar"
+        },
+        {
+          id: "risk_tolerance",
+          prompt: "In general, how willing are you to take financial risks?",
+          type: "likert", required: true, min: 1, max: 5,
+          minLabel: "Avoid risk entirely", maxLabel: "Embrace risk"
+        },
+        {
+          id: "considered_hidden",
+          prompt: "During the audits, how often did you think about the transactions the manager did NOT send to you?",
+          type: "likert", required: true, min: 1, max: 5,
+          minLabel: "Never", maxLabel: "On every audit"
+        },
+        {
+          id: "manager_strategic_belief",
+          prompt: "How strongly did you believe the manager picked transactions strategically rather than randomly?",
+          type: "likert", required: true, min: 1, max: 5,
+          minLabel: "Not at all", maxLabel: "Very strongly"
         }
       ]
     },
