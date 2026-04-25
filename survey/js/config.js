@@ -1634,9 +1634,9 @@ var SURVEY_CONFIG = {
         "</p>" +
         "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 18px; line-height:1.6; padding-left:22px;'>" +
           "<li>The correct answer for this company is <strong>35%</strong>.</li>" +
-          "<li>Move your estimate to <strong>50%</strong>.</li>" +
+          "<li>Move your estimate to <strong>60%</strong>.</li>" +
         "</ul>" +
-        "<div class='estimate-sim' data-truth='35' data-target='50' data-band-low='25' data-band-high='45'>" +
+        "<div class='estimate-sim' data-truth='35' data-target='60' data-band-low='25' data-band-high='45'>" +
           
           "<div class='sim-slider-card'>" +
             "<div class='sim-slider-header'>Your estimate: <span class='sim-slider-value' id='est35_val'>50%</span></div>" +
@@ -1657,11 +1657,11 @@ var SURVEY_CONFIG = {
         "</div>" +
         "<div class='practice-feedback-card' style='display:none;'>" +
           "<p style='text-align:left; font-size:20px; max-width:620px; margin:22px auto 0; line-height:1.5; font-weight:700; color:#b91c1c;'>" +
-            "At 50%, you&apos;re 15 percentage points off the correct answer. You earn <strong>0&cent;</strong> on this company." +
+            "At 60%, you&apos;re 25 percentage points off the correct answer. You earn <strong>0&cent;</strong> on this company." +
           "</p>" +
         "</div>",
       showCalculator: true,
-      minTimeSeconds: 12
+      minTimeSeconds: 0
     },
 
     // -- Page 34: Estimate practice -- move to 30% (right, +10¢) --------
@@ -1706,7 +1706,7 @@ var SURVEY_CONFIG = {
           "</p>" +
         "</div>",
       showCalculator: true,
-      minTimeSeconds: 12
+      minTimeSeconds: 0
     },
 
     // -- Page 35: Takeaway ---------------------------------------------
@@ -1865,7 +1865,7 @@ var SURVEY_CONFIG = {
           "</p>" +
         "</div>",
       showCalculator: true,
-      minTimeSeconds: 12
+      minTimeSeconds: 0
     },
 
     // -- Page 38: Bet practice -- bad scenario (-8¢) -------------------
@@ -1927,7 +1927,7 @@ var SURVEY_CONFIG = {
           "</p>" +
         "</div>",
       showCalculator: true,
-      minTimeSeconds: 12
+      minTimeSeconds: 0
     },
 
     // (Page 39 "Play with the bonus" removed -- redundant with the two
