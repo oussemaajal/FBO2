@@ -755,15 +755,24 @@ body {
   margin-bottom: 6px;
 }
 .practice-summary-amount {
-  font-size: 36px;
+  font-size: 44px;
   font-weight: 800;
   color: #14532d;
   letter-spacing: -0.01em;
   margin-bottom: 4px;
+  line-height: 1.1;
+}
+.practice-summary-amount-of {
+  font-size: 28px;
+  font-weight: 700;
+  color: #15803d;
+  opacity: 0.75;
+  margin-left: 6px;
 }
 .practice-summary-amount-sub {
   font-size: 14px;
   color: #475569;
+  margin-top: 6px;
 }
 .practice-summary-note {
   font-size: 15px;
@@ -1154,9 +1163,27 @@ body {
 }
 
 .bonus-amount {
-  font-size: 36px;
-  font-weight: 700;
+  font-size: 44px;
+  font-weight: 800;
   color: var(--color-primary-dark);
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+.bonus-amount-of {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-primary);
+  opacity: 0.75;
+  margin-left: 6px;
+}
+
+.bonus-amount-sub {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-top: 6px;
+  margin-bottom: 12px;
 }
 
 .bonus-detail {

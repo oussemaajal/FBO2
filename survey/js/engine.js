@@ -870,10 +870,23 @@
         // Target-reached gating: once the user hits the target(s), mark
         // the sim as satisfied. validatePage() reads this before unlocking
         // Next.
+        //
+        // First-time-reached side effect: reveal any
+        // .practice-feedback-card blocks (the takeaway line, hidden until
+        // compliance) and apply a 5-second post-compliance read lock so the
+        // participant has time to absorb the feedback before clicking Next.
         if (hasTarget) {
           var estOK = isNaN(targetEst) || pHat === targetEst;
           var betOK = isNaN(targetBet) || (confSlider && bet === targetBet);
-          if (estOK && betOK) sim.setAttribute('data-target-reached', '1');
+          var wasReached = sim.getAttribute('data-target-reached') === '1';
+          if (estOK && betOK) {
+            sim.setAttribute('data-target-reached', '1');
+            if (!wasReached) {
+              var cards = document.querySelectorAll('#pageContent .practice-feedback-card');
+              cards.forEach(function (c) { c.style.display = ''; });
+              self.lockNextForSeconds(5);
+            }
+          }
         }
       }
 
@@ -1546,6 +1559,37 @@
     if (this.elBtnNext) this.elBtnNext.disabled = false;
   };
 
+  // ── Generic lock-Next-for-N-seconds helper ─────────────────────────────
+  // Used by:
+  //   (a) Practice-page bonus simulators after the participant complies
+  //       with the slider target (5s "read the feedback" lock).
+  //   (b) Practice-page validation when the participant tries to advance
+  //       without complying (10s "re-read the instruction" cooldown).
+  //
+  // Reuses the same overlay + countdown UI as the page-load minTime lock,
+  // so the participant sees a consistent waiting experience.
+  SurveyEngine.prototype.lockNextForSeconds = function (seconds) {
+    if (this.devMode) return;
+    var self = this;
+    this.minTimeReady = false;
+    if (this.elBtnNext) this.elBtnNext.disabled = true;
+    var remaining = seconds;
+    if (this.elMinTimeOverlay) this.elMinTimeOverlay.style.display = '';
+    if (this.elMinTimeCountdown) this.elMinTimeCountdown.textContent = '(' + remaining + 's)';
+    if (this.minTimeTimer) {
+      clearInterval(this.minTimeTimer);
+      this.minTimeTimer = null;
+    }
+    this.minTimeTimer = setInterval(function () {
+      remaining--;
+      if (remaining <= 0) {
+        self.clearMinTime();
+      } else if (self.elMinTimeCountdown) {
+        self.elMinTimeCountdown.textContent = '(' + remaining + 's)';
+      }
+    }, 1000);
+  };
+
   // ── Navigation ─────────────────────────────────────────────────────────
   SurveyEngine.prototype.nextPage = function () {
     if (!this.devMode && !this.minTimeReady) return;
@@ -1746,6 +1790,10 @@
       if (!allSimReady) {
         this.showError(null, msg);
         valid = false;
+        // 10-second cooldown: same penalty pattern used by retry-mode
+        // attention checks. Forces the participant to re-read the
+        // instruction rather than mash Next until something happens.
+        this.lockNextForSeconds(10);
       }
     }
 
@@ -2549,16 +2597,17 @@
     var dollars = info.amountDollars.toFixed(2);
     var cur = info.currency || 'USD';
 
+    var maxDollars = (maxCents / 100).toFixed(2);
     var html = '<div class="practice-summary-card">';
     html += '<div class="practice-summary-kicker">Warm-up complete</div>';
     html += '<div class="practice-summary-title">You finished the 5 warm-up audits.</div>';
     html += '<div class="practice-summary-amount-wrap">';
     html += '<div class="practice-summary-amount-label">If these had counted, you would have earned:</div>';
-    html += '<div class="practice-summary-amount">' + cur + ' $' + dollars + '</div>';
-    html += '<div class="practice-summary-amount-sub">out of a possible ' + cur + ' $' +
-            (maxCents / 100).toFixed(2) + ' on 5 rounds';
-    if (info.n > 0) html += ' (' + pct + '% of the max)';
-    html += '.</div>';
+    html += '<div class="practice-summary-amount">' + cur + ' $' + dollars +
+            '<span class="practice-summary-amount-of">/ $' + maxDollars + '</span></div>';
+    if (info.n > 0) {
+      html += '<div class="practice-summary-amount-sub">' + pct + '% of the maximum</div>';
+    }
     html += '</div>';
     html += '<div class="practice-summary-note">';
     html += '<strong>Reminder:</strong> these 5 rounds <strong>don\'t count</strong> toward your real bonus. ';
@@ -2683,7 +2732,6 @@
     html += '</div>';
     html += '<span class="slider-label">10&cent;</span>';
     html += '</div>';
-    html += '<div class="slider-hint">Bet only what you\'re willing to risk losing if your estimate is off.</div>';
     html += '<div class="field-error" id="error_confidence"></div>';
     html += '</div>';
 
@@ -2929,17 +2977,22 @@
 
     if (page.showBonus && this.bonusInfo && this.bonusInfo.enabled && this.bonusInfo.amount !== undefined) {
       var fixedBase = (this.config.bonus && this.config.bonus.fixedBase) || 0;
-      var totalPay = fixedBase + this.bonusInfo.amount;
-      var pointSum = this.bonusInfo.pointBonus != null ? this.bonusInfo.pointBonus : 0;
-      var calibSum = this.bonusInfo.calibBonus != null ? this.bonusInfo.calibBonus : 0;
-      var cc = this.bonusInfo.correctTrials != null ? this.bonusInfo.correctTrials : '-';
-      var tt = this.bonusInfo.totalTrials   != null ? this.bonusInfo.totalTrials   : '-';
+      var maxBonus  = (this.config.bonus && this.config.bonus.maxBonus)  || 0;
+      var totalPay  = fixedBase + this.bonusInfo.amount;
+      var maxTotal  = fixedBase + maxBonus;
+      var pctOfMax  = maxTotal > 0 ? Math.round(100 * totalPay / maxTotal) : 0;
+      var pointSum  = this.bonusInfo.pointBonus != null ? this.bonusInfo.pointBonus : 0;
+      var calibSum  = this.bonusInfo.calibBonus != null ? this.bonusInfo.calibBonus : 0;
+      var cc        = this.bonusInfo.correctTrials != null ? this.bonusInfo.correctTrials : '-';
+      var tt        = this.bonusInfo.totalTrials   != null ? this.bonusInfo.totalTrials   : '-';
       html += '<div class="bonus-display">';
-      html += '<div class="bonus-amount">' + this.bonusInfo.currency + ' ' + totalPay.toFixed(2) + '</div>';
-      html += '<div class="bonus-detail">Fixed base: ' + this.bonusInfo.currency + ' ' + fixedBase.toFixed(2) +
-              ' &nbsp;|&nbsp; Performance bonus: ' + this.bonusInfo.currency + ' ' + this.bonusInfo.amount.toFixed(2) + '</div>';
-      html += '<div class="bonus-detail">Point-estimate bonus: ' + pointSum.toFixed(2) +
-              ' &nbsp;|&nbsp; Calibration bonus: ' + calibSum.toFixed(2) +
+      html += '<div class="bonus-amount">' + this.bonusInfo.currency + ' $' + totalPay.toFixed(2) +
+              '<span class="bonus-amount-of"> / $' + maxTotal.toFixed(2) + '</span></div>';
+      html += '<div class="bonus-amount-sub">' + pctOfMax + '% of the maximum</div>';
+      html += '<div class="bonus-detail">Fixed base: ' + this.bonusInfo.currency + ' $' + fixedBase.toFixed(2) +
+              ' &nbsp;|&nbsp; Performance bonus: ' + this.bonusInfo.currency + ' $' + this.bonusInfo.amount.toFixed(2) + '</div>';
+      html += '<div class="bonus-detail">Point-estimate bonus: $' + pointSum.toFixed(2) +
+              ' &nbsp;|&nbsp; Calibration bonus: $' + calibSum.toFixed(2) +
               ' &nbsp;|&nbsp; Trials within 10 points: ' + cc + ' / ' + tt + '</div>';
       html += '</div>';
     }
