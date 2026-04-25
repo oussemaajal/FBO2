@@ -160,14 +160,16 @@ body {
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--color-text);
-  margin-bottom: 10px;
+  margin: 0 auto 10px;
+  max-width: 620px;
   line-height: 1.2;
 }
 
 .page-subtitle {
   font-size: 17px;
   color: var(--color-text-secondary);
-  margin-bottom: 26px;
+  margin: 0 auto 26px;
+  max-width: 620px;
 }
 
 .page-body {
@@ -178,13 +180,13 @@ body {
   text-align: justify;
   text-justify: inter-word;
   /* Constrain reading width so prose stays at a comfortable measure
-     even when the survey card scales up to ~1080px. Without this, body
-     paragraphs sometimes hug the far-left edge of the wide card, which
-     looks unbalanced; with it, every paragraph is centered with equal
-     margins on both sides. Individual `<p style='max-width:...'>` rules
-     already set tighter widths and override this on the pages that need
-     them. */
-  max-width: 720px;
+     even when the survey card scales up to ~1080px. 620px matches the
+     inline `max-width:620px` value used on most existing paragraphs,
+     so the column is now consistent: paragraphs without an explicit
+     max-width and paragraphs WITH `max-width:620px` both render at the
+     same column width. Without this, the bare paragraphs visually hug
+     the left edge while their neighbors look centered. */
+  max-width: 620px;
   margin-left: auto;
   margin-right: auto;
   /* No auto-hyphenation anywhere: browsers were splitting words like
@@ -1031,10 +1033,13 @@ body {
   display: flex;
   align-items: center;
   /* Constrained width + centered so Back/Next sit toward the middle of
-     the card instead of hugging the corners. The floating calculator
-     widget docks on the right at ~16px from the viewport edge; pulling
-     Next inward keeps it from being covered. */
-  max-width: 720px;
+     the card instead of hugging the corners. Matches the body column
+     (.page-body max-width:620px) so the buttons sit visually inside
+     the same vertical column as the prose. The floating calculator
+     widget docks on the right edge of the viewport; pulling Next
+     inward to ~310px from the page-content right edge keeps it
+     uncovered even at the widest scaled-up viewport. */
+  max-width: 620px;
   margin-top: 32px;
   margin-left: auto;
   margin-right: auto;
