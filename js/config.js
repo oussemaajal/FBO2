@@ -233,8 +233,8 @@ var SURVEY_CONFIG = {
           "<div class='mission-badge-label'>GOVERNMENT AUDITOR</div>" +
         "</div>" +
         "<p style='text-align:justify; font-size:18px; max-width:620px; margin:0 auto; line-height:1.65;'>" +
-          "You're a <strong>government auditor</strong>. For each company, you look at its " +
-          "transactions and give it a <strong>fraud estimate</strong>." +
+          "You play the role of a <strong>government auditor</strong>. For each company, you review its " +
+          "transactions and provide a <strong>fraud estimate</strong>." +
         "</p>" +
         "<p style='text-align:justify; font-size:18px; max-width:620px; margin:18px auto 0; line-height:1.65;'>" +
           "At the end of the study, we reveal each company's <strong>actual fraud rate</strong> (the real percentage of its transactions that were suspicious). " +
@@ -272,11 +272,11 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:justify; font-size:24px; max-width:620px; margin:0 auto 16px; font-weight:700;'>" +
-          "Now, the details." +
+          "What follows: the details." +
         "</p>" +
         "<p style='text-align:justify; font-size:17px; max-width:620px; margin:0 auto; line-height:1.6;'>" +
-          "Up next: the auditing process, what transactions look like, and how the " +
-          "bonus works." +
+          "The next section explains the auditing process, the two kinds of transactions, " +
+          "and how the bonus is calculated." +
         "</p>",
       minTimeSeconds: 5
     },
@@ -292,17 +292,17 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:justify; font-size:24px; max-width:620px; margin:0 auto 8px; font-weight:600;'>" +
-          "How do you assess fraud?" +
+          "How do you assess a company's fraud rate?" +
         "</p>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px;'>" +
-          "By looking at the company's <strong>transactions</strong>." +
+          "By examining the company's <strong>transactions</strong>." +
         "</p>" +
         "<div style='display:flex; justify-content:center; margin:12px 0;'>" +
           "<div class='transaction-doc neutral large'></div>" +
         "</div>" +
         "<p style='text-align:justify; font-size:17px; max-width:620px; margin:18px auto 0; line-height:1.6;'>" +
-          "This is one transaction. You won't need to read what's inside. Just " +
-          "know <strong>what kind</strong> it is." +
+          "This is a single transaction. You will not need to read its contents. " +
+          "You only need to know <strong>what kind</strong> of transaction it is." +
         "</p>",
       minTimeSeconds: 7
     },
@@ -326,7 +326,7 @@ var SURVEY_CONFIG = {
             "<div class='transaction-doc-caption'>&nbsp;</div>" +
           "</div>" +
         "</div>",
-      minTimeSeconds: 5
+      minTimeSeconds: 2
     },
 
     // -- Page 9: Clean AND Suspicious transactions ----------------------
@@ -348,7 +348,7 @@ var SURVEY_CONFIG = {
             "<div class='transaction-doc-caption' style='color:#b91c1c;'>Suspicious</div>" +
           "</div>" +
         "</div>",
-      minTimeSeconds: 5
+      minTimeSeconds: 3
     },
 
     // -- Page 10: 50/50 coin flip ---------------------------------------
@@ -408,7 +408,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:justify; font-size:24px; margin:0 auto 22px; max-width:620px; font-weight:600;'>" +
-          "Companies have many transactions." +
+          "Each company has many transactions." +
         "</p>" +
         "<div class='doc-cluster'>" +
           // 20 neutral document icons, positioned pseudo-randomly
@@ -447,7 +447,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:justify; font-size:24px; margin:0 auto 22px; font-weight:600;'>" +
-          "Some companies are cleaner than others." +
+          "Companies vary in how many of their transactions are suspicious." +
         "</p>" +
         "<div class='company-mix-pair'>" +
           "<div class='company-mix-panel'>" +
@@ -504,7 +504,7 @@ var SURVEY_CONFIG = {
           "</div>" +
         "</div>" +
         "<p style='text-align:justify; font-size:19px; max-width:620px; margin:22px auto 0;'>" +
-          "Your job: tell them apart with a <strong>fraud estimate</strong>." +
+          "Your task is to distinguish them by providing a <strong>fraud estimate</strong>." +
         "</p>",
       minTimeSeconds: 12
     },
@@ -520,7 +520,7 @@ var SURVEY_CONFIG = {
           "share of suspicious transactions." +
         "</p>" +
         "<p style='text-align:justify; font-size:17px; max-width:620px; margin:0 auto 24px; line-height:1.6;'>" +
-          "Three example companies, every transaction shown:" +
+          "Three example companies, with every transaction shown:" +
         "</p>" +
         "<div style='max-width:620px; margin:0 auto; display:flex; flex-direction:column; gap:14px;'>" +
           // 0 / 10
@@ -617,7 +617,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:left; font-size:22px; max-width:620px; margin:0 auto 14px; font-weight:700;'>" +
-          "What happens to companies after they receive an estimate?" +
+          "What happens to a company after you submit its estimate?" +
         "</p>" +
         "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto; line-height:1.65; padding-left:22px;'>" +
           "<li>Your estimates feed a <strong>lottery</strong>.</li>" +
@@ -686,7 +686,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:justify; font-size:24px; max-width:620px; margin:0 auto 12px; font-weight:600;'>" +
-          "Another one." +
+          "A second example." +
         "</p>" +
         "<p style='text-align:justify; font-size:16px; max-width:620px; margin:0 auto 16px; line-height:1.6;'>" +
           "A company with <strong>20</strong> transactions, all shown." +
@@ -734,7 +734,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:justify; font-size:24px; max-width:620px; margin:0 auto 12px; font-weight:600;'>" +
-          "Last one." +
+          "A final example." +
         "</p>" +
         "<p style='text-align:justify; font-size:16px; max-width:620px; margin:0 auto 16px; line-height:1.6;'>" +
           "A company with <strong>30</strong> transactions, all shown." +
@@ -947,7 +947,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:justify; font-size:24px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
-          "Now, a quick thought experiment." +
+          "Consider the following thought experiment." +
         "</p>" +
         "<p style='text-align:justify; font-size:22px; max-width:620px; margin:0 auto 26px; line-height:1.5;'>" +
           "Imagine you could grab <strong>one random transaction</strong> from a company." +
@@ -956,7 +956,7 @@ var SURVEY_CONFIG = {
           "<div class='transaction-doc large neutral' style='visibility:hidden;'>&nbsp;</div>" +
           "<div class='random-single-caption' style='visibility:hidden;'>&nbsp;</div>" +
         "</div>",
-      minTimeSeconds: 5
+      minTimeSeconds: 2
     },
 
     // -- Page 18c: Reveal -- it's suspicious ---------------------------
@@ -966,7 +966,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:justify; font-size:24px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
-          "Now, a quick thought experiment." +
+          "Consider the following thought experiment." +
         "</p>" +
         "<p style='text-align:justify; font-size:22px; max-width:620px; margin:0 auto 26px; line-height:1.5;'>" +
           "Imagine you could grab <strong>one random transaction</strong> from a company." +
@@ -977,7 +977,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:22px; font-weight:700; max-width:620px; margin:22px auto 0; color:#b91c1c;'>" +
           "It turns out to be suspicious." +
         "</p>",
-      minTimeSeconds: 5
+      minTimeSeconds: 3
     },
 
     // -- Page 18d: Pose the question -----------------------------------
@@ -1004,7 +1004,7 @@ var SURVEY_CONFIG = {
             "<div class='transaction-doc-mini hidden-mini'>?</div>" +
           "</div>" +
         "</div>",
-      minTimeSeconds: 6
+      minTimeSeconds: 3
     },
 
     // -- Page 18e: Punchline -- no, it could be any of these -----------
@@ -1100,9 +1100,9 @@ var SURVEY_CONFIG = {
           "</div>" +
         "</div>" +
         "<p style='text-align:center; font-size:22px; font-weight:800; max-width:620px; margin:22px auto 0; line-height:1.45;'>" +
-          "One random transaction doesn't tell you the rest." +
+          "A single random transaction tells you very little about the rest." +
         "</p>",
-      minTimeSeconds: 10
+      minTimeSeconds: 5
     },
 
     // -- Page 18f: Attention check -- flipped to clean -----------------
@@ -1147,10 +1147,10 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:center; font-size:28px; line-height:1.4; max-width:620px; margin:80px auto 0; font-weight:700; color:#0f172a;'>" +
-          "However, in our setting, the 4 transactions you see about a company are " +
-          "<strong style='color:#b91c1c;'>not randomly picked from the lot</strong>." +
+          "In this study, however, the 4 transactions you see about a company are " +
+          "<strong style='color:#b91c1c;'>not selected at random</strong>." +
         "</p>",
-      minTimeSeconds: 7
+      minTimeSeconds: 5
     },
 
     // -- Page 23: Meet the manager -------------------------------------
@@ -1160,7 +1160,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
-          "Meet the <strong>manager</strong> of the company you're auditing." +
+          "Now consider the <strong>manager</strong> of the company you are auditing." +
         "</p>" +
         "<div class='manager-badge'>" +
           "<svg viewBox='0 0 120 140' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>" +
@@ -1405,7 +1405,7 @@ var SURVEY_CONFIG = {
           "</div>" +
         "</div>" +
         "<p style='text-align:justify; font-size:18px; max-width:620px; margin:22px auto 0; line-height:1.6;'>" +
-          "So the manager is better off when your estimate is <strong>low</strong>." +
+          "The manager therefore prefers a <strong>low</strong> estimate." +
         "</p>",
       minTimeSeconds: 6
     },
@@ -1470,7 +1470,7 @@ var SURVEY_CONFIG = {
             "<div class='answer-sub'>&nbsp;</div>" +
           "</div>" +
         "</div>",
-      minTimeSeconds: 5
+      minTimeSeconds: 2
     },
 
     // -- Page 31b: Your task has two answers -- reveal Answer 2 --------
@@ -1498,7 +1498,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:20px; max-width:620px; margin:26px auto 0; font-weight:700;'>" +
           "Each one earns its own bonus." +
         "</p>",
-      minTimeSeconds: 8
+      minTimeSeconds: 4
     },
 
     // -- Page 32: Estimate bonus -- introduction ------------------------
@@ -1518,7 +1518,7 @@ var SURVEY_CONFIG = {
           "<li>If your estimate is <strong>more than 10 percentage points</strong> away from the correct answer, you earn <strong>0&cent;</strong>.</li>" +
         "</ul>" +
         "<p style='text-align:left; font-size:17px; max-width:620px; margin:18px auto 0; line-height:1.6;'>" +
-          "Let's practice. For our example company, the correct answer is <strong>35%</strong>." +
+          "Let us walk through an example. For this company, the correct answer is <strong>35%</strong>." +
         "</p>",
       minTimeSeconds: 8
     },
@@ -1530,7 +1530,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:left; font-size:22px; max-width:620px; margin:0 auto 14px; font-weight:700;'>" +
-          "Try it." +
+          "Practice this." +
         "</p>" +
         "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 18px; line-height:1.6; padding-left:22px;'>" +
           "<li>The correct answer for this company is <strong>35%</strong>.</li>" +
@@ -1569,7 +1569,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:left; font-size:22px; max-width:620px; margin:0 auto 14px; font-weight:700;'>" +
-          "Now try again." +
+          "Now try a different estimate." +
         "</p>" +
         "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 18px; line-height:1.6; padding-left:22px;'>" +
           "<li>Same correct answer: <strong>35%</strong>.</li>" +
@@ -1608,7 +1608,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:justify; font-size:22px; max-width:620px; margin:0 auto 14px; font-weight:600;'>" +
-          "Takeaway." +
+          "Summary." +
         "</p>" +
         "<p style='text-align:justify; font-size:18px; max-width:620px; margin:0 auto; line-height:1.6;'>" +
           "Correct answer <strong>35%</strong> &rarr; the bonus pays out for any estimate between " +
@@ -1631,7 +1631,7 @@ var SURVEY_CONFIG = {
         "</p>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600; line-height:1.5;'>" +
           "The correct answer is <strong>60%</strong>. You estimate <strong>55%</strong>. " +
-          "How much do you earn from the estimate?" +
+          "How much would you earn from the estimate?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='ten' data-mode='retry' " +
              "data-explain='55% is within 10 percentage points of 60% (difference is 5), so the estimate bonus is +10&cent;.'>" +
@@ -1656,7 +1656,7 @@ var SURVEY_CONFIG = {
           "The bet." +
         "</p>" +
         "<p style='text-align:justify; font-size:18px; max-width:620px; margin:0 auto; line-height:1.6;'>" +
-          "Besides your estimate, you can also <strong>bet up to 10&cent;</strong> on whether your estimate is within 10 percentage points of the correct answer." +
+          "In addition to your estimate, you may <strong>bet up to 10&cent;</strong> on whether your estimate is within 10 percentage points of the correct answer." +
         "</p>",
       minTimeSeconds: 7
     },
@@ -1668,12 +1668,12 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:center; font-size:22px; max-width:620px; margin:0 auto 18px; font-weight:700;'>" +
-          "For instance, you bet <strong>5&cent;</strong> on your estimate:" +
+          "For example, suppose you bet <strong>5&cent;</strong> on your estimate:" +
         "</p>" +
         "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 14px; line-height:1.65; padding-left:22px;'>" +
           "<li>Within 10 percentage points &rarr; you <strong>win the bet</strong>: <strong>+5&cent;</strong>.</li>" +
           "<li>More than 10 percentage points away &rarr; you <strong>lose the bet</strong>: <strong>&minus;5&cent;</strong> (deducted from bonus on other companies).</li>" +
-          "<li>Your <strong>$3 base pay is never touched.</strong> Lost bets only reduce bonus from other companies, and total bonus can't drop below $0.</li>" +
+          "<li>Your <strong>$3 base pay is never affected.</strong> Lost bets only reduce the bonus from other companies, and the total bonus cannot fall below $0.</li>" +
         "</ul>",
       minTimeSeconds: 9
     },
@@ -1685,7 +1685,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:left; font-size:22px; max-width:620px; margin:0 auto 14px; font-weight:700;'>" +
-          "Try it." +
+          "Practice this." +
         "</p>" +
         "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 18px; line-height:1.6; padding-left:22px;'>" +
           "<li>The correct answer is <strong>35%</strong>.</li>" +
@@ -1737,7 +1737,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:left; font-size:22px; max-width:620px; margin:0 auto 14px; font-weight:700;'>" +
-          "Now try again." +
+          "Now try a different estimate." +
         "</p>" +
         "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 18px; line-height:1.6; padding-left:22px;'>" +
           "<li>Same correct answer: <strong>35%</strong>.</li>" +
@@ -1834,7 +1834,7 @@ var SURVEY_CONFIG = {
             "<div class='interests-body'>&nbsp;</div>" +
           "</div>" +
         "</div>",
-      minTimeSeconds: 5
+      minTimeSeconds: 2
     },
 
     // -- Page 40b: Opposing goals -- reveal MANAGER (vs) ---------------
@@ -1893,7 +1893,7 @@ var SURVEY_CONFIG = {
             "</div>" +
           "</div>" +
         "</div>",
-      minTimeSeconds: 7
+      minTimeSeconds: 4
     },
 
     // -- Page 40c: The sum-up line on its own page, big + emphasized ---
@@ -1903,15 +1903,15 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:center; font-size:30px; line-height:1.35; max-width:620px; margin:60px auto 24px; font-weight:800; color:#0f172a;'>" +
-          "The manager just wants a <span style='color:#b91c1c;'>low</span> estimate." +
+          "The manager wants a <span style='color:#b91c1c;'>low</span> estimate." +
         "</p>" +
         "<p style='text-align:center; font-size:30px; line-height:1.35; max-width:620px; margin:0 auto 32px; font-weight:800; color:#0f172a;'>" +
-          "You want an <span style='color:#0f766e;'>accurate</span> one." +
+          "You want an <span style='color:#0f766e;'>accurate</span> estimate." +
         "</p>" +
         "<p style='text-align:center; font-size:17px; max-width:560px; margin:0 auto; line-height:1.6; color:#475569;'>" +
-          "A full audit costs the manager their raise whether fraud is found or not." +
+          "A full audit costs the manager their raise, whether fraud is found or not." +
         "</p>",
-      minTimeSeconds: 8
+      minTimeSeconds: 5
     },
 
     // ==================================================================
@@ -1925,7 +1925,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:justify; font-size:26px; max-width:620px; margin:0 auto 18px; font-weight:700;'>" +
-          "One last check before the audits." +
+          "A final check before the audits." +
         "</p>" +
         "<p style='text-align:justify; font-size:18px; max-width:620px; margin:0 auto; line-height:1.6;'>" +
           "Answer 13 quick questions. Each wrong answer triggers a " +
@@ -1945,7 +1945,7 @@ var SURVEY_CONFIG = {
           "What is your job in this study?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='audit' data-mode='retry' " +
-             "data-explain='You&apos;re the government auditor. You estimate each company&apos;s percentage of suspicious transactions.'>" +
+             "data-explain='You are the government auditor. You estimate the percentage of each company&apos;s transactions that are suspicious.'>" +
           "<button type='button' class='practice-btn' data-val='invest'>Decide which companies to invest in.</button>" +
           "<button type='button' class='practice-btn' data-val='audit'>Give each company a fraud estimate based on its transactions.</button>" +
           "<button type='button' class='practice-btn' data-val='rate'>Give each company a customer-service score.</button>" +
@@ -2211,13 +2211,13 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 22px; font-weight:700;'>" +
-          "You're ready." +
+          "You are ready." +
         "</p>" +
         "<p style='text-align:justify; font-size:19px; max-width:620px; margin:0 auto 16px; line-height:1.65;'>" +
-          "The audits come in two parts:" +
+          "The audits proceed in two parts:" +
         "</p>" +
         "<ol style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 16px; line-height:1.65; padding-left:22px;'>" +
-          "<li><strong>5 warm-up audits.</strong> To get the hang of it. <strong>No bonus</strong> on these.</li>" +
+          "<li><strong>5 warm-up audits.</strong> These help you become familiar with the task. <strong>No bonus</strong> on these.</li>" +
           "<li><strong>30 scored audits.</strong> These count toward your bonus, <strong>up to $6.00</strong>.</li>" +
         "</ol>",
       minTimeSeconds: 6
@@ -2265,7 +2265,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:20px; max-width:620px; margin:20px auto 0; line-height:1.5; font-weight:700;'>" +
           "Some are <strong>small</strong> &mdash; <strong>10 transactions</strong>." +
         "</p>",
-      minTimeSeconds: 5
+      minTimeSeconds: 2
     },
 
     // -- Firm-size intro: step 2 -- medium (20) ------------------------
@@ -2313,7 +2313,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:20px; max-width:620px; margin:20px auto 0; line-height:1.5; font-weight:700;'>" +
           "Some are <strong>medium</strong> &mdash; <strong>20 transactions</strong>." +
         "</p>",
-      minTimeSeconds: 5
+      minTimeSeconds: 2
     },
 
     // -- Firm-size intro: step 3 -- large (30) + rule reminder ---------
@@ -2371,7 +2371,7 @@ var SURVEY_CONFIG = {
         "<p style='text-align:center; font-size:20px; max-width:620px; margin:20px auto 0; line-height:1.5; font-weight:700;'>" +
           "Some are <strong>large</strong> &mdash; <strong>30 transactions</strong>." +
         "</p>",
-      minTimeSeconds: 6
+      minTimeSeconds: 3
     },
 
     // -- Firm-size intro: rule reminder on its own page for emphasis ---
@@ -2413,12 +2413,12 @@ var SURVEY_CONFIG = {
           "First, <strong>5 warm-up audits</strong>." +
         "</p>" +
         "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 16px; line-height:1.65; padding-left:22px;'>" +
-          "<li>Same task as the scored audits: estimate + bet.</li>" +
-          "<li><strong>These don't count toward your bonus.</strong></li>" +
-          "<li>At the end, we'll tell you how much you <em>would have</em> earned, so you can see how you did before the scored rounds.</li>" +
+          "<li>The task is the same as the scored audits: provide an estimate and a bet.</li>" +
+          "<li><strong>These do not count toward your bonus.</strong></li>" +
+          "<li>At the end, we will report how much you <em>would have</em> earned, so you can see your performance before the scored rounds begin.</li>" +
         "</ul>" +
         "<p style='text-align:center; font-size:20px; font-weight:700; max-width:620px; margin:22px auto 0;'>" +
-          "Take them seriously &mdash; the 30 scored audits come right after." +
+          "Treat them seriously: the 30 scored audits begin immediately afterward." +
         "</p>",
       minTimeSeconds: 8
     },
@@ -2453,14 +2453,14 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:justify; font-size:26px; line-height:1.35; max-width:620px; margin:0 auto 18px; font-weight:700;'>" +
-          "Now, the real thing." +
+          "The scored audits begin now." +
         "</p>" +
         "<p style='text-align:justify; font-size:19px; max-width:620px; margin:0 auto 16px; line-height:1.65;'>" +
-          "The next <strong>30 audits</strong> count toward your bonus " +
-          "(<strong>up to $6.00</strong>)." +
+          "The following <strong>30 audits</strong> count toward your bonus, " +
+          "up to <strong>$6.00</strong>." +
         "</p>" +
         "<p style='text-align:justify; font-size:17px; max-width:620px; margin:0 auto; line-height:1.65; color:#334155;'>" +
-          "Same task as the warm-up. Good luck." +
+          "The task is the same as the warm-up." +
         "</p>",
       minTimeSeconds: 6
     },

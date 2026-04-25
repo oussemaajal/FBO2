@@ -386,7 +386,7 @@
             totalTrialsGlobal: isPractice ? trials.length : totalTrialsGlobal,
             block: block,
             practice: isPractice,
-            minTimeSeconds: 5
+            minTimeSeconds: 2
           });
           // Fraud trial page
           self.pages.push({
