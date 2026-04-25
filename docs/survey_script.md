@@ -7,9 +7,10 @@
 - Every page has a `### PAGE N` heading. Numbers are just markers — I'll
   renumber after each round of edits so you don't have to.
 - Everything below a page heading is fair game.
-- Inline edit comments: `[[ ... ]]` (e.g. `[[ shorten ]]`, `[[ DELETE ]]`).
+- Inline edit comments: write a parenthetical or footnote next to the
+  text you want changed.
 - To add a page, write a new `### PAGE NEW` section wherever you want it.
-- To delete a page, write `[[ DELETE PAGE ]]` at the top of its section.
+- To delete a page, write `DELETE PAGE` at the top of its section.
 - Reorder pages by moving whole sections up/down.
 
 ---
@@ -49,6 +50,11 @@
   card unhides and a **5-second read lock** runs before Next becomes
   active. If the participant clicks Next before reaching the target,
   Next disables for a **10-second cooldown** before they can try again.
+- **Numbered answer badges:** the "1" / "2" badges on the two-answer
+  pages and the bet/estimate kickers all use the same blue palette.
+  Small inline badges: `#4361ee` filled, white text. Larger circular
+  badges (Page 30 stakes list): `#dbe4ff` background with `#3730a3`
+  text. No teal or amber variants remain in the flow.
 - **Dev mode (`?dev=true`):** time locks are skipped, the resume prompt
   is suppressed when `?start=<page_id>` is set, and a floating page
   jumper appears in the top-left with a searchable list of every page.
@@ -57,7 +63,8 @@
   Russian, Greek, binary, reversed English, or a prompt-injection
   attempt). Field type rotates across text / radio / checkbox. Humans
   never see it (off-screen, 1-px, transparent); a DOM-scraping bot
-  will try to answer it, which flags the submission. Stored in
+  will try to answer it, which **immediately ends the survey** with
+  a lockout screen — **no completion code, no payment**. Stored in
   `stealthCheck` in the raw data blob.
 
 ---
@@ -76,7 +83,9 @@
   - Best case per company: +20¢. Worst case per company: −10¢.
   - Summed across all 30 companies, floored at $0. Losses on one company
     eat into gains on another, never into base pay.
-- **Pay range:** $4.00 to $10.00.
+- **Pay range:** $4.00 to $10.00 ($4 base + up to $6 bonus).
+- **Total survey time floor:** **16 minutes** in aggregate (sum of every
+  page's `minTimeSeconds` before any thinking time).
 - **Bonus benchmark (piecewise):** the "correct answer" used for payout
   depends on `k` (the number of suspicious transactions among those
   disclosed):
@@ -107,6 +116,12 @@
   full 30-trial run.
 - **Slider requirement:** the participant has to move the fraud-estimate
   slider at least once per trial, even if they settle back at 50.
+- **Bot detection enforcement:** any page with a non-empty `stealthCheck`
+  field (the rotating invisible honeypot) immediately aborts the survey
+  on submit. The participant is shown a lockout screen, **no completion
+  code is issued, no payment is made**. The consent page (Page 4) carries
+  an IMPORTANT red callout warning participants of this rule before they
+  agree to participate.
 
 **Terminology (locked in — do not vary):**
 - The participant is a **government auditor** (never just "auditor").
@@ -182,6 +197,13 @@
   payment.
 - **Voluntary.** You may withdraw at any time by closing this window.
 
+**RED IMPORTANT NOTE** (light-red background, red left border, uppercase
+"IMPORTANT." prefix):
+- This study includes hidden checks for automated agents (e.g., AI
+  assistants completing the form on your behalf). If detected, the
+  survey will end immediately. **No completion code will be issued, and
+  no payment will be made.** Please complete the study yourself.
+
 **CHECKBOX** (required): `I agree to participate.`
 **Decline message:** *You must agree to participate in order to continue.*
 
@@ -197,7 +219,8 @@
 **BODY:**
 - You play the role of a **government auditor**. For each company, you
   review its transactions and provide a preliminary **fraud estimate**.
-- At the end of the study, we reveal each company's **correct answer**. **The closer your estimate to the correct answer, the more you earn.**
+- At the end of the study, we reveal each company's **correct answer**.
+  **The closer your estimate to the correct answer, the more you earn.**
 
 ---
 
@@ -245,7 +268,7 @@ accurate you are, the more you earn.*
 **VISUALS:** one large neutral document icon, centered.
 
 **Closing line:**
-- [p, 17 px] This is a single transaction. You will not need to read
+- [p, 20 px] This is a single transaction. You will not need to read
   its contents. You only need to know **what type** of transaction it
   is.
 
@@ -283,11 +306,11 @@ placeholder reserved for the next page (so the layout doesn't shift).
 **Time lock:** 5 s
 
 **BODY:**
-- [headline, 24 px, semibold] Any given transaction is a coin flip.
+- [headline, 24 px] Any given transaction is a coin flip.
 
 **VISUALS:** the same two cards, captioned **`50%`** each.
 
-**Closing line** (centered, 22 px, bold):
+**Closing line** (centered, 24 px):
 - Your job is to assess the **proportion of a company's transactions
   that are suspicious**.
 
@@ -332,7 +355,7 @@ background panel).
 **Time lock:** 10 s
 
 **BODY:**
-- [headline, 24 px, semibold] Companies vary in how many of their
+- [headline, 20 px] Companies vary in how many of their
   transactions are suspicious.
 
 **VISUALS (two cluster panels side by side, mini scale):**
@@ -341,8 +364,8 @@ background panel).
 - **Mostly suspicious** (red label): 2 C + 18 S, same 20 positions.
 
 **Closing line:**
-- [p, 19 px] Your task is to distinguish them by providing a **fraud
-  estimate**.
+- [p, 24 px, centered] Your task is to distinguish them by providing a
+  **fraud estimate**.
 
 ---
 
@@ -506,31 +529,24 @@ company's transactions that are suspicious, expressed as a percentage.*
 
 **Behavior:** `retry` mode.
 
-**Explanation:** *A higher estimate means more lottery tickets, and a
-higher chance of a full audit, though not a guarantee.*
+**Explanation when correct:** *A higher estimate means more lottery
+tickets, and a higher chance of a full audit, though not a guarantee.*
 
 ---
 
 # ACT III — THE MANAGER AND THE TWIST
 
-*(Note on ordering: in the live config, the early law-setup pages
-(`p3_inst_law_4`, `p3_inst_law_4_nature`, `p3_check_all`,
-`p3_check_how_many`) come first, followed by the "Independence
-interlude" pages — `p2_inst_random_*` and `p2_attn_random` — then the
-bridge `p3_inst_not_random` and the manager intro. The page order
-below mirrors the JS array exactly.)*
-
-### PAGE 24 — Law: send only 4
+### PAGE 24 — Law requires exactly 4
 **ID:** `p3_inst_law_4`
 **Time lock:** 5 s
 
 **BODY:**
-- [p, 22 px] Here's the catch.
-- [p, 26 px, bold] A company has many transactions, but the law requires it to send you, the auditor, only **4** transactions for the preliminary audit. *(big red 44 px "4")*
+- [p, 24 px] Here's the catch: A company has many transactions, but the
+  law requires it to send you, the auditor, only
+  **4** (44 px, red, inline) **transactions** for the preliminary audit.
 
-**VISUALS:** the same transaction cluster from the cluster page, with
-**4 icons highlighted** (thick black outline). The remaining icons
-stay neutral.
+**VISUALS:** the same 20-document cluster as Page 13, but **4** of the
+documents are **highlighted** (gold ring) to show which would be picked.
 
 ---
 
@@ -539,19 +555,19 @@ stay neutral.
 **Time lock:** 5 s
 
 **BODY:**
-- [headline, 26 px, bold] You only learn the nature (clean or
-  suspicious) of those **4** transactions.
+- [p, 22 px] You only learn the nature (clean vs suspicious) of those
+  **4 transactions.**
 
-**VISUALS:** same cluster. The 4 highlighted docs now show their
-stamps (3 C + 1 S). All other docs show a `?`.
+**VISUALS:** same cluster, the 4 highlighted ones now show their type
+(C/S stamps), the remaining 16 show a `?` mark on a hidden background.
 
-**Closing line** (centered, 24 px, extra-bold):
+**Closing line** (centered, 26 px):
 - This means that your view of the company's overall transactions in
   this preliminary audit is **always incomplete**.
 
 ---
 
-### PAGE 26 — Attention check: do you see all?
+### PAGE 26 — Attention check (do you see all?)
 **ID:** `p3_check_all`
 **Time lock:** 5 s
 
@@ -566,11 +582,12 @@ stamps (3 C + 1 S). All other docs show a `?`.
 
 **Behavior:** `retry` mode.
 
-**Explanation:** *The law requires only 4 transactions per company.*
+**Explanation when correct:** *The law requires only 4 transactions per
+company.*
 
 ---
 
-### PAGE 27 — Attention check: who picks how many?
+### PAGE 27 — Attention check (who picks how many)
 **ID:** `p3_check_how_many`
 **Time lock:** 5 s
 
@@ -579,45 +596,50 @@ stamps (3 C + 1 S). All other docs show a `?`.
 **Question** (20 px, bold): Who decides **how many** transactions you
 see?
 
-**Answers:**
+**Answers (A / B / C):**
 - A. The law. ← correct
 - B. The manager.
 - C. You.
 
 **Behavior:** `retry` mode.
 
-**Explanation:** *The law. Fixed at 4; no one can change it.*
+**Explanation when correct:** *The law. Fixed at 4; no one can change
+it.*
 
 ---
 
-### PAGE 28 — Independence: setup (reveal step 1)
+### PAGE 28 — Independence interlude: thought experiment
 **ID:** `p2_inst_random_a`
 **Time lock:** 2 s
 
 **BODY:**
-- [lead-in, 24 px, semibold] Consider the following thought experiment.
+- [headline, 24 px, semibold] Consider the following thought experiment.
 - [p, 22 px] Imagine you could grab **one random transaction** from a
   company.
 
-**VISUALS:** single large transaction slot, centered, kept invisible
-(visibility:hidden) to reserve space.
+**VISUALS:** an empty single-transaction slot (placeholder, kept
+invisible so the layout matches the next page).
 
 ---
 
-### PAGE 29 — Independence: reveal the sample
+### PAGE 29 — Independence interlude: it's suspicious
 **ID:** `p2_inst_random_b`
 **Time lock:** 3 s
 
-**BODY:** same lead-in and body as the previous page.
+**BODY:**
+- [headline, 24 px, semibold] Consider the following thought experiment.
+- [p, 22 px] Imagine you could grab **one random transaction** from a
+  company.
 
-**VISUALS:** same slot; now showing a red **S** card.
+**VISUALS:** the same single slot, now showing one large suspicious (S)
+card.
 
 **Closing line** (centered, 22 px, bold, red):
 - It turns out to be suspicious.
 
 ---
 
-### PAGE 30 — Independence: pose the question
+### PAGE 30 — Independence interlude: pose the question
 **ID:** `p2_inst_random_c`
 **Time lock:** 3 s
 
@@ -625,31 +647,30 @@ see?
 - [headline, 26 px, bold] Does this mean most of the company's other
   transactions are also suspicious?
 
-**VISUALS:** the big S card on the left, an arrow `→`, then a row of
-9 small `?` placeholder cards.
+**VISUALS:** the suspicious card on the left, an arrow `→`, and 9 mini
+unknown (`?`) document tiles on the right.
 
 ---
 
-### PAGE 31 — Independence: punchline
+### PAGE 31 — Independence interlude: punchline
 **ID:** `p2_inst_random_d`
 **Time lock:** 8 s
 
 **BODY:**
-- [headline, 26 px, bold] No. It could be **any** of these companies.
-- [p, 17 px, soft slate] A single suspicious transaction is consistent
-  with a mostly-clean company, a half-and-half company, or a
-  mostly-suspicious company.
+- [p, 22 px] No. It could be **any** of these companies.
 
-**VISUALS:** three side-by-side micro cluster panels (Mostly clean /
-Half & half / Mostly suspicious), each containing at least one S so
-the observed transaction is consistent with all three.
+**VISUALS (three cluster panels side by side, micro scale):**
+- **Mostly clean** (green label): 18 C + 2 S.
+- **Half & half** (slate label): 10 C + 10 S.
+- **Mostly suspicious** (red label): 18 S + 2 C.
 
-**Closing line** (centered, 22 px, extra-bold):
-- A single random transaction tells you very little about the rest.
+**Closing line** (centered, 25 px, extra-bold):
+- The type of single randomly selected transaction tells you nothing
+  about the nature of the rest of the company's transactions.
 
 ---
 
-### PAGE 32 — Independence: attention check (flipped to clean)
+### PAGE 32 — Attention check (one random clean)
 **ID:** `p2_attn_random`
 **Time lock:** 6 s
 
@@ -658,7 +679,7 @@ the observed transaction is consistent with all three.
 **Setup** (20 px, bold): You grab one random transaction from a
 company. It's **clean**.
 
-**VISUALS:** single clean C card, centered.
+**VISUALS:** one large clean (C) card, centered.
 
 **Question** (20 px, bold): What does that tell you about the
 company's other transactions?
@@ -669,9 +690,7 @@ company's other transactions?
 - C. Nothing reliable — one isn't enough. ← correct
 - D. Roughly half should be clean too.
 
-**Behavior:** `retry` mode. Visible card is **clean** (opposite of the
-teaching example) so the participant can't pattern-match on
-"suspicious → nothing".
+**Behavior:** `retry` mode.
 
 **Explanation when correct:** *Right. A random transaction could come
 from a mostly-clean, half-and-half, or mostly-suspicious company. One
@@ -679,17 +698,14 @@ doesn't tell you the rest.*
 
 ---
 
-### PAGE 33 — Bridge: "not selected at random"
+### PAGE 33 — Bridge: but here, NOT random
 **ID:** `p3_inst_not_random`
 **Time lock:** 6 s
 
-**Standalone page.** No kicker, no call-out. One centered sentence,
-28 px, bold, dropped ~80 px from the top:
-
-> In this study, however, the 4 transactions you see about a company
-> are **NOT selected at random** from all of its transactions.
-
-The key phrase is in red bold for emphasis.
+**BODY** (centered, 28 px, bold; sits on plain background, no callout
+box):
+- In this study, however, the 4 transactions you see about a company
+  are **NOT selected at random** (red) from all of its transactions.
 
 ---
 
@@ -698,14 +714,14 @@ The key phrase is in red bold for emphasis.
 **Time lock:** 7 s
 
 **BODY:**
-- [headline, 26 px, bold] Meet the **manager** of the company you are
-  auditing.
+- [p, 22 px] Meet the **manager** of the company you are auditing.
 
-**VISUALS:** [SVG: manager badge — indigo rounded square with white
-person silhouette, uppercase caption `MANAGER`].
+**VISUALS (centered):**
+- [SVG: indigo "manager" badge — purple square card with a generic
+  silhouette of a person, uppercase caption `MANAGER`]
 
 **Closing line:**
-- [p, 20 px] The manager is responsible for sending you the company's
+- [p, 20 px] The manager is responsible for sending you the 4
   transactions for the preliminary audit.
 
 ---
@@ -715,90 +731,83 @@ person silhouette, uppercase caption `MANAGER`].
 **Time lock:** 5 s
 
 **BODY:**
-- [headline, 24 px, bold] Here's the catch: the manager knows the type
-  of every transaction in the company, and decides **which 4** are
-  sent for the preliminary audit.
+- [p, 24 px] Here's the catch: the manager **knows the type of every
+  transaction** in the company, and decides **which 4** (red) are sent
+  for the preliminary audit.
 
-**VISUALS:** mini manager badge above, captioned `Sees everything`.
-Below: all 10 of the company's transactions with their true stamps
-(6 C + 4 S).
+**VISUALS:**
+- The manager mini-badge above, captioned `Sees everything`.
+- Below: a row of 10 small transaction cards (6 C + 4 S, mixed) — the
+  full company.
 
 ---
 
-### PAGE 36 — Split view: manager picks, auditor sees 4
+### PAGE 36 — Split view: manager picks 4, auditor sees 4
 **ID:** `p3_inst_manager_picks`
 **Time lock:** 5 s
 
 **BODY:**
 - [headline, 24 px, bold] The manager picks the **4** you see.
 
-**VISUALS (split view):**
-- **Manager side:** badge + full set of **10** transactions
-  (6 C + 4 S). Caption: `Sees all 10`.
-- **`SENT` →** arrow (uppercase kicker label above a large arrow).
-- **Auditor side:** badge + the 4 the manager chose to send,
-  **all Clean** (`C C C C`). Caption: `Sees 4 (manager's pick)`.
+**VISUALS (two-panel split):**
+- **Left panel:** manager mini-badge labelled `Manager`; below, a row
+  of all 10 transactions (6 C + 4 S); caption `Sees all 10`.
+- **Center:** small uppercase label `SENT` above a giant arrow `→`.
+- **Right panel:** auditor magnifying-glass mini-badge labelled `You`;
+  below, a row of 4 cards, all clean (C / C / C / C); caption
+  `Sees 4 (manager's pick)`.
 
 ---
 
-### PAGE 37 — Mandate (screen A: just the giant 4 + headline)
+### PAGE 37 — Mandate split A: giant 4 + headline
 **ID:** `p3_inst_mandate_a`
 **Time lock:** 3 s
 
-*First of three progressive-reveal pages that establish the manager's
-hard constraints. This page shows the giant "4 transactions disclosed"
-visual and the headline only.*
+**VISUALS (centered, top of page):**
+- A massive `4` (110 px, extra-bold, primary blue).
+- Subtitle: `transactions disclosed` (24 px, bold).
+- Tag: `REQUIRED BY LAW` (14 px, uppercase, slate).
 
-**VISUALS (centered):**
-- Enormous `4`, 110 px, primary-blue, ultra-bold.
-- Caption below (24 px, bold): `transactions disclosed`.
-- Small caps tag below that: `REQUIRED BY LAW`.
+**BODY:**
+- [headline, 22 px, bold] Two rules the manager **cannot** break:
 
-**Headline only** (22 px, bold, justified):
-- Two rules the manager **cannot** break:
-
-*(No rules listed yet. Body intentionally blank under the headline.)*
+(No rules listed yet — this page is a build-up; rules appear on the
+next two pages.)
 
 ---
 
-### PAGE 38 — Mandate (screen B: rule 1 only)
+### PAGE 38 — Mandate split B: rule 1
 **ID:** `p3_inst_mandate_b`
 **Time lock:** 3 s
 
-*Second of three progressive-reveal pages. Same giant "4" visual and
-same headline as PAGE 37; rule 1 now appears below.*
+**VISUALS (centered):**
+- Same `4` + `transactions disclosed` + `REQUIRED BY LAW` block as
+  Page 37.
 
-**VISUALS:** same as PAGE 37 (giant `4`, `transactions disclosed`,
-`REQUIRED BY LAW`).
-
-**Headline** (22 px, bold):
-- Two rules the manager **cannot** break:
-
-**Ordered list** (19 px):
-1. The manager sends **exactly 4** transactions. Not more, not fewer.
+**BODY:**
+- [headline, 22 px, bold] Two rules the manager **cannot** break:
+- [ordered list, 19 px]:
+  1. The manager sends **exactly 4** transactions. Not more, not fewer.
 
 ---
 
-### PAGE 39 — Mandate (screen C: both rules)
+### PAGE 39 — Mandate split C: rule 1 + rule 2
 **ID:** `p3_inst_mandate_c`
 **Time lock:** 5 s
 
-*Third of three progressive-reveal pages. Both rules now visible.*
+**VISUALS (centered):**
+- Same `4` + `transactions disclosed` + `REQUIRED BY LAW` block.
 
-**VISUALS:** same as PAGE 37 (giant `4`, `transactions disclosed`,
-`REQUIRED BY LAW`).
-
-**Headline** (22 px, bold):
-- Two rules the manager **cannot** break:
-
-**Ordered list** (19 px):
-1. The manager sends **exactly 4** transactions. Not more, not fewer.
-2. The manager cannot falsify or forge transactions to change their
-   type.
+**BODY:**
+- [headline, 22 px, bold] Two rules the manager **cannot** break:
+- [ordered list, 19 px]:
+  1. The manager sends **exactly 4** transactions. Not more, not fewer.
+  2. The manager **cannot falsify or forge transactions** to change
+     their types.
 
 ---
 
-### PAGE 40 — Attention check: who picks which?
+### PAGE 40 — Attention check (who picks which?)
 **ID:** `p3_check_which`
 **Time lock:** 5 s
 
@@ -806,24 +815,25 @@ same headline as PAGE 37; rule 1 now appears below.*
 
 **Question** (20 px, bold): Who picks **which** transactions you see?
 
-**Answers:**
+**Answers (A / B / C):**
 - A. The law.
 - B. Random chance.
 - C. The manager. ← correct
 
 **Behavior:** `retry` mode.
 
-**Explanation:** *The law sets how many. The manager picks which ones.*
+**Explanation when correct:** *The law sets how many. The manager
+picks which ones.*
 
 ---
 
-### PAGE 41 — Attention check: can the manager fake?
+### PAGE 41 — Attention check (manager can fake?)
 **ID:** `p3_check_fake`
 **Time lock:** 5 s
 
 **Kicker** (centered, small caps, primary blue): `QUICK ATTENTION CHECK`
 
-**Question** (20 px, bold): The manager can turn a suspicious
+**Statement** (20 px, bold): The manager can turn a suspicious
 transaction into a clean one.
 
 **Answers (A / B):**
@@ -832,8 +842,8 @@ transaction into a clean one.
 
 **Behavior:** `retry` mode.
 
-**Explanation:** *The manager can't fake transactions. They can only
-pick which ones get sent.*
+**Explanation when correct:** *The manager can't fake transactions.
+They can only pick which ones get sent.*
 
 ---
 
@@ -845,12 +855,14 @@ pick which ones get sent.*
 
 **BODY:**
 - [headline, 26 px, bold] What's at stake for the manager? Their raise!
-- [p, 18 px] A full audit is costly for the company. And if it
-  happens, the manager **loses their raise**.
+- [p, 18 px] A full audit is costly for the company. And if it happens,
+  the manager **loses their raise**.
 
 **VISUALS (two scenario lines):**
-- Line 1 (green): `You estimate 10%` → **Full audit** unlikely → **Manager gets the raise**.
-- Line 2 (red): `You estimate 80%` → **Full audit** likely → **Manager loses the raise**.
+- *Good for the manager:* `You estimate 10%` → **Full audit** unlikely
+  → `Manager gets the raise`.
+- *Bad for the manager:* `You estimate 80%` → **Full audit** likely
+  → `Manager loses the raise`.
 
 **Closing line:**
 - [p, 18 px] The manager therefore wants a **low** fraud estimate.
@@ -886,7 +898,8 @@ likely, and a full audit costs the manager their raise.*
 
 **BODY:**
 - [headline, 26 px, bold] What's at stake for **you**?
-- [ordered list, 19 px, with circle badges `1` and `2`]:
+- [unordered list, 19 px, blue circular badges (#dbe4ff bg, #3730a3
+  text), no bullets]:
   1. You earn more when your estimates are **accurate**, summed across
      all 30 companies you will audit.
   2. You also earn extra when you're **confident and correct** (by
@@ -894,7 +907,7 @@ likely, and a full audit costs the manager their raise.*
 
 ---
 
-### PAGE 45 — Two answers (reveal Answer 1)
+### PAGE 45 — Two answers: reveal Answer 1
 **ID:** `p4_inst_two_answers_a`
 **Time lock:** 5 s
 
@@ -902,26 +915,30 @@ likely, and a full audit costs the manager their raise.*
 - [headline, 26 px, bold] For each audited company, you are required
   to provide **two** answers.
 
-**VISUALS (two cards, second invisible placeholder):**
-- Card 1 (visible): `1`, **Fraud estimate**. *Your best guess of the
-  share of the company's transactions that are suspicious. Be as
-  **precise** as you can.*
-- Card 2 (invisible): `2`, **Bet** (reserves space).
+**VISUALS (two answer cards in a row; second card invisible
+placeholder):**
+- **Card 1 (visible):**
+  - Big number `1`.
+  - Title: `Fraud estimate`.
+  - Sub: *Your best guess of the share of the company's transactions
+    that are suspicious. Be as **precise** as you can.*
+- **Card 2 (placeholder):** kept invisible to prevent layout shift.
 
 ---
 
-### PAGE 46 — Two answers (reveal Answer 2)
+### PAGE 46 — Two answers: reveal Answer 2
 **ID:** `p4_inst_two_answers_b`
 **Time lock:** 4 s
 
-**BODY:** same headline as the previous page.
+**BODY:**
+- [headline, 26 px, bold] For each audited company, you are required
+  to provide **two** answers.
 
-**VISUALS (both cards visible):**
-- Card 1: `1`, **Fraud estimate**. *Your best guess of the share of
-  the company's transactions that are suspicious. Be as **precise**
-  as you can.*
-- Card 2: `2`, **Bet**. *How confident you are that your estimate is
-  **within 10 percentage points** of the correct answer.*
+**VISUALS (two answer cards):**
+- **Card 1:** Big `1`, title `Fraud estimate`, same sub as Page 45.
+- **Card 2:** Big `2`, title `Bet`, sub: *How confident you are that
+  your estimate is **within 10 percentage points** of the correct
+  answer.*
 
 **Closing line** (centered, 20 px, bold):
 - Each one earns its own bonus.
@@ -932,12 +949,12 @@ likely, and a full audit costs the manager their raise.*
 **ID:** `p4_inst_estimate_intro`
 **Time lock:** 8 s
 
-**Kicker** (centered, small caps, primary blue, with circle `1` badge):
-`ANSWER 1: FRAUD ESTIMATE`
+**Kicker** (centered, small caps, primary blue):
+- Small blue badge `1` + label `Answer 1: fraud estimate`.
 
 **BODY:**
 - [headline, 24 px, bold] The estimate bonus.
-- [bullet list, 18 px]:
+- [unordered list, 18 px]:
   - If your estimate is **within 10 percentage points** of the correct
     answer, you earn **+10¢**.
   - If your estimate is **more than 10 percentage points** away from
@@ -949,75 +966,72 @@ likely, and a full audit costs the manager their raise.*
 **ID:** `p4_inst_estimate_example_intro`
 **Time lock:** 4 s
 
-**Standalone page**, dropped ~60 px from the top.
-
-**Kicker** (centered, with circle `1` badge): `ANSWER 1: FRAUD ESTIMATE`
+**Kicker** (centered, small caps, primary blue):
+- Small blue badge `1` + label `Answer 1: fraud estimate`.
 
 **BODY** (centered, 22 px, bold):
-- Let us walk through an example. For this company, let's
-  assume that the correct answer is **35%** *(35% in red)*.
+- Let us walk through an example. For this company, let's assume that
+  the correct answer is **35%** (red).
 
 ---
 
-### PAGE 49 — Estimate practice (move to 50%, wrong, 0¢)
+### PAGE 49 — Estimate practice: move to 50% (wrong, 0¢)
 **ID:** `p4_inst_estimate_try_50`
 **Time lock:** 12 s
 **Calculator:** ON
 
-**Kicker** (centered, with circle `1` badge): `ANSWER 1: FRAUD ESTIMATE`
+**Kicker** (centered, small caps, primary blue):
+- Small blue badge `1` + label `Answer 1: fraud estimate`.
 
 **BODY:**
 - [headline, 22 px, bold] Practice this.
-- [bullet list, 18 px]:
+- [unordered list, 18 px]:
   - The correct answer for this company is **35%**.
   - Move your estimate to **50%**.
 
 **INTERACTIVE:**
-- Estimate slider 0–100%. Band shaded 25–45% (within-10 window of 35).
-- Live result: `Within 10 percentage points of the correct answer? No ✗` ·
-  `Estimate bonus: 0¢`.
-- The closing-line feedback card stays hidden until the slider hits
-  **50%** (the page's target). Once it does, the card reveals and a
-  **5-second read lock** runs before Next becomes active. If the
-  participant clicks Next before reaching 50%, Next is disabled for a
-  **10-second cooldown**.
+- Estimate slider (0%–100%, default 50). Coverage band moves with the
+  thumb. Truth band fixed at 25%–45% (the "within 10 pp" window
+  around 35%).
+- Live readouts: `Within 10 percentage points of the correct answer?`
+  (Yes/No flag), `Estimate bonus:` (in ¢).
 
-**Closing line (hidden until target reached, then revealed with a 5s read lock):**
-- At 50%, you're 15 percentage points off the correct answer. You
-  earn **0¢** on this company.
+**Closing line** (revealed only after slider hits target; 5s read lock
+follows; 10s cooldown if Next clicked early):
+- [p, 20 px, bold, red] At 50%, you're 15 percentage points off the
+  correct answer. You earn **0¢** on this company.
 
 ---
 
-### PAGE 50 — Estimate practice (move to 30%, right, +10¢)
+### PAGE 50 — Estimate practice: move to 30% (correct, +10¢)
 **ID:** `p4_inst_estimate_try_30`
 **Time lock:** 12 s
 **Calculator:** ON
 
-**Kicker** (centered, with circle `1` badge): `ANSWER 1: FRAUD ESTIMATE`
+**Kicker** (centered, small caps, primary blue):
+- Small blue badge `1` + label `Answer 1: fraud estimate`.
 
 **BODY:**
 - [headline, 22 px, bold] Now try a different estimate.
-- [bullet list, 18 px]:
+- [unordered list, 18 px]:
   - Same correct answer: **35%**.
   - Move your estimate to **30%**.
 
-**INTERACTIVE:** same layout. The closing-line card unhides only
-**after the slider hits 30** (inside the band). Within the band:
-- `Within 10 percentage points of the correct answer? Yes ✓`
-- `Estimate bonus: +10¢`.
-- A **5-second read lock** runs after the card reveals. Clicking Next
-  before the slider reaches 30 triggers a **10-second cooldown**.
+**INTERACTIVE:** identical slider widget to Page 49, target = 30.
 
-**Closing line (hidden until target reached, then revealed with a 5s read lock):**
-- At 30%, you're within 10 percentage points of 35%. You earn **+10¢**.
+**Closing line** (revealed only after slider hits target; 5s read lock
+follows; 10s cooldown if Next clicked early):
+- [p, 20 px, bold, green] At 30%, you're within 10 percentage points
+  of 35%. You earn **+10¢**.
 
 ---
 
-### PAGE 51 — Takeaway
+### PAGE 51 — Estimate takeaway
 **ID:** `p4_inst_estimate_takeaway`
 **Time lock:** 6 s
 
-**Kicker** (centered, with circle `1` badge): `ANSWER 1: FRAUD ESTIMATE`
+**Kicker** (centered, small caps, primary blue):
+- Small blue badge `1` + label `Answer 1: fraud estimate`.
 
 **BODY:**
 - [headline, 22 px, semibold] Summary.
@@ -1026,7 +1040,7 @@ likely, and a full audit costs the manager their raise.*
 
 ---
 
-### PAGE 52 — Attention check (estimate bonus, numeric)
+### PAGE 52 — Attention check (estimate bonus numeric)
 **ID:** `p4_check_estimate_bonus`
 **Time lock:** 6 s
 **Calculator:** ON
@@ -1042,19 +1056,19 @@ estimate **55%**. How much would you earn from the estimate?
 - C. +10¢ ← correct
 - D. −5¢
 
-**Behavior:** `retry` mode. Uses a fresh truth (60%) so participants
-who memorized the 35/25/45 example must apply the rule.
+**Behavior:** `retry` mode.
 
 **Explanation when correct:** *55% is within 10 percentage points of
 60% (difference is 5), so the estimate bonus is +10¢.*
 
 ---
 
-### PAGE 53 — Bet intro
+### PAGE 53 — Bet intro (concept)
 **ID:** `p4_inst_bet_intro`
 **Time lock:** 7 s
 
-**Kicker** (centered, amber, with circle `2` badge): `ANSWER 2: BET`
+**Kicker** (centered, small caps, color `#b45309`):
+- Small blue badge `2` + label `Answer 2: bet`.
 
 **BODY:**
 - [headline, 26 px, bold] The bet.
@@ -1064,160 +1078,141 @@ who memorized the 35/25/45 example must apply the rule.
 
 ---
 
-### PAGE 54 — Bet example
+### PAGE 54 — Bet example (concrete)
 **ID:** `p4_inst_bet_example`
 **Time lock:** 9 s
 
-**Kicker** (centered, amber, with circle `2` badge): `ANSWER 2: BET`
+**Kicker** (centered, small caps, color `#b45309`):
+- Small blue badge `2` + label `Answer 2: bet`.
 
 **BODY:**
-- [p, 22 px, centered, bold] For example, suppose you bet **5¢** on
-  your estimate:
-- [bullet list, 18 px]:
+- [centered, 22 px, bold] For example, suppose you bet **5¢** on your
+  estimate:
+- [unordered list, 18 px]:
   - Within 10 percentage points → you **win the bet**: **+5¢**.
   - More than 10 percentage points away → you **lose the bet**: **−5¢**
     (deducted from bonus on other companies).
 
 ---
 
-### PAGE 55 — Bet safety (standalone callout)
+### PAGE 55 — Bet safety (highlighted callout)
 **ID:** `p4_inst_bet_safety`
 **Time lock:** 6 s
 
-**Standalone callout page.** Single green-tinted card with a green left
-border, centered, dropped ~80 px from the top. Designed to give the
-$4 base-pay safety its own beat — it's the single most important fact
-about how losing bets work.
-
-**Headline** (centered, 24 px, weight 800):
-- Your $4 base pay is never affected.
-
-**Sub-text** (centered, 17 px):
-- Lost bets only reduce the bonus from other companies, and the total
-  bonus cannot fall below $0.
+**VISUALS (centered green callout, soft border, light-green background):**
+- **Headline** (24 px, extra-bold): `Your $4 base pay is never affected.`
+- **Sub** (17 px): *Lost bets only reduce the bonus from other
+  companies, and the total bonus cannot fall below $0.*
 
 ---
 
-### PAGE 56 — Bet practice, good scenario (+18¢)
+### PAGE 56 — Bet practice: good scenario (+18¢)
 **ID:** `p4_inst_bet_try_good`
 **Time lock:** 12 s
 **Calculator:** ON
 
-**Kicker** (centered, amber, with circle `2` badge): `ANSWER 2: BET`
+**Kicker** (centered, small caps, color `#b45309`):
+- Small blue badge `2` + label `Answer 2: bet`.
 
 **BODY:**
 - [headline, 22 px, bold] Practice this.
-- [bullet list, 18 px]:
+- [unordered list, 18 px]:
   - The correct answer is **35%**.
   - Set your estimate to **30%**.
   - Set your bet to **8¢**.
 
-**INTERACTIVE (estimate + bet sliders):**
-- Estimate band: 25–45%. Bet slider 0–10¢.
-- Live tiles update as you drag:
-  - `Within 10 percentage points? Yes ✓`
-  - `Estimate bonus: +10¢`
-  - `Bet outcome: +8¢`
-  - **Total: +18¢** (bold, green).
-- The closing-line card stays hidden until **both targets are met**
-  (estimate 30 AND bet 8). Once it reveals, a **5-second read lock**
-  runs before Next becomes active. Clicking Next before hitting both
-  targets triggers a **10-second cooldown**.
+**INTERACTIVE (two stacked slider cards):**
+- Estimate slider (0%–100%, default 50%, target 30%).
+- Bet slider (0¢–10¢, default 0¢, target 8¢).
+- Live readouts: within-band flag, estimate bonus, bet outcome,
+  total earned.
 
-**Closing line (hidden until target reached, then revealed with a 5s read lock):**
-- Within 10 percentage points, bet won. You earn **+18¢**.
+**Closing line** (revealed only after both sliders hit target; 5s
+read lock follows; 10s cooldown if Next clicked early):
+- [p, 20 px, bold, green] Within 10 percentage points, bet won. You
+  earn **+18¢**.
 
 ---
 
-### PAGE 57 — Bet practice, bad scenario (−8¢)
+### PAGE 57 — Bet practice: bad scenario (−8¢)
 **ID:** `p4_inst_bet_try_bad`
 **Time lock:** 12 s
 **Calculator:** ON
 
-**Kicker** (centered, amber, with circle `2` badge): `ANSWER 2: BET`
+**Kicker** (centered, small caps, color `#b45309`):
+- Small blue badge `2` + label `Answer 2: bet`.
 
 **BODY:**
 - [headline, 22 px, bold] Now try a different estimate.
-- [bullet list, 18 px]:
+- [unordered list, 18 px]:
   - Same correct answer: **35%**.
   - Set your estimate to **50%**.
   - Keep your bet at **8¢**.
 
-**INTERACTIVE:** same layout. Estimate starts at 30 (inside band),
-target moves to 50 (out of band).
-- Live tiles:
-  - `Within 10 percentage points? No ✗`
-  - `Estimate bonus: 0¢`
-  - `Bet outcome: −8¢`
-  - **Total: −8¢** (bold, red).
-- The closing-line card stays hidden until the estimate reaches 50
-  (with bet still 8). On reveal, a **5-second read lock** runs;
-  clicking Next early triggers a **10-second cooldown**.
+**INTERACTIVE:** same two-slider widget, default estimate 30%, target
+50%; default bet 0¢, target 8¢.
 
-**Closing line (hidden until target reached, then revealed with a 5s read lock):**
-- More than 10 percentage points off, bet lost. You earn **−8¢**.
-
-**Footer note** (also inside the hidden feedback card, 17 px):
-- Bet **0¢** instead, and you'd have earned **0¢**, not lost 8¢.
-  **Only bet when you're confident.**
+**Closing line** (revealed only after both sliders hit target; 5s
+read lock follows; 10s cooldown if Next clicked early):
+- [p, 20 px, bold, red] More than 10 percentage points off, bet lost.
+  You earn **−8¢**.
+- [p, 17 px] Bet **0¢** instead, and you'd have earned **0¢**, not
+  lost 8¢. **Only bet when you're confident.**
 
 ---
 
-### PAGE 58 — Opposing goals (reveal YOU)
+### PAGE 58 — Opposing goals: reveal YOU
 **ID:** `p4_inst_opposing_a`
 **Time lock:** 2 s
 
 **BODY:**
-- [headline, 24 px, bold] Your goal and the manager's are **opposite**.
+- [headline, 24 px, bold] Your goal and the manager's are
+  **opposite**.
 
-**VISUALS (two-card layout, only Auditor card revealed):**
-- **Auditor card** (visible): teal magnifier-on-document icon. Label
-  `You – the government auditor`. Body: **Detect fraud.** Estimate
-  each company as accurately as you can.
-- `vs` divider and **Manager card**: invisible placeholders so the
-  next page doesn't shift layout.
+**VISUALS (two cards in a row; second card invisible placeholder):**
+- **Auditor card (left, visible):**
+  - Icon: teal magnifying-glass mini-badge.
+  - Label: `You – the government auditor`.
+  - Body: **Detect fraud.** Estimate each company as accurately as
+    you can.
+- **Manager card (right, placeholder):** invisible to prevent layout
+  shift.
 
 ---
 
-### PAGE 59 — Opposing goals (reveal MANAGER)
+### PAGE 59 — Opposing goals: reveal MANAGER (vs)
 **ID:** `p4_inst_opposing_b`
 **Time lock:** 4 s
 
-**BODY:** same headline as the previous page.
+**BODY:**
+- [headline, 24 px, bold] Your goal and the manager's are
+  **opposite**.
 
-**VISUALS (both cards visible):**
-- **Auditor card** (left): teal magnifier icon. Label `You – the
-  government auditor`. Body: **Detect fraud.** Estimate each company
-  as accurately as you can.
-- `vs` divider, centered.
-- **Manager card** (right): indigo manager badge. Label `The manager`.
-  Body: Wants the **lowest estimate** possible, ideally **0%**, even
-  if the company really is fraudulent.
+**VISUALS (two cards in a row, divider `vs` between them):**
+- **Auditor card** (same as Page 58).
+- **Manager card** (visible):
+  - Icon: indigo "manager" mini-badge.
+  - Label: `The manager`.
+  - Body: Wants the **lowest estimate** possible, ideally **0%**, even
+    if the company really is fraudulent.
 
 ---
 
-### PAGE 60 — The punchline, emphasized
+### PAGE 60 — Opposing goals: sum-up
 **ID:** `p4_inst_opposing_c`
 **Time lock:** 5 s
 
-**Standalone page**, centered, no visuals. Two big bold lines
-(30 px, weight 800), color-coded:
+**BODY** (centered, 30 px, extra-bold):
+- The manager wants a **low** *(red)* estimate.
+- You want an **accurate** *(teal)* estimate.
 
-> The manager wants a **low** estimate. *(low in red)*
->
-> You want an **accurate** estimate. *(accurate in green)*
-
-**Small note below** (17 px, soft slate, centered):
+**Closing line** (centered, 17 px, slate):
 - A full audit costs the manager their raise, whether fraud is found
   or not.
 
 ---
 
 # ACT V — COMPREHENSION QUIZ (14 QUESTIONS)
-
-*Same retry-with-10-second-timeout behavior as the attention checks.
-Participants can't advance until every question is answered correctly.
-Per-quiz-question time lock: 8 s by default.*
 
 ### PAGE 61 — Quiz intro
 **ID:** `p5_quiz_intro`
@@ -1233,104 +1228,143 @@ Per-quiz-question time lock: 8 s by default.*
 ### Quiz Q1
 **ID:** `p5_q1`
 **Time lock:** 8 s
-**Kicker:** `QUIZ: QUESTION 1 OF 14`
 
-**Question:** What is your job in this study?
+**Kicker** (centered, small caps, primary blue): `QUIZ: QUESTION 1 OF 14`
+
+**Question** (20 px, semibold): What is your job in this study?
+
+**Answers (A / B / C / D):**
 - A. Decide which companies to invest in.
 - B. Assign each company a fraud estimate. ← correct
 - C. Give each company a customer-service score.
 - D. Pick which transactions the company discloses.
 
-**Explanation:** *You are the government auditor. You estimate the
-percentage of each company's transactions that are suspicious.*
+**Behavior:** `retry`.
+
+**Explanation when correct:** *You are the government auditor. You
+estimate the percentage of each company's transactions that are
+suspicious.*
 
 ---
 
 ### Quiz Q2
 **ID:** `p5_q2`
 **Time lock:** 8 s
+
 **Kicker:** `QUIZ: QUESTION 2 OF 14`
 
 **Question:** How many transactions must a company send you?
+
+**Answers (A / B / C / D):**
 - A. 1.
 - B. 2.
 - C. 4. ← correct
 - D. All of them.
 
-**Explanation:** *Exactly 4. Set by law.*
+**Behavior:** `retry`.
+
+**Explanation when correct:** *Exactly 4. Set by law.*
 
 ---
 
 ### Quiz Q3
 **ID:** `p5_q3`
 **Time lock:** 8 s
+
 **Kicker:** `QUIZ: QUESTION 3 OF 14`
 
 **Question:** Who decides **how many** transactions are disclosed?
+
+**Answers (A / B / C):**
 - A. The law. ← correct
 - B. The manager.
 - C. You.
 
-**Explanation:** *The law. Fixed at 4; no one can change it.*
+**Behavior:** `retry`.
+
+**Explanation when correct:** *The law. Fixed at 4; no one can change
+it.*
 
 ---
 
 ### Quiz Q4 — True/False (random?)
 **ID:** `p5_q4`
 **Time lock:** 8 s
+
 **Kicker:** `QUIZ: QUESTION 4 OF 14`
 
-**Question (True/False):** The 4 transactions you receive from a
-company are **randomly picked** from all of its transactions.
+**Statement:** The 4 transactions you receive from a company are
+**randomly picked** from all of its transactions.
+
+**Answers (A / B):**
 - A. True.
 - B. False. ← correct
 
-**Explanation:** *False. The manager picks which 4 to send.*
+**Behavior:** `retry`.
+
+**Explanation when correct:** *False. The manager picks which 4 to
+send.*
 
 ---
 
 ### Quiz Q5
 **ID:** `p5_q5`
 **Time lock:** 8 s
+
 **Kicker:** `QUIZ: QUESTION 5 OF 14`
 
 **Question:** Can the manager turn a suspicious transaction into a
 clean one?
+
+**Answers (A / B):**
 - A. Yes.
 - B. No. ← correct
 
-**Explanation:** *No. The manager can only pick which ones get sent.*
+**Behavior:** `retry`.
+
+**Explanation when correct:** *No. The manager can only pick which
+ones get sent.*
 
 ---
 
 ### Quiz Q6
 **ID:** `p5_q6`
 **Time lock:** 8 s
+
 **Kicker:** `QUIZ: QUESTION 6 OF 14`
 
 **Question:** Fraud estimate =
+
+**Answers (A / B / C / D):**
 - A. Your gut feeling, in percent.
 - B. The count of suspicious transactions.
 - C. Suspicious transactions divided by total. ← correct
 - D. 50% for every company, by default.
 
-**Explanation:** *Suspicious divided by total.*
+**Behavior:** `retry`.
+
+**Explanation when correct:** *Suspicious divided by total.*
 
 ---
 
 ### Quiz Q7
 **ID:** `p5_q7`
 **Time lock:** 8 s
+
 **Kicker:** `QUIZ: QUESTION 7 OF 14`
 
 **Question:** What happens when you rate a company **high**?
+
+**Answers (A / B / C / D):**
 - A. They never get a full audit.
 - B. They get a full audit for sure.
 - C. More likely to face a full audit. ← correct
 - D. It's random — your estimate doesn't matter.
 
-**Explanation:** *Higher estimate → more lottery tickets → higher
-chance of a full audit.*
+**Behavior:** `retry`.
+
+**Explanation when correct:** *Higher estimate → more lottery tickets
+→ higher chance of a full audit.*
 
 ---
 
@@ -1338,17 +1372,22 @@ chance of a full audit.*
 **ID:** `p5_q8`
 **Time lock:** 8 s
 **Calculator:** ON
+
 **Kicker:** `QUIZ: QUESTION 8 OF 14`
 
 **Question:** Correct answer: **40%**. Your estimate: **46%**.
 Estimate bonus?
+
+**Answers (A / B / C / D):**
 - A. 0¢.
 - B. +10¢. ← correct
 - C. +6¢.
 - D. −10¢.
 
-**Explanation:** *46 is within 10 percentage points of 40. Pays the
-+10¢.*
+**Behavior:** `retry`.
+
+**Explanation when correct:** *46 is within 10 percentage points of
+40. Pays the +10¢.*
 
 ---
 
@@ -1356,83 +1395,108 @@ Estimate bonus?
 **ID:** `p5_q9`
 **Time lock:** 8 s
 **Calculator:** ON
+
 **Kicker:** `QUIZ: QUESTION 9 OF 14`
 
-**Question:** Correct answer: **50%**. Estimate: **80%**. Bet: **7¢**.
-Total for this company?
+**Question:** Correct answer: **50%**. Estimate: **80%**. Bet:
+**7¢**. Total for this company?
+
+**Answers (A / B / C / D):**
 - A. +17¢.
 - B. +7¢.
 - C. 0¢.
 - D. −7¢. ← correct
 
-**Explanation:** *30 percentage points off → 0¢ estimate bonus. Bet
-lost → −7¢.*
+**Behavior:** `retry`.
+
+**Explanation when correct:** *30 percentage points off → 0¢ estimate
+bonus. Bet lost → −7¢.*
 
 ---
 
 ### Quiz Q10
 **ID:** `p5_q10`
 **Time lock:** 8 s
+
 **Kicker:** `QUIZ: QUESTION 10 OF 14`
 
 **Question:** If you lose several bets, can your **$4 base pay** drop
 below $4?
+
+**Answers (A / B):**
 - A. Yes — lost bets can pull base pay below $4.
 - B. No — base pay is guaranteed and the bonus floors at $0. ← correct
 
-**Explanation:** *Correct. Lost bets only reduce the bonus. They never
-touch the base pay.*
+**Behavior:** `retry`.
+
+**Explanation when correct:** *Correct. Lost bets only reduce the
+bonus. They never touch the base pay.*
 
 ---
 
 ### Quiz Q11
 **ID:** `p5_q11`
 **Time lock:** 8 s
+
 **Kicker:** `QUIZ: QUESTION 11 OF 14`
 
 **Question:** What's the probability that any given transaction is
 clean?
+
+**Answers (A / B / C / D):**
 - A. 0%.
 - B. 25%.
 - C. 50%. ← correct
 - D. 100%.
 
-**Explanation:** *Any transaction is a coin flip: 50% clean, 50%
-suspicious.*
+**Behavior:** `retry`.
+
+**Explanation when correct:** *Any transaction is a coin flip: 50%
+clean, 50% suspicious.*
 
 ---
 
 ### Quiz Q12
 **ID:** `p5_q12`
 **Time lock:** 8 s
+
 **Kicker:** `QUIZ: QUESTION 12 OF 14`
 
 **Question:** Why doesn't the manager want a **high** fraud estimate?
+
+**Answers (A / B / C / D):**
 - A. A high estimate triggers a personal fine for the manager.
 - B. A high estimate makes a full audit likely and costs them their
   raise. ← correct
 - C. A high estimate directly reduces the auditor's bonus payout.
 - D. The manager has no stake in what you estimate.
 
-**Explanation:** *A high estimate makes a full audit likely, and a
-full audit costs the manager their raise.*
+**Behavior:** `retry`.
+
+**Explanation when correct:** *A high estimate makes a full audit
+likely, and a full audit costs the manager their raise.*
 
 ---
 
 ### Quiz Q13
 **ID:** `p5_q13`
 **Time lock:** 8 s
+
 **Kicker:** `QUIZ: QUESTION 13 OF 14`
 
 **Question:** If you are **not at all confident** in your fraud
 estimate, how much should you bet?
+
+**Answers (A / B / C / D):**
 - A. 10¢, to maximize the upside.
 - B. 5¢, to hedge your bet.
 - C. 0¢ — only bet if confident. ← correct
 - D. Whatever — betting is mandatory.
 
-**Explanation:** *Bet 0. An uncertain estimate is more likely to miss
-the 10-point band, and losing a bet only costs you.*
+**Behavior:** `retry`.
+
+**Explanation when correct:** *Bet 0. An uncertain estimate is more
+likely to miss the 10-point band, and losing a bet only costs you.*
 
 ---
 
@@ -1440,17 +1504,22 @@ the 10-point band, and losing a bet only costs you.*
 **ID:** `p5_q14`
 **Time lock:** 8 s
 **Calculator:** ON
+
 **Kicker:** `QUIZ: QUESTION 14 OF 14`
 
-**Question:** Correct answer: **25%**. Estimate: **30%**. Bet: **6¢**.
-Total for this company?
+**Question:** Correct answer: **25%**. Estimate: **30%**. Bet:
+**6¢**. Total for this company?
+
+**Answers (A / B / C / D):**
 - A. +16¢. ← correct
 - B. +10¢.
 - C. +6¢.
 - D. −6¢.
 
-**Explanation:** *30 is within 10 percentage points of 25 → +10¢
-estimate bonus. Bet won → +6¢. Total = +16¢.*
+**Behavior:** `retry`.
+
+**Explanation when correct:** *30 is within 10 percentage points of
+25 → +10¢ estimate bonus. Bet won → +6¢. Total = +16¢.*
 
 ---
 
@@ -1469,9 +1538,9 @@ estimate bonus. Bet won → +6¢. Total = +16¢.*
 
 ---
 
-# ACT VI — THE TRIALS (5 WARM-UP + 30 SCORED)
+# ACT VI — THE TRIALS (5 + 15 + 15)
 
-### PAGE 77 — Company size intro (reveal step 1)
+### PAGE 77 — Firm sizes A: small (10)
 **ID:** `p6_firm_sizes_a`
 **Time lock:** 2 s
 
@@ -1479,65 +1548,74 @@ estimate bonus. Bet won → +6¢. Total = +16¢.*
 - [headline, 26 px, bold] One last thing. Companies come in different
   sizes.
 
-**VISUALS:** three file-cabinet slots in a row, bottom-aligned. Only
-the **small** cabinet is visible (10 transactions); medium and large
-slots are invisible placeholders.
+**VISUALS (three firm-size cards in a row; only Small is visible,
+Medium and Large are placeholder-invisible):**
+- **Small:** small filing cabinet SVG, number `10`, sub
+  `transactions (small)`.
+- *(Medium and Large reserved as invisible placeholders so the layout
+  doesn't shift on the next two pages.)*
 
 **Closing line** (centered, 20 px, bold):
 - Some are **small** — **10 transactions**.
 
 ---
 
-### PAGE 78 — Company size intro (reveal step 2)
+### PAGE 78 — Firm sizes B: medium (20)
 **ID:** `p6_firm_sizes_b`
 **Time lock:** 2 s
 
-**BODY:** same headline as the previous page.
+**BODY:**
+- [headline, 26 px, bold] One last thing. Companies come in different
+  sizes.
 
-**VISUALS:** small + medium cabinets visible; large still a
-placeholder.
+**VISUALS:**
+- **Small** card visible (as Page 77).
+- **Medium** card now visible: medium cabinet SVG, number `20`, sub
+  `transactions (medium)`.
+- **Large** card still placeholder-invisible.
 
 **Closing line** (centered, 20 px, bold):
 - Some are **medium** — **20 transactions**.
 
 ---
 
-### PAGE 79 — Company size intro (reveal step 3)
+### PAGE 79 — Firm sizes C: large (30)
 **ID:** `p6_firm_sizes_c`
 **Time lock:** 3 s
 
-**BODY:** same headline as the previous two pages.
+**BODY:**
+- [headline, 26 px, bold] One last thing. Companies come in different
+  sizes.
 
-**VISUALS:** all three cabinets visible (small → medium → large,
-bottom-aligned so the height differences carry the contrast).
+**VISUALS:** all three cards visible.
+- **Small** (10 transactions), **Medium** (20), **Large** (30 — large
+  filing cabinet SVG, sub `transactions (large)`).
 
 **Closing line** (centered, 20 px, bold):
 - Some are **large** — **30 transactions**.
 
 ---
 
-### PAGE 80 — Size rule reminder (standalone)
+### PAGE 80 — Firm sizes: rule reminder
 **ID:** `p6_firm_sizes_rule`
 **Time lock:** 7 s
 
-**Standalone page.** No kicker, no visuals. Two centered bold lines
-dropped ~60 px from the top:
-
-- [p, 26 px, bold, centered] We'll tell you each company's size.
-- [p, 26 px, bold, centered] The law still requires the manager to
-  disclose **exactly 4** *(red)*, regardless of size.
+**BODY** (two centered, bold paragraphs at 26 px):
+- We'll tell you each company's size.
+- The law still requires the manager to disclose **exactly 4** *(red)*,
+  regardless of size.
 
 ---
 
-### PAGE 81 — Warm-up intro
+### PAGE 81 — Practice intro
 **ID:** `p6_practice_intro`
 **Time lock:** 8 s
 
 **BODY:**
 - [headline, 28 px, bold] First, **5 warm-up audits**.
-- [bullet list, 18 px]:
-  - The task is the same as the scored audits: provide an estimate and
-    a bet.
+- [unordered list, 18 px]:
+  - The task is the same as the scored audits: provide an estimate
+    and a bet.
   - **These do not count toward your bonus.**
   - At the end, we will report how much you *would have* earned, so
     you can see your performance before the scored rounds begin.
