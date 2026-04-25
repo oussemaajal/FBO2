@@ -2732,7 +2732,6 @@
     html += '</div>';
     html += '<span class="slider-label">10&cent;</span>';
     html += '</div>';
-    html += '<div class="slider-hint">Bet only what you\'re willing to risk losing if your estimate is off.</div>';
     html += '<div class="field-error" id="error_confidence"></div>';
     html += '</div>';
 
