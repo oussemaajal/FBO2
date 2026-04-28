@@ -63,23 +63,30 @@ body {
 }
 
 /* ---------- Survey Wrapper ---------- */
+/* Responsive: scales up to ~92vw on larger screens, with a hard ceiling so
+   text lines don't get uncomfortably long on ultra-wide displays.
+   Floor of 320px keeps it readable on small phones; ceiling of 1080px keeps
+   instruction prose at a comfortable reading width. */
 .survey-wrapper {
-  width: 100%;
-  max-width: 800px;
+  width: min(92vw, 1080px);
+  max-width: 1080px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  transition: max-width var(--transition-slow);
+  transition: max-width var(--transition-slow), width var(--transition-slow);
 }
 
+/* Trial pages get the full ceiling because they show transaction cards in
+   a wider grid; ultra-wide displays can use up to 1280px. */
 .survey-wrapper.trial-active {
-  max-width: 1100px;
+  width: min(94vw, 1280px);
+  max-width: 1280px;
 }
 
 /* ---------- Progress Bar ---------- */
 .progress-container {
   width: 100%;
-  max-width: 800px;
+  max-width: 1080px;
   margin-bottom: 20px;
 }
 
@@ -153,14 +160,16 @@ body {
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--color-text);
-  margin-bottom: 10px;
+  margin: 0 auto 10px;
+  max-width: 620px;
   line-height: 1.2;
 }
 
 .page-subtitle {
   font-size: 17px;
   color: var(--color-text-secondary);
-  margin-bottom: 26px;
+  margin: 0 auto 26px;
+  max-width: 620px;
 }
 
 .page-body {
@@ -170,6 +179,16 @@ body {
   margin-bottom: 22px;
   text-align: justify;
   text-justify: inter-word;
+  /* Constrain reading width so prose stays at a comfortable measure
+     even when the survey card scales up to ~1080px. 620px matches the
+     inline `max-width:620px` value used on most existing paragraphs,
+     so the column is now consistent: paragraphs without an explicit
+     max-width and paragraphs WITH `max-width:620px` both render at the
+     same column width. Without this, the bare paragraphs visually hug
+     the left edge while their neighbors look centered. */
+  max-width: 620px;
+  margin-left: auto;
+  margin-right: auto;
   /* No auto-hyphenation anywhere: browsers were splitting words like
      "regardless" -> "regard-less" at line ends, which reads as an error. */
   hyphens: none;
@@ -197,7 +216,8 @@ body {
 
 /* ---------- Question Block ---------- */
 .question-block {
-  margin-bottom: 28px;
+  max-width: 620px;
+  margin: 0 auto 28px;
 }
 
 .question-prompt {
@@ -714,7 +734,7 @@ body {
 }
 
 /* Practice summary card -- shown after the 5 warm-up rounds, before
-   the 30 scored rounds. Shows aggregate would-have-earned only. */
+   the 45 scored rounds. Shows aggregate would-have-earned only. */
 .practice-summary-card {
   max-width: 620px;
   margin: 32px auto 0;
@@ -755,15 +775,24 @@ body {
   margin-bottom: 6px;
 }
 .practice-summary-amount {
-  font-size: 36px;
+  font-size: 44px;
   font-weight: 800;
   color: #14532d;
   letter-spacing: -0.01em;
   margin-bottom: 4px;
+  line-height: 1.1;
+}
+.practice-summary-amount-of {
+  font-size: 28px;
+  font-weight: 700;
+  color: #15803d;
+  opacity: 0.75;
+  margin-left: 6px;
 }
 .practice-summary-amount-sub {
   font-size: 14px;
   color: #475569;
+  margin-top: 6px;
 }
 .practice-summary-note {
   font-size: 15px;
@@ -976,7 +1005,11 @@ body {
   background: var(--color-input-bg);
   border-radius: var(--radius-md);
   border: 2px solid var(--color-border);
-  margin-top: 16px;
+  /* Match the unified 620px column used by .page-body, .page-title,
+     and .nav-buttons so the consent checkbox box sits inside the same
+     centered column instead of spanning the full card width. */
+  max-width: 620px;
+  margin: 16px auto 0;
   cursor: pointer;
   transition: border-color var(--transition);
 }
@@ -1004,7 +1037,17 @@ body {
 .nav-buttons {
   display: flex;
   align-items: center;
+  /* Constrained width + centered so Back/Next sit toward the middle of
+     the card instead of hugging the corners. Matches the body column
+     (.page-body max-width:620px) so the buttons sit visually inside
+     the same vertical column as the prose. The floating calculator
+     widget docks on the right edge of the viewport; pulling Next
+     inward to ~310px from the page-content right edge keeps it
+     uncovered even at the widest scaled-up viewport. */
+  max-width: 620px;
   margin-top: 32px;
+  margin-left: auto;
+  margin-right: auto;
   padding-top: 24px;
   border-top: 1px solid var(--color-border);
 }
@@ -1065,7 +1108,8 @@ body {
 .field-error {
   font-size: 13px;
   color: var(--color-error);
-  margin-top: 6px;
+  margin: 6px auto 0;
+  max-width: 620px;
   display: none;
 }
 
@@ -1154,9 +1198,27 @@ body {
 }
 
 .bonus-amount {
-  font-size: 36px;
-  font-weight: 700;
+  font-size: 44px;
+  font-weight: 800;
   color: var(--color-primary-dark);
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+.bonus-amount-of {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-primary);
+  opacity: 0.75;
+  margin-left: 6px;
+}
+
+.bonus-amount-sub {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-top: 6px;
+  margin-bottom: 12px;
 }
 
 .bonus-detail {
@@ -3084,13 +3146,13 @@ body {
   color: #0f172a;
   font-size: 26px;
   line-height: 1.5;
-  font-weight: 600;
+  font-weight: 400;
 }
 .trial-header-bullets li {
   margin-bottom: 4px;
 }
 .trial-header-bullets li strong {
-  font-weight: 800;
+  font-weight: 700;
 }
 
 /* --- Firm size banner (prominent, sits above the transactions card) -- */
@@ -3740,7 +3802,7 @@ body {
   flex-wrap: wrap;
 }
 
-/* ---------- Regime comparison (K=4 vs K=8) ---------- */
+/* ---------- Regime comparison (K=5 vs K=10) ---------- */
 .regime-compare {
   display: flex;
   gap: 24px;

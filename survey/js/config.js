@@ -1,5 +1,12 @@
 /* ==========================================================================
-   FBO 2 (Selection Neglect) -- Experiment Configuration v5.0
+   FBO 2 (Selection Neglect) -- Experiment Configuration v7.0
+
+   V7 change vs v6: N is now STOCHASTIC within each size category. The
+   participant only learns the size; the exact N is uniformly distributed
+   over the size's range. This gives a Bayesian agent residual posterior
+   uncertainty about theta (because theta_NV and theta_RB depend on N),
+   matching the theoretical setup; SN-types remain unaffected because
+   k/K does not depend on N. Calibration block removed.
 
    Structure (matches docs/survey_script.md):
      ACT I    -- Consent & Overview           (5 pages)
@@ -9,19 +16,26 @@
      ACT IV   -- Stakes & Bonus               (11 pages, incl. interactive
                                                  try-it pages)
      ACT V    -- 13-question comprehension quiz
-     ACT VI   -- 30 scored trials in 2 blocks:
-                 Block 1: 15 companies (K=4, N in {10,20,30}, k in {0..4})
-                 Block 2: 15 companies (K=8, N in {10,20,30}, k in {0,1,4,7,8})
-                 [rule change between blocks: K=4 -> K=8]
+     ACT VI   -- 60 scored trials in 3 blocks:
+                 Block 1: 12 companies (K=3,  3 sizes x k in {0..3})
+                 Block 2: 16 companies (K=5,  3 sizes x k in {0..5})
+                 Block 3: 32 companies (K=10, 3 sizes x k in {0..10})
+                 [rule change between blocks: K=5 -> K=10]
      ACT VII  -- Demographics + debrief
 
-   Bonus rule:
-     base = $5.00, guaranteed.
-     per company:
-       within 10 percentage points of truth  :  +10¢ answer  +  bet_cents (win bet)
-       outside                                :   0¢         -  bet_cents (lose bet)
-     bet in [0,10], default 0.  per company range: [-10¢, +20¢].
-     total bonus = sum over all 30 companies, floored at $0, capped at $6.00.
+   Sizes (uniform prior over N | size):
+     small:  N in {10..15}
+     medium: N in {16..25}
+     large:  N in {26..50}
+
+   Bonus rule (LOTTERY):
+     base = $8.00, guaranteed.
+     at the end of the survey, 3 of the 60 companies are picked at random.
+     ONLY those 3 picked companies count toward the bonus:
+       within 5 percentage points of truth :  +$1.00 answer + bet (win bet)
+       outside                             :   $0.00         - bet (lose bet)
+     bet in [$0, $1.00], default $0.  per picked-company range: [-$1.00, +$2.00].
+     total bonus = sum over the 3 picked, floored at $0, capped at $6.00.
      base pay NEVER reduced by lost bets.
    ========================================================================== */
 
@@ -30,7 +44,7 @@ var SURVEY_CONFIG = {
   // -- Study Metadata -------------------------------------------------------
   study: {
     title: "Decision Making Study",
-    version: "5.0.0",
+    version: "7.1.0",
     dataEndpoint: "https://script.google.com/macros/s/AKfycbwUkl3FnttwsmkiQ0jRD_UOgyYSCwVERR2_2oTre_ib50bltFzTMk3TPuQdzefWy-OX/exec"
   },
 
@@ -47,16 +61,21 @@ var SURVEY_CONFIG = {
   trialAttentionCheckCount: 3,
 
   // -- Bonus parameters -----------------------------------------------------
+  // V6: LOTTERY scheme. At the end, lotteryCount trials are picked at random
+  // (PID-seeded for reproducibility). Only those picked trials contribute
+  // to the bonus -- per-trial: +answerCents if within accuracyThreshold,
+  // plus/minus the participant's bet on that trial.
   bonus: {
     enabled: true,
     currency: "USD",
-    fixedBase: 5.00,          // guaranteed base pay (untouched by penalties)
-    answerCents: 10,          // 10¢ if estimate is within threshold
-    betMaxCents: 10,          // bet slider 0..10 cents
-    accuracyThreshold: 0.10,  // "within 10 percentage points"
-    maxBonus: 6.00,           // 30 trials × 20¢ max
+    fixedBase: 8.00,          // guaranteed base pay (untouched by penalties)
+    answerCents: 100,         // +$1.00 per PICKED trial within threshold
+    betMaxCents: 100,         // bet slider 0..$1.00 (per picked trial)
+    accuracyThreshold: 0.05,  // "within 5 percentage points"
+    maxBonus: 6.00,           // 3 picked × ($1 estimate + $1 bet) = $6.00
     floor: 0.00,              // total bonus floored at $0 (base untouched)
-    selectionMethod: "sum_all_trials"
+    selectionMethod: "lottery",
+    lotteryCount: 3           // number of trials picked at random
   },
 
   // -- Stimuli --------------------------------------------------------------
@@ -82,76 +101,152 @@ var SURVEY_CONFIG = {
   //   D = K, dN = K-k, nFlagged = k,
   //   bayesPosterior = thetaRB, snPosterior = thetaSN, mrPosterior = thetaNV
   //
-  // phase=1: K=4 (N in {10,20,30}, k in {0,1,2,3,4})         [15 trials]
-  // phase=2: K=8 (N in {10,20,30}, k in {0,1,4,7,8})         [15 trials]
-  // 5 disclosure compositions per K: all C, k-1 C & 1 S, half/half,
-  //   1 C & k-1 S, all S.
+  // V7 (60 trials, stochastic N within size category, 3 phases):
+  //   sizes:
+  //     small:  N in {10..15}   (uniform, mean 12.5)
+  //     medium: N in {20..25}   (uniform, mean 22.5)
+  //     large:  N in {45..50}   (uniform, mean 47.5)
+  //   phase=1: K=3,  6 unique cells x 2 reps              [12 trials]
+  //   phase=2: K=5,  8 unique cells x 2 reps              [16 trials]
+  //   phase=3: K=10, 16 unique cells x 2 reps             [32 trials]
+  //   Two rule changes between phases (K=3 -> 5 -> 10).
+  //   Selection rule: top 20 cells by HM + top 10 by stdRB
+  //   from remainder = 30 unique cells, each repeated 2x.
+  //
+  // Per-cell benchmarks are STRICT Bayesian expectations:
+  //   posterior P(N | size, K, k) prop_to P(k | N, K) * P(N | size)
+  //   under Binomial(N, 0.5) DGP and optimal manager strategy.
+  // theta_SN does not depend on N (k/K), so theta_SN is unchanged.
+  // theta_NV and theta_RB are integrals over the size's N-range.
+  // stdNV / stdRB are sqrt(Var_N[theta_T(N) | size]) -- the residual
+  // posterior std a Bayesian agent of type T faces on this cell. SN std = 0.
+  //
+  // thetaTrue = theta_RB (full unraveling at expectation) -- payment benchmark.
   stimuli: [
-    // ── Phase 1: K=4, N in {10,20,30}, k in {0,1,2,3,4} ─────────
-    { id: "p1t01", phase: 1, K: 4, k: 0, N: 10, nClean: 4, hidden:  6, thetaTrue: 0.300, thetaSN: 0.000, thetaNV: 0.300, thetaRB: 0.300,
-      D: 4, dN: 4, nFlagged: 0, bayesPosterior: 0.300, snPosterior: 0.000, mrPosterior: 0.300 },
-    { id: "p1t02", phase: 1, K: 4, k: 1, N: 10, nClean: 3, hidden:  6, thetaTrue: 0.700, thetaSN: 0.250, thetaNV: 0.400, thetaRB: 0.700,
-      D: 4, dN: 3, nFlagged: 1, bayesPosterior: 0.700, snPosterior: 0.250, mrPosterior: 0.400 },
-    { id: "p1t03", phase: 1, K: 4, k: 2, N: 10, nClean: 2, hidden:  6, thetaTrue: 0.800, thetaSN: 0.500, thetaNV: 0.500, thetaRB: 0.800,
-      D: 4, dN: 2, nFlagged: 2, bayesPosterior: 0.800, snPosterior: 0.500, mrPosterior: 0.500 },
-    { id: "p1t04", phase: 1, K: 4, k: 3, N: 10, nClean: 1, hidden:  6, thetaTrue: 0.900, thetaSN: 0.750, thetaNV: 0.600, thetaRB: 0.900,
-      D: 4, dN: 1, nFlagged: 3, bayesPosterior: 0.900, snPosterior: 0.750, mrPosterior: 0.600 },
-    { id: "p1t05", phase: 1, K: 4, k: 4, N: 10, nClean: 0, hidden:  6, thetaTrue: 1.000, thetaSN: 1.000, thetaNV: 0.700, thetaRB: 1.000,
-      D: 4, dN: 0, nFlagged: 4, bayesPosterior: 1.000, snPosterior: 1.000, mrPosterior: 0.700 },
-    { id: "p1t06", phase: 1, K: 4, k: 0, N: 20, nClean: 4, hidden: 16, thetaTrue: 0.400, thetaSN: 0.000, thetaNV: 0.400, thetaRB: 0.400,
-      D: 4, dN: 4, nFlagged: 0, bayesPosterior: 0.400, snPosterior: 0.000, mrPosterior: 0.400 },
-    { id: "p1t07", phase: 1, K: 4, k: 1, N: 20, nClean: 3, hidden: 16, thetaTrue: 0.850, thetaSN: 0.250, thetaNV: 0.450, thetaRB: 0.850,
-      D: 4, dN: 3, nFlagged: 1, bayesPosterior: 0.850, snPosterior: 0.250, mrPosterior: 0.450 },
-    { id: "p1t08", phase: 1, K: 4, k: 2, N: 20, nClean: 2, hidden: 16, thetaTrue: 0.900, thetaSN: 0.500, thetaNV: 0.500, thetaRB: 0.900,
-      D: 4, dN: 2, nFlagged: 2, bayesPosterior: 0.900, snPosterior: 0.500, mrPosterior: 0.500 },
-    { id: "p1t09", phase: 1, K: 4, k: 3, N: 20, nClean: 1, hidden: 16, thetaTrue: 0.950, thetaSN: 0.750, thetaNV: 0.550, thetaRB: 0.950,
-      D: 4, dN: 1, nFlagged: 3, bayesPosterior: 0.950, snPosterior: 0.750, mrPosterior: 0.550 },
-    { id: "p1t10", phase: 1, K: 4, k: 4, N: 20, nClean: 0, hidden: 16, thetaTrue: 1.000, thetaSN: 1.000, thetaNV: 0.600, thetaRB: 1.000,
-      D: 4, dN: 0, nFlagged: 4, bayesPosterior: 1.000, snPosterior: 1.000, mrPosterior: 0.600 },
-    { id: "p1t11", phase: 1, K: 4, k: 0, N: 30, nClean: 4, hidden: 26, thetaTrue: 0.433, thetaSN: 0.000, thetaNV: 0.433, thetaRB: 0.433,
-      D: 4, dN: 4, nFlagged: 0, bayesPosterior: 0.433, snPosterior: 0.000, mrPosterior: 0.433 },
-    { id: "p1t12", phase: 1, K: 4, k: 1, N: 30, nClean: 3, hidden: 26, thetaTrue: 0.900, thetaSN: 0.250, thetaNV: 0.467, thetaRB: 0.900,
-      D: 4, dN: 3, nFlagged: 1, bayesPosterior: 0.900, snPosterior: 0.250, mrPosterior: 0.467 },
-    { id: "p1t13", phase: 1, K: 4, k: 2, N: 30, nClean: 2, hidden: 26, thetaTrue: 0.933, thetaSN: 0.500, thetaNV: 0.500, thetaRB: 0.933,
-      D: 4, dN: 2, nFlagged: 2, bayesPosterior: 0.933, snPosterior: 0.500, mrPosterior: 0.500 },
-    { id: "p1t14", phase: 1, K: 4, k: 3, N: 30, nClean: 1, hidden: 26, thetaTrue: 0.967, thetaSN: 0.750, thetaNV: 0.533, thetaRB: 0.967,
-      D: 4, dN: 1, nFlagged: 3, bayesPosterior: 0.967, snPosterior: 0.750, mrPosterior: 0.533 },
-    { id: "p1t15", phase: 1, K: 4, k: 4, N: 30, nClean: 0, hidden: 26, thetaTrue: 1.000, thetaSN: 1.000, thetaNV: 0.567, thetaRB: 1.000,
-      D: 4, dN: 0, nFlagged: 4, bayesPosterior: 1.000, snPosterior: 1.000, mrPosterior: 0.567 },
-
-    // ── Phase 2: K=8, N in {10,20,30}, k in {0,1,4,7,8} ─────────
-    { id: "p2t01", phase: 2, K: 8, k: 0, N: 10, nClean: 8, hidden:  2, thetaTrue: 0.100, thetaSN: 0.000, thetaNV: 0.100, thetaRB: 0.100,
-      D: 8, dN: 8, nFlagged: 0, bayesPosterior: 0.100, snPosterior: 0.000, mrPosterior: 0.100 },
-    { id: "p2t02", phase: 2, K: 8, k: 1, N: 10, nClean: 7, hidden:  2, thetaTrue: 0.300, thetaSN: 0.125, thetaNV: 0.200, thetaRB: 0.300,
-      D: 8, dN: 7, nFlagged: 1, bayesPosterior: 0.300, snPosterior: 0.125, mrPosterior: 0.200 },
-    { id: "p2t03", phase: 2, K: 8, k: 4, N: 10, nClean: 4, hidden:  2, thetaTrue: 0.600, thetaSN: 0.500, thetaNV: 0.500, thetaRB: 0.600,
-      D: 8, dN: 4, nFlagged: 4, bayesPosterior: 0.600, snPosterior: 0.500, mrPosterior: 0.500 },
-    { id: "p2t04", phase: 2, K: 8, k: 7, N: 10, nClean: 1, hidden:  2, thetaTrue: 0.900, thetaSN: 0.875, thetaNV: 0.800, thetaRB: 0.900,
-      D: 8, dN: 1, nFlagged: 7, bayesPosterior: 0.900, snPosterior: 0.875, mrPosterior: 0.800 },
-    { id: "p2t05", phase: 2, K: 8, k: 8, N: 10, nClean: 0, hidden:  2, thetaTrue: 1.000, thetaSN: 1.000, thetaNV: 0.900, thetaRB: 1.000,
-      D: 8, dN: 0, nFlagged: 8, bayesPosterior: 1.000, snPosterior: 1.000, mrPosterior: 0.900 },
-    { id: "p2t06", phase: 2, K: 8, k: 0, N: 20, nClean: 8, hidden: 12, thetaTrue: 0.300, thetaSN: 0.000, thetaNV: 0.300, thetaRB: 0.300,
-      D: 8, dN: 8, nFlagged: 0, bayesPosterior: 0.300, snPosterior: 0.000, mrPosterior: 0.300 },
-    { id: "p2t07", phase: 2, K: 8, k: 1, N: 20, nClean: 7, hidden: 12, thetaTrue: 0.650, thetaSN: 0.125, thetaNV: 0.350, thetaRB: 0.650,
-      D: 8, dN: 7, nFlagged: 1, bayesPosterior: 0.650, snPosterior: 0.125, mrPosterior: 0.350 },
-    { id: "p2t08", phase: 2, K: 8, k: 4, N: 20, nClean: 4, hidden: 12, thetaTrue: 0.800, thetaSN: 0.500, thetaNV: 0.500, thetaRB: 0.800,
-      D: 8, dN: 4, nFlagged: 4, bayesPosterior: 0.800, snPosterior: 0.500, mrPosterior: 0.500 },
-    { id: "p2t09", phase: 2, K: 8, k: 7, N: 20, nClean: 1, hidden: 12, thetaTrue: 0.950, thetaSN: 0.875, thetaNV: 0.650, thetaRB: 0.950,
-      D: 8, dN: 1, nFlagged: 7, bayesPosterior: 0.950, snPosterior: 0.875, mrPosterior: 0.650 },
-    { id: "p2t10", phase: 2, K: 8, k: 8, N: 20, nClean: 0, hidden: 12, thetaTrue: 1.000, thetaSN: 1.000, thetaNV: 0.700, thetaRB: 1.000,
-      D: 8, dN: 0, nFlagged: 8, bayesPosterior: 1.000, snPosterior: 1.000, mrPosterior: 0.700 },
-    { id: "p2t11", phase: 2, K: 8, k: 0, N: 30, nClean: 8, hidden: 22, thetaTrue: 0.367, thetaSN: 0.000, thetaNV: 0.367, thetaRB: 0.367,
-      D: 8, dN: 8, nFlagged: 0, bayesPosterior: 0.367, snPosterior: 0.000, mrPosterior: 0.367 },
-    { id: "p2t12", phase: 2, K: 8, k: 1, N: 30, nClean: 7, hidden: 22, thetaTrue: 0.767, thetaSN: 0.125, thetaNV: 0.400, thetaRB: 0.767,
-      D: 8, dN: 7, nFlagged: 1, bayesPosterior: 0.767, snPosterior: 0.125, mrPosterior: 0.400 },
-    { id: "p2t13", phase: 2, K: 8, k: 4, N: 30, nClean: 4, hidden: 22, thetaTrue: 0.867, thetaSN: 0.500, thetaNV: 0.500, thetaRB: 0.867,
-      D: 8, dN: 4, nFlagged: 4, bayesPosterior: 0.867, snPosterior: 0.500, mrPosterior: 0.500 },
-    { id: "p2t14", phase: 2, K: 8, k: 7, N: 30, nClean: 1, hidden: 22, thetaTrue: 0.967, thetaSN: 0.875, thetaNV: 0.600, thetaRB: 0.967,
-      D: 8, dN: 1, nFlagged: 7, bayesPosterior: 0.967, snPosterior: 0.875, mrPosterior: 0.600 },
-    { id: "p2t15", phase: 2, K: 8, k: 8, N: 30, nClean: 0, hidden: 22, thetaTrue: 1.000, thetaSN: 1.000, thetaNV: 0.633, thetaRB: 1.000,
-      D: 8, dN: 0, nFlagged: 8, bayesPosterior: 1.000, snPosterior: 1.000, mrPosterior: 0.633 }
+    // -- Phase 1: K=3, 12 trials (6 unique cells x 2 reps) --
+    { id: "p1t01", phase: 1, size: "medium", K: 3, k: 1, nLo: 20, nHi: 25, nClean: 2, thetaTrue: 0.9047, thetaSN: 0.3333, thetaNV: 0.4762, thetaRB: 0.9047, stdNV: 0.0014, stdRB: 0.0054,
+      D: 3, dN: 2, nFlagged: 1, bayesPosterior: 0.9047, snPosterior: 0.3333, mrPosterior: 0.4762 },
+    { id: "p1t02", phase: 1, size: "large", K: 3, k: 2, nLo: 45, nHi: 50, nClean: 1, thetaTrue: 0.9782, thetaSN: 0.6667, thetaNV: 0.5109, thetaRB: 0.9782, stdNV: 0.0003, stdRB: 0.0006,
+      D: 3, dN: 1, nFlagged: 2, bayesPosterior: 0.9782, snPosterior: 0.6667, mrPosterior: 0.5109 },
+    { id: "p1t03", phase: 1, size: "small", K: 3, k: 1, nLo: 10, nHi: 15, nClean: 2, thetaTrue: 0.8190, thetaSN: 0.3333, thetaNV: 0.4547, thetaRB: 0.8190, stdNV: 0.0050, stdRB: 0.0199,
+      D: 3, dN: 2, nFlagged: 1, bayesPosterior: 0.8190, snPosterior: 0.3333, mrPosterior: 0.4547 },
+    { id: "p1t04", phase: 1, size: "large", K: 3, k: 1, nLo: 45, nHi: 50, nClean: 2, thetaTrue: 0.9565, thetaSN: 0.3333, thetaNV: 0.4891, thetaRB: 0.9565, stdNV: 0.0003, stdRB: 0.0011,
+      D: 3, dN: 2, nFlagged: 1, bayesPosterior: 0.9565, snPosterior: 0.3333, mrPosterior: 0.4891 },
+    { id: "p1t05", phase: 1, size: "medium", K: 3, k: 2, nLo: 20, nHi: 25, nClean: 1, thetaTrue: 0.9522, thetaSN: 0.6667, thetaNV: 0.5239, thetaRB: 0.9522, stdNV: 0.0013, stdRB: 0.0026,
+      D: 3, dN: 1, nFlagged: 2, bayesPosterior: 0.9522, snPosterior: 0.6667, mrPosterior: 0.5239 },
+    { id: "p1t06", phase: 1, size: "large", K: 3, k: 2, nLo: 45, nHi: 50, nClean: 1, thetaTrue: 0.9782, thetaSN: 0.6667, thetaNV: 0.5109, thetaRB: 0.9782, stdNV: 0.0003, stdRB: 0.0006,
+      D: 3, dN: 1, nFlagged: 2, bayesPosterior: 0.9782, snPosterior: 0.6667, mrPosterior: 0.5109 },
+    { id: "p1t07", phase: 1, size: "small", K: 3, k: 1, nLo: 10, nHi: 15, nClean: 2, thetaTrue: 0.8190, thetaSN: 0.3333, thetaNV: 0.4547, thetaRB: 0.8190, stdNV: 0.0050, stdRB: 0.0199,
+      D: 3, dN: 2, nFlagged: 1, bayesPosterior: 0.8190, snPosterior: 0.3333, mrPosterior: 0.4547 },
+    { id: "p1t08", phase: 1, size: "small", K: 3, k: 2, nLo: 10, nHi: 15, nClean: 1, thetaTrue: 0.9083, thetaSN: 0.6667, thetaNV: 0.5459, thetaRB: 0.9083, stdNV: 0.0047, stdRB: 0.0094,
+      D: 3, dN: 1, nFlagged: 2, bayesPosterior: 0.9083, snPosterior: 0.6667, mrPosterior: 0.5459 },
+    { id: "p1t09", phase: 1, size: "medium", K: 3, k: 1, nLo: 20, nHi: 25, nClean: 2, thetaTrue: 0.9047, thetaSN: 0.3333, thetaNV: 0.4762, thetaRB: 0.9047, stdNV: 0.0014, stdRB: 0.0054,
+      D: 3, dN: 2, nFlagged: 1, bayesPosterior: 0.9047, snPosterior: 0.3333, mrPosterior: 0.4762 },
+    { id: "p1t10", phase: 1, size: "large", K: 3, k: 1, nLo: 45, nHi: 50, nClean: 2, thetaTrue: 0.9565, thetaSN: 0.3333, thetaNV: 0.4891, thetaRB: 0.9565, stdNV: 0.0003, stdRB: 0.0011,
+      D: 3, dN: 2, nFlagged: 1, bayesPosterior: 0.9565, snPosterior: 0.3333, mrPosterior: 0.4891 },
+    { id: "p1t11", phase: 1, size: "small", K: 3, k: 2, nLo: 10, nHi: 15, nClean: 1, thetaTrue: 0.9083, thetaSN: 0.6667, thetaNV: 0.5459, thetaRB: 0.9083, stdNV: 0.0047, stdRB: 0.0094,
+      D: 3, dN: 1, nFlagged: 2, bayesPosterior: 0.9083, snPosterior: 0.6667, mrPosterior: 0.5459 },
+    { id: "p1t12", phase: 1, size: "medium", K: 3, k: 2, nLo: 20, nHi: 25, nClean: 1, thetaTrue: 0.9522, thetaSN: 0.6667, thetaNV: 0.5239, thetaRB: 0.9522, stdNV: 0.0013, stdRB: 0.0026,
+      D: 3, dN: 1, nFlagged: 2, bayesPosterior: 0.9522, snPosterior: 0.6667, mrPosterior: 0.5239 },
+    // -- Phase 2: K=5, 16 trials (8 unique cells x 2 reps) --
+    { id: "p2t01", phase: 2, size: "large", K: 5, k: 2, nLo: 45, nHi: 50, nClean: 3, thetaTrue: 0.9347, thetaSN: 0.4000, thetaNV: 0.4891, thetaRB: 0.9347, stdNV: 0.0003, stdRB: 0.0017,
+      D: 5, dN: 3, nFlagged: 2, bayesPosterior: 0.9347, snPosterior: 0.4000, mrPosterior: 0.4891 },
+    { id: "p2t02", phase: 2, size: "medium", K: 5, k: 4, nLo: 20, nHi: 25, nClean: 1, thetaTrue: 0.9522, thetaSN: 0.8000, thetaNV: 0.5718, thetaRB: 0.9522, stdNV: 0.0039, stdRB: 0.0026,
+      D: 5, dN: 1, nFlagged: 4, bayesPosterior: 0.9522, snPosterior: 0.8000, mrPosterior: 0.5718 },
+    { id: "p2t03", phase: 2, size: "medium", K: 5, k: 1, nLo: 20, nHi: 25, nClean: 4, thetaTrue: 0.8109, thetaSN: 0.2000, thetaNV: 0.4291, thetaRB: 0.8109, stdNV: 0.0044, stdRB: 0.0116,
+      D: 5, dN: 4, nFlagged: 1, bayesPosterior: 0.8109, snPosterior: 0.2000, mrPosterior: 0.4291 },
+    { id: "p2t04", phase: 2, size: "small", K: 5, k: 2, nLo: 10, nHi: 15, nClean: 3, thetaTrue: 0.7328, thetaSN: 0.4000, thetaNV: 0.4555, thetaRB: 0.7328, stdNV: 0.0052, stdRB: 0.0313,
+      D: 5, dN: 3, nFlagged: 2, bayesPosterior: 0.7328, snPosterior: 0.4000, mrPosterior: 0.4555 },
+    { id: "p2t05", phase: 2, size: "medium", K: 5, k: 1, nLo: 20, nHi: 25, nClean: 4, thetaTrue: 0.8109, thetaSN: 0.2000, thetaNV: 0.4291, thetaRB: 0.8109, stdNV: 0.0044, stdRB: 0.0116,
+      D: 5, dN: 4, nFlagged: 1, bayesPosterior: 0.8109, snPosterior: 0.2000, mrPosterior: 0.4291 },
+    { id: "p2t06", phase: 2, size: "small", K: 5, k: 1, nLo: 10, nHi: 15, nClean: 4, thetaTrue: 0.6510, thetaSN: 0.2000, thetaNV: 0.3691, thetaRB: 0.6510, stdNV: 0.0163, stdRB: 0.0434,
+      D: 5, dN: 4, nFlagged: 1, bayesPosterior: 0.6510, snPosterior: 0.2000, mrPosterior: 0.3691 },
+    { id: "p2t07", phase: 2, size: "large", K: 5, k: 1, nLo: 45, nHi: 50, nClean: 4, thetaTrue: 0.9131, thetaSN: 0.2000, thetaNV: 0.4674, thetaRB: 0.9131, stdNV: 0.0009, stdRB: 0.0023,
+      D: 5, dN: 4, nFlagged: 1, bayesPosterior: 0.9131, snPosterior: 0.2000, mrPosterior: 0.4674 },
+    { id: "p2t08", phase: 2, size: "small", K: 5, k: 0, nLo: 10, nHi: 15, nClean: 5, thetaTrue: 0.3000, thetaSN: 0.0000, thetaNV: 0.3000, thetaRB: 0.3000, stdNV: 0.0274, stdRB: 0.0274,
+      D: 5, dN: 5, nFlagged: 0, bayesPosterior: 0.3000, snPosterior: 0.0000, mrPosterior: 0.3000 },
+    { id: "p2t09", phase: 2, size: "large", K: 5, k: 1, nLo: 45, nHi: 50, nClean: 4, thetaTrue: 0.9131, thetaSN: 0.2000, thetaNV: 0.4674, thetaRB: 0.9131, stdNV: 0.0009, stdRB: 0.0023,
+      D: 5, dN: 4, nFlagged: 1, bayesPosterior: 0.9131, snPosterior: 0.2000, mrPosterior: 0.4674 },
+    { id: "p2t10", phase: 2, size: "small", K: 5, k: 2, nLo: 10, nHi: 15, nClean: 3, thetaTrue: 0.7328, thetaSN: 0.4000, thetaNV: 0.4555, thetaRB: 0.7328, stdNV: 0.0052, stdRB: 0.0313,
+      D: 5, dN: 3, nFlagged: 2, bayesPosterior: 0.7328, snPosterior: 0.4000, mrPosterior: 0.4555 },
+    { id: "p2t11", phase: 2, size: "small", K: 5, k: 0, nLo: 10, nHi: 15, nClean: 5, thetaTrue: 0.3000, thetaSN: 0.0000, thetaNV: 0.3000, thetaRB: 0.3000, stdNV: 0.0274, stdRB: 0.0274,
+      D: 5, dN: 5, nFlagged: 0, bayesPosterior: 0.3000, snPosterior: 0.0000, mrPosterior: 0.3000 },
+    { id: "p2t12", phase: 2, size: "large", K: 5, k: 4, nLo: 45, nHi: 50, nClean: 1, thetaTrue: 0.9782, thetaSN: 0.8000, thetaNV: 0.5327, thetaRB: 0.9782, stdNV: 0.0008, stdRB: 0.0006,
+      D: 5, dN: 1, nFlagged: 4, bayesPosterior: 0.9782, snPosterior: 0.8000, mrPosterior: 0.5327 },
+    { id: "p2t13", phase: 2, size: "small", K: 5, k: 1, nLo: 10, nHi: 15, nClean: 4, thetaTrue: 0.6510, thetaSN: 0.2000, thetaNV: 0.3691, thetaRB: 0.6510, stdNV: 0.0163, stdRB: 0.0434,
+      D: 5, dN: 4, nFlagged: 1, bayesPosterior: 0.6510, snPosterior: 0.2000, mrPosterior: 0.3691 },
+    { id: "p2t14", phase: 2, size: "medium", K: 5, k: 4, nLo: 20, nHi: 25, nClean: 1, thetaTrue: 0.9522, thetaSN: 0.8000, thetaNV: 0.5718, thetaRB: 0.9522, stdNV: 0.0039, stdRB: 0.0026,
+      D: 5, dN: 1, nFlagged: 4, bayesPosterior: 0.9522, snPosterior: 0.8000, mrPosterior: 0.5718 },
+    { id: "p2t15", phase: 2, size: "large", K: 5, k: 2, nLo: 45, nHi: 50, nClean: 3, thetaTrue: 0.9347, thetaSN: 0.4000, thetaNV: 0.4891, thetaRB: 0.9347, stdNV: 0.0003, stdRB: 0.0017,
+      D: 5, dN: 3, nFlagged: 2, bayesPosterior: 0.9347, snPosterior: 0.4000, mrPosterior: 0.4891 },
+    { id: "p2t16", phase: 2, size: "large", K: 5, k: 4, nLo: 45, nHi: 50, nClean: 1, thetaTrue: 0.9782, thetaSN: 0.8000, thetaNV: 0.5327, thetaRB: 0.9782, stdNV: 0.0008, stdRB: 0.0006,
+      D: 5, dN: 1, nFlagged: 4, bayesPosterior: 0.9782, snPosterior: 0.8000, mrPosterior: 0.5327 },
+    // -- Phase 3: K=10, 32 trials (16 unique cells x 2 reps) --
+    { id: "p3t01", phase: 3, size: "small", K: 10, k: 5, nLo: 10, nHi: 15, nClean: 5, thetaTrue: 0.5745, thetaSN: 0.5000, thetaNV: 0.5000, thetaRB: 0.5745, stdNV: 0.0000, stdRB: 0.0554,
+      D: 10, dN: 5, nFlagged: 5, bayesPosterior: 0.5745, snPosterior: 0.5000, mrPosterior: 0.5000 },
+    { id: "p3t02", phase: 3, size: "large", K: 10, k: 3, nLo: 45, nHi: 50, nClean: 7, thetaTrue: 0.8482, thetaSN: 0.3000, thetaNV: 0.4566, thetaRB: 0.8482, stdNV: 0.0012, stdRB: 0.0043,
+      D: 10, dN: 7, nFlagged: 3, bayesPosterior: 0.8482, snPosterior: 0.3000, mrPosterior: 0.4566 },
+    { id: "p3t03", phase: 3, size: "small", K: 10, k: 1, nLo: 10, nHi: 15, nClean: 9, thetaTrue: 0.3334, thetaSN: 0.1000, thetaNV: 0.2037, thetaRB: 0.3334, stdNV: 0.0319, stdRB: 0.0717,
+      D: 10, dN: 9, nFlagged: 1, bayesPosterior: 0.3334, snPosterior: 0.1000, mrPosterior: 0.2037 },
+    { id: "p3t04", phase: 3, size: "small", K: 10, k: 6, nLo: 10, nHi: 15, nClean: 4, thetaTrue: 0.6510, thetaSN: 0.6000, thetaNV: 0.5873, thetaRB: 0.6510, stdNV: 0.0108, stdRB: 0.0434,
+      D: 10, dN: 4, nFlagged: 6, bayesPosterior: 0.6510, snPosterior: 0.6000, mrPosterior: 0.5873 },
+    { id: "p3t05", phase: 3, size: "large", K: 10, k: 8, nLo: 45, nHi: 50, nClean: 2, thetaTrue: 0.9565, thetaSN: 0.8000, thetaNV: 0.5653, thetaRB: 0.9565, stdNV: 0.0017, stdRB: 0.0011,
+      D: 10, dN: 2, nFlagged: 8, bayesPosterior: 0.9565, snPosterior: 0.8000, mrPosterior: 0.5653 },
+    { id: "p3t06", phase: 3, size: "small", K: 10, k: 7, nLo: 10, nHi: 15, nClean: 3, thetaTrue: 0.7328, thetaSN: 0.7000, thetaNV: 0.6781, thetaRB: 0.7328, stdNV: 0.0209, stdRB: 0.0313,
+      D: 10, dN: 3, nFlagged: 7, bayesPosterior: 0.7328, snPosterior: 0.7000, mrPosterior: 0.6781 },
+    { id: "p3t07", phase: 3, size: "small", K: 10, k: 2, nLo: 10, nHi: 15, nClean: 8, thetaTrue: 0.3857, thetaSN: 0.2000, thetaNV: 0.2696, thetaRB: 0.3857, stdNV: 0.0284, stdRB: 0.0758,
+      D: 10, dN: 8, nFlagged: 2, bayesPosterior: 0.3857, snPosterior: 0.2000, mrPosterior: 0.2696 },
+    { id: "p3t08", phase: 3, size: "small", K: 10, k: 1, nLo: 10, nHi: 15, nClean: 9, thetaTrue: 0.3334, thetaSN: 0.1000, thetaNV: 0.2037, thetaRB: 0.3334, stdNV: 0.0319, stdRB: 0.0717,
+      D: 10, dN: 9, nFlagged: 1, bayesPosterior: 0.3334, snPosterior: 0.1000, mrPosterior: 0.2037 },
+    { id: "p3t09", phase: 3, size: "small", K: 10, k: 0, nLo: 10, nHi: 15, nClean: 10, thetaTrue: 0.1443, thetaSN: 0.0000, thetaNV: 0.1443, thetaRB: 0.1443, stdNV: 0.0290, stdRB: 0.0290,
+      D: 10, dN: 10, nFlagged: 0, bayesPosterior: 0.1443, snPosterior: 0.0000, mrPosterior: 0.1443 },
+    { id: "p3t10", phase: 3, size: "small", K: 10, k: 4, nLo: 10, nHi: 15, nClean: 6, thetaTrue: 0.5047, thetaSN: 0.4000, thetaNV: 0.4175, thetaRB: 0.5047, stdNV: 0.0110, stdRB: 0.0662,
+      D: 10, dN: 6, nFlagged: 4, bayesPosterior: 0.5047, snPosterior: 0.4000, mrPosterior: 0.4175 },
+    { id: "p3t11", phase: 3, size: "small", K: 10, k: 3, nLo: 10, nHi: 15, nClean: 7, thetaTrue: 0.4420, thetaSN: 0.3000, thetaNV: 0.3406, thetaRB: 0.4420, stdNV: 0.0210, stdRB: 0.0737,
+      D: 10, dN: 7, nFlagged: 3, bayesPosterior: 0.4420, snPosterior: 0.3000, mrPosterior: 0.3406 },
+    { id: "p3t12", phase: 3, size: "small", K: 10, k: 4, nLo: 10, nHi: 15, nClean: 6, thetaTrue: 0.5047, thetaSN: 0.4000, thetaNV: 0.4175, thetaRB: 0.5047, stdNV: 0.0110, stdRB: 0.0662,
+      D: 10, dN: 6, nFlagged: 4, bayesPosterior: 0.5047, snPosterior: 0.4000, mrPosterior: 0.4175 },
+    { id: "p3t13", phase: 3, size: "large", K: 10, k: 1, nLo: 45, nHi: 50, nClean: 9, thetaTrue: 0.8053, thetaSN: 0.1000, thetaNV: 0.4135, thetaRB: 0.8053, stdNV: 0.0026, stdRB: 0.0057,
+      D: 10, dN: 9, nFlagged: 1, bayesPosterior: 0.8053, snPosterior: 0.1000, mrPosterior: 0.4135 },
+    { id: "p3t14", phase: 3, size: "small", K: 10, k: 5, nLo: 10, nHi: 15, nClean: 5, thetaTrue: 0.5745, thetaSN: 0.5000, thetaNV: 0.5000, thetaRB: 0.5745, stdNV: 0.0000, stdRB: 0.0554,
+      D: 10, dN: 5, nFlagged: 5, bayesPosterior: 0.5745, snPosterior: 0.5000, mrPosterior: 0.5000 },
+    { id: "p3t15", phase: 3, size: "small", K: 10, k: 3, nLo: 10, nHi: 15, nClean: 7, thetaTrue: 0.4420, thetaSN: 0.3000, thetaNV: 0.3406, thetaRB: 0.4420, stdNV: 0.0210, stdRB: 0.0737,
+      D: 10, dN: 7, nFlagged: 3, bayesPosterior: 0.4420, snPosterior: 0.3000, mrPosterior: 0.3406 },
+    { id: "p3t16", phase: 3, size: "medium", K: 10, k: 2, nLo: 20, nHi: 25, nClean: 8, thetaTrue: 0.6308, thetaSN: 0.2000, thetaNV: 0.3615, thetaRB: 0.6308, stdNV: 0.0098, stdRB: 0.0261,
+      D: 10, dN: 8, nFlagged: 2, bayesPosterior: 0.6308, snPosterior: 0.2000, mrPosterior: 0.3615 },
+    { id: "p3t17", phase: 3, size: "small", K: 10, k: 7, nLo: 10, nHi: 15, nClean: 3, thetaTrue: 0.7328, thetaSN: 0.7000, thetaNV: 0.6781, thetaRB: 0.7328, stdNV: 0.0209, stdRB: 0.0313,
+      D: 10, dN: 3, nFlagged: 7, bayesPosterior: 0.7328, snPosterior: 0.7000, mrPosterior: 0.6781 },
+    { id: "p3t18", phase: 3, size: "large", K: 10, k: 7, nLo: 45, nHi: 50, nClean: 3, thetaTrue: 0.9347, thetaSN: 0.7000, thetaNV: 0.5435, thetaRB: 0.9347, stdNV: 0.0011, stdRB: 0.0017,
+      D: 10, dN: 3, nFlagged: 7, bayesPosterior: 0.9347, snPosterior: 0.7000, mrPosterior: 0.5435 },
+    { id: "p3t19", phase: 3, size: "medium", K: 10, k: 3, nLo: 20, nHi: 25, nClean: 7, thetaTrue: 0.6746, thetaSN: 0.3000, thetaNV: 0.4070, thetaRB: 0.6746, stdNV: 0.0064, stdRB: 0.0223,
+      D: 10, dN: 7, nFlagged: 3, bayesPosterior: 0.6746, snPosterior: 0.3000, mrPosterior: 0.4070 },
+    { id: "p3t20", phase: 3, size: "medium", K: 10, k: 2, nLo: 20, nHi: 25, nClean: 8, thetaTrue: 0.6308, thetaSN: 0.2000, thetaNV: 0.3615, thetaRB: 0.6308, stdNV: 0.0098, stdRB: 0.0261,
+      D: 10, dN: 8, nFlagged: 2, bayesPosterior: 0.6308, snPosterior: 0.2000, mrPosterior: 0.3615 },
+    { id: "p3t21", phase: 3, size: "medium", K: 10, k: 3, nLo: 20, nHi: 25, nClean: 7, thetaTrue: 0.6746, thetaSN: 0.3000, thetaNV: 0.4070, thetaRB: 0.6746, stdNV: 0.0064, stdRB: 0.0223,
+      D: 10, dN: 7, nFlagged: 3, bayesPosterior: 0.6746, snPosterior: 0.3000, mrPosterior: 0.4070 },
+    { id: "p3t22", phase: 3, size: "large", K: 10, k: 2, nLo: 45, nHi: 50, nClean: 8, thetaTrue: 0.8267, thetaSN: 0.2000, thetaNV: 0.4350, thetaRB: 0.8267, stdNV: 0.0019, stdRB: 0.0050,
+      D: 10, dN: 8, nFlagged: 2, bayesPosterior: 0.8267, snPosterior: 0.2000, mrPosterior: 0.4350 },
+    { id: "p3t23", phase: 3, size: "medium", K: 10, k: 1, nLo: 20, nHi: 25, nClean: 9, thetaTrue: 0.5880, thetaSN: 0.1000, thetaNV: 0.3169, thetaRB: 0.5880, stdNV: 0.0133, stdRB: 0.0299,
+      D: 10, dN: 9, nFlagged: 1, bayesPosterior: 0.5880, snPosterior: 0.1000, mrPosterior: 0.3169 },
+    { id: "p3t24", phase: 3, size: "small", K: 10, k: 0, nLo: 10, nHi: 15, nClean: 10, thetaTrue: 0.1443, thetaSN: 0.0000, thetaNV: 0.1443, thetaRB: 0.1443, stdNV: 0.0290, stdRB: 0.0290,
+      D: 10, dN: 10, nFlagged: 0, bayesPosterior: 0.1443, snPosterior: 0.0000, mrPosterior: 0.1443 },
+    { id: "p3t25", phase: 3, size: "small", K: 10, k: 6, nLo: 10, nHi: 15, nClean: 4, thetaTrue: 0.6510, thetaSN: 0.6000, thetaNV: 0.5873, thetaRB: 0.6510, stdNV: 0.0108, stdRB: 0.0434,
+      D: 10, dN: 4, nFlagged: 6, bayesPosterior: 0.6510, snPosterior: 0.6000, mrPosterior: 0.5873 },
+    { id: "p3t26", phase: 3, size: "small", K: 10, k: 2, nLo: 10, nHi: 15, nClean: 8, thetaTrue: 0.3857, thetaSN: 0.2000, thetaNV: 0.2696, thetaRB: 0.3857, stdNV: 0.0284, stdRB: 0.0758,
+      D: 10, dN: 8, nFlagged: 2, bayesPosterior: 0.3857, snPosterior: 0.2000, mrPosterior: 0.2696 },
+    { id: "p3t27", phase: 3, size: "large", K: 10, k: 1, nLo: 45, nHi: 50, nClean: 9, thetaTrue: 0.8053, thetaSN: 0.1000, thetaNV: 0.4135, thetaRB: 0.8053, stdNV: 0.0026, stdRB: 0.0057,
+      D: 10, dN: 9, nFlagged: 1, bayesPosterior: 0.8053, snPosterior: 0.1000, mrPosterior: 0.4135 },
+    { id: "p3t28", phase: 3, size: "large", K: 10, k: 7, nLo: 45, nHi: 50, nClean: 3, thetaTrue: 0.9347, thetaSN: 0.7000, thetaNV: 0.5435, thetaRB: 0.9347, stdNV: 0.0011, stdRB: 0.0017,
+      D: 10, dN: 3, nFlagged: 7, bayesPosterior: 0.9347, snPosterior: 0.7000, mrPosterior: 0.5435 },
+    { id: "p3t29", phase: 3, size: "large", K: 10, k: 2, nLo: 45, nHi: 50, nClean: 8, thetaTrue: 0.8267, thetaSN: 0.2000, thetaNV: 0.4350, thetaRB: 0.8267, stdNV: 0.0019, stdRB: 0.0050,
+      D: 10, dN: 8, nFlagged: 2, bayesPosterior: 0.8267, snPosterior: 0.2000, mrPosterior: 0.4350 },
+    { id: "p3t30", phase: 3, size: "large", K: 10, k: 3, nLo: 45, nHi: 50, nClean: 7, thetaTrue: 0.8482, thetaSN: 0.3000, thetaNV: 0.4566, thetaRB: 0.8482, stdNV: 0.0012, stdRB: 0.0043,
+      D: 10, dN: 7, nFlagged: 3, bayesPosterior: 0.8482, snPosterior: 0.3000, mrPosterior: 0.4566 },
+    { id: "p3t31", phase: 3, size: "large", K: 10, k: 8, nLo: 45, nHi: 50, nClean: 2, thetaTrue: 0.9565, thetaSN: 0.8000, thetaNV: 0.5653, thetaRB: 0.9565, stdNV: 0.0017, stdRB: 0.0011,
+      D: 10, dN: 2, nFlagged: 8, bayesPosterior: 0.9565, snPosterior: 0.8000, mrPosterior: 0.5653 },
+    { id: "p3t32", phase: 3, size: "medium", K: 10, k: 1, nLo: 20, nHi: 25, nClean: 9, thetaTrue: 0.5880, thetaSN: 0.1000, thetaNV: 0.3169, thetaRB: 0.5880, stdNV: 0.0133, stdRB: 0.0299,
+      D: 10, dN: 9, nFlagged: 1, bayesPosterior: 0.5880, snPosterior: 0.1000, mrPosterior: 0.3169 },
   ],
-
   // ====================================================================
   //  PAGES (single flow, no Part 1 / Part 2 split)
   // ====================================================================
@@ -211,11 +306,11 @@ var SURVEY_CONFIG = {
       title: "Consent",
       body:
         "<p style='text-align:justify;'><strong>What you'll do.</strong> Learn a simple " +
-        "auditing task, then go through 30 auditing rounds.</p>" +
-        "<p style='text-align:justify;'><strong>Time.</strong> About 25 minutes.</p>" +
-        "<p style='text-align:justify;'><strong>Pay.</strong> $5.00 base + up to $6.00 " +
-        "performance bonus. Base pay is <strong>guaranteed</strong>; no penalty can " +
-        "reduce it.</p>" +
+        "auditing task, then go through 60 auditing rounds.</p>" +
+        "<p style='text-align:justify;'><strong>Time.</strong> About 40 minutes.</p>" +
+        "<p style='text-align:justify;'><strong>Pay.</strong> $8.00 base + up to $6.00 " +
+        "performance bonus (3 rounds picked at random at the end count toward the bonus). " +
+        "Base pay is <strong>guaranteed</strong>; no penalty can reduce it.</p>" +
         "<p style='text-align:justify;'><strong>Risks.</strong> None beyond everyday life.</p>" +
         "<p style='text-align:justify;'><strong>Confidentiality.</strong> Anonymous. We " +
         "collect your Prolific ID only for payment.</p>" +
@@ -772,9 +867,9 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 5
     },
 
-    // -- Page 17: Practice math #3 -- N=30 ------------------------------
+    // -- Page 17: Practice math #3 -- N=50 ------------------------------
     {
-      id: "p2_inst_try_n30",
+      id: "p2_inst_try_n50",
       type: "instructions",
       title: "",
       body:
@@ -782,22 +877,11 @@ var SURVEY_CONFIG = {
           "A final example." +
         "</p>" +
         "<p style='text-align:justify; font-size:16px; max-width:620px; margin:0 auto 16px; line-height:1.6;'>" +
-          "A company with <strong>30</strong> transactions, all shown." +
+          "A company with <strong>50</strong> transactions, all shown." +
         "</p>" +
         "<div class='cards-grid-10'>" +
-          // 24 S + 6 C spread across 3 rows of 13
-          "<div class='transaction-doc suspicious rule-small'>S</div>" +
-          "<div class='transaction-doc suspicious rule-small'>S</div>" +
-          "<div class='transaction-doc clean rule-small'>C</div>" +
-          "<div class='transaction-doc suspicious rule-small'>S</div>" +
-          "<div class='transaction-doc suspicious rule-small'>S</div>" +
-          "<div class='transaction-doc suspicious rule-small'>S</div>" +
-          "<div class='transaction-doc clean rule-small'>C</div>" +
-          "<div class='transaction-doc suspicious rule-small'>S</div>" +
-          "<div class='transaction-doc suspicious rule-small'>S</div>" +
-          "<div class='transaction-doc suspicious rule-small'>S</div>" +
-          "<div class='transaction-doc clean rule-small'>C</div>" +
-          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          // 40 S + 10 C across 5 rows of 10 (40/50 = 80%)
+          // Row 1
           "<div class='transaction-doc suspicious rule-small'>S</div>" +
           "<div class='transaction-doc suspicious rule-small'>S</div>" +
           "<div class='transaction-doc clean rule-small'>C</div>" +
@@ -805,20 +889,56 @@ var SURVEY_CONFIG = {
           "<div class='transaction-doc suspicious rule-small'>S</div>" +
           "<div class='transaction-doc suspicious rule-small'>S</div>" +
           "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          // Row 2
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
           "<div class='transaction-doc suspicious rule-small'>S</div>" +
           "<div class='transaction-doc clean rule-small'>C</div>" +
           "<div class='transaction-doc suspicious rule-small'>S</div>" +
           "<div class='transaction-doc suspicious rule-small'>S</div>" +
           "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          // Row 3
           "<div class='transaction-doc clean rule-small'>C</div>" +
           "<div class='transaction-doc suspicious rule-small'>S</div>" +
           "<div class='transaction-doc suspicious rule-small'>S</div>" +
           "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          // Row 4
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          // Row 5
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc suspicious rule-small'>S</div>" +
+          "<div class='transaction-doc clean rule-small'>C</div>" +
           "<div class='transaction-doc suspicious rule-small'>S</div>" +
           "<div class='transaction-doc suspicious rule-small'>S</div>" +
         "</div>" +
         "<div class='practice-buttons' data-correct='80' data-mode='directional' " +
-             "data-explain='24 of 30 transactions are suspicious &rarr; 24 / 30 = 80%.'>" +
+             "data-explain='40 of 50 transactions are suspicious &rarr; 40 / 50 = 80%.'>" +
           "<button type='button' class='practice-btn' data-val='40'>40%</button>" +
           "<button type='button' class='practice-btn' data-val='60'>60%</button>" +
           "<button type='button' class='practice-btn' data-val='80'>80%</button>" +
@@ -856,7 +976,7 @@ var SURVEY_CONFIG = {
     //  ACT III -- THE MANAGER AND THE TWIST
     // ==================================================================
 
-    // -- Page 19: Law requires exactly 4 (cluster + 4 highlighted) -----
+    // -- Page 19: Law requires exactly 3 (cluster + 3 highlighted) -----
     {
       id: "p3_inst_law_4",
       type: "instructions",
@@ -864,10 +984,10 @@ var SURVEY_CONFIG = {
       body:
         "<p style='text-align:justify; font-size:24px; line-height:1.45; max-width:620px; margin:0 auto 18px;'>" +
           "Here&apos;s the catch: A company has many transactions, but the law requires it to send you, the auditor, only " +
-          "<strong style='color:#b91c1c; font-size:44px; line-height:1; padding:0 4px;'>4</strong> <strong>transactions</strong> for the preliminary audit." +
+          "<strong style='color:#b91c1c; font-size:44px; line-height:1; padding:0 4px;'>3</strong> <strong>transactions</strong> for the preliminary audit." +
         "</p>" +
         "<div class='doc-cluster'>" +
-          // Same 20 positions as before, but 4 are highlighted
+          // 20 positions, 3 highlighted (V7-K3 initial law)
           "<div class='cluster-doc highlighted' style='top:22%; left:32%;'></div>" +
           "<div class='cluster-doc' style='top:10%; left:18%;'></div>" +
           "<div class='cluster-doc' style='top:7%;  left:48%;'></div>" +
@@ -879,7 +999,7 @@ var SURVEY_CONFIG = {
           "<div class='cluster-doc' style='top:32%; left:78%;'></div>" +
           "<div class='cluster-doc' style='top:56%; left:15%;'></div>" +
           "<div class='cluster-doc' style='top:60%; left:34%;'></div>" +
-          "<div class='cluster-doc highlighted' style='top:54%; left:50%;'></div>" +
+          "<div class='cluster-doc' style='top:54%; left:50%;'></div>" +
           "<div class='cluster-doc' style='top:64%; left:66%;'></div>" +
           "<div class='cluster-doc' style='top:58%; left:82%;'></div>" +
           "<div class='cluster-doc' style='top:74%; left:24%;'></div>" +
@@ -900,10 +1020,10 @@ var SURVEY_CONFIG = {
       body:
         "<p style='text-align:justify; font-size:22px; line-height:1.4; max-width:620px; margin:0 auto 18px;'>" +
           "You only learn the nature (clean vs suspicious) of those " +
-          "<strong>4 transactions.</strong>" +
+          "<strong>3 transactions.</strong>" +
         "</p>" +
         "<div class='doc-cluster'>" +
-          // 4 highlighted with C/S labels, the rest with ? marks
+          // 3 highlighted with C/S labels (V7-K3), the rest with ? marks
           "<div class='cluster-doc highlighted labeled clean' style='top:22%; left:32%;'>C</div>" +
           "<div class='cluster-doc hidden-q' style='top:10%; left:18%;'>?</div>" +
           "<div class='cluster-doc hidden-q' style='top:7%;  left:48%;'>?</div>" +
@@ -915,11 +1035,11 @@ var SURVEY_CONFIG = {
           "<div class='cluster-doc hidden-q' style='top:32%; left:78%;'>?</div>" +
           "<div class='cluster-doc hidden-q' style='top:56%; left:15%;'>?</div>" +
           "<div class='cluster-doc hidden-q' style='top:60%; left:34%;'>?</div>" +
-          "<div class='cluster-doc highlighted labeled suspicious' style='top:54%; left:50%;'>S</div>" +
+          "<div class='cluster-doc hidden-q' style='top:54%; left:50%;'>?</div>" +
           "<div class='cluster-doc hidden-q' style='top:64%; left:66%;'>?</div>" +
           "<div class='cluster-doc hidden-q' style='top:58%; left:82%;'>?</div>" +
           "<div class='cluster-doc hidden-q' style='top:74%; left:24%;'>?</div>" +
-          "<div class='cluster-doc highlighted labeled clean' style='top:78%; left:44%;'>C</div>" +
+          "<div class='cluster-doc highlighted labeled suspicious' style='top:78%; left:44%;'>S</div>" +
           "<div class='cluster-doc hidden-q' style='top:72%; left:58%;'>?</div>" +
           "<div class='cluster-doc hidden-q' style='top:82%; left:72%;'>?</div>" +
           "<div class='cluster-doc hidden-q' style='top:18%; left:88%;'>?</div>" +
@@ -944,9 +1064,9 @@ var SURVEY_CONFIG = {
           "When you audit a company, do you see <strong>all</strong> of its transactions?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='no' data-mode='retry' " +
-             "data-explain='The law requires only 4 transactions per company.'>" +
+             "data-explain='The law requires only 3 transactions per company.'>" +
           "<button type='button' class='practice-btn' data-val='yes'>Yes, all of them.</button>" +
-          "<button type='button' class='practice-btn' data-val='no'>No, only 4.</button>" +
+          "<button type='button' class='practice-btn' data-val='no'>No, only 3.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
       minTimeSeconds: 5
@@ -1186,7 +1306,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<p style='text-align:center; font-size:28px; line-height:1.4; max-width:620px; margin:80px auto 0; font-weight:700; color:#0f172a;'>" +
-          "In this study, however, the 4 transactions you see about a company are " +
+          "In this study, however, the 3 transactions you see about a company are " +
           "<strong style='color:#b91c1c;'>NOT selected at random</strong> from all of its transactions." +
         "</p>",
       minTimeSeconds: 6
@@ -1217,12 +1337,12 @@ var SURVEY_CONFIG = {
           "<div class='manager-badge-label'>MANAGER</div>" +
         "</div>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:0 auto;'>" +
-          "The manager is responsible for sending you the 4 transactions for the preliminary audit." +
+          "The manager is responsible for sending you the 3 transactions for the preliminary audit." +
         "</p>",
       minTimeSeconds: 7
     },
 
-    // -- Page 24: Manager knows all, picks 4 ---------------------------
+    // -- Page 24: Manager knows all, picks 3 ---------------------------
     {
       id: "p3_inst_manager_knows_all",
       type: "instructions",
@@ -1230,7 +1350,7 @@ var SURVEY_CONFIG = {
       body:
         "<p style='text-align:justify; font-size:24px; line-height:1.4; max-width:620px; margin:0 auto 18px;'>" +
           "Here&apos;s the catch: the manager <strong>knows the type of every transaction</strong> in the company, and " +
-          "decides <strong style='color:#b91c1c;'>which 4</strong> are sent for the preliminary audit." +
+          "decides <strong style='color:#b91c1c;'>which 3</strong> are sent for the preliminary audit." +
         "</p>" +
         "<div class='manager-above-wrap'>" +
           "<div class='manager-badge-mini'>" +
@@ -1248,8 +1368,8 @@ var SURVEY_CONFIG = {
             "<div class='manager-badge-caption'>Sees everything</div>" +
           "</div>" +
           "<div class='manager-cards-below'>" +
-            // 10 transactions: 6 C + 4 S, visually diverse so the
-            // "sees everything" framing lands.
+            // V7: manager always sees 15 transactions by default
+            // (9 C + 6 S, same proportion as before, more visible mass).
             "<div class='transaction-doc clean rule-small'>C</div>" +
             "<div class='transaction-doc suspicious rule-small'>S</div>" +
             "<div class='transaction-doc clean rule-small'>C</div>" +
@@ -1260,19 +1380,24 @@ var SURVEY_CONFIG = {
             "<div class='transaction-doc clean rule-small'>C</div>" +
             "<div class='transaction-doc clean rule-small'>C</div>" +
             "<div class='transaction-doc suspicious rule-small'>S</div>" +
+            "<div class='transaction-doc clean rule-small'>C</div>" +
+            "<div class='transaction-doc suspicious rule-small'>S</div>" +
+            "<div class='transaction-doc clean rule-small'>C</div>" +
+            "<div class='transaction-doc suspicious rule-small'>S</div>" +
+            "<div class='transaction-doc clean rule-small'>C</div>" +
           "</div>" +
         "</div>",
       minTimeSeconds: 5
     },
 
-    // -- Page 25: Split view -- manager picks 4, auditor sees 4 --------
+    // -- Page 25: Split view -- manager picks 3, auditor sees 3 --------
     {
       id: "p3_inst_manager_picks",
       type: "instructions",
       title: "",
       body:
         "<p style='text-align:justify; font-size:24px; line-height:1.35; max-width:620px; margin:0 auto 18px; font-weight:700;'>" +
-          "The manager picks the <strong>4</strong> you see." +
+          "The manager picks the <strong>3</strong> you see." +
         "</p>" +
         "<div class='split-view'>" +
           "<div class='split-side'>" +
@@ -1291,8 +1416,7 @@ var SURVEY_CONFIG = {
               "<div class='split-badge-label'>Manager</div>" +
             "</div>" +
             "<div class='split-cards'>" +
-              // 10 transactions: same 6 C + 4 S as Page 24, so the
-              // "manager sees all 10" visual carries over.
+              // V7: manager always sees 15 across all laws (9 C + 6 S).
               "<div class='transaction-doc clean rule-small'>C</div>" +
               "<div class='transaction-doc suspicious rule-small'>S</div>" +
               "<div class='transaction-doc clean rule-small'>C</div>" +
@@ -1303,8 +1427,13 @@ var SURVEY_CONFIG = {
               "<div class='transaction-doc clean rule-small'>C</div>" +
               "<div class='transaction-doc clean rule-small'>C</div>" +
               "<div class='transaction-doc suspicious rule-small'>S</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc suspicious rule-small'>S</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc suspicious rule-small'>S</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
             "</div>" +
-            "<div class='split-caption'>Sees all 10</div>" +
+            "<div class='split-caption'>Sees all 15</div>" +
           "</div>" +
           "<div class='split-arrow' style='font-size:64px; display:flex; flex-direction:column; align-items:center;'>" +
             "<span style=\"font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:#64748b; margin-bottom:-4px; font-weight:700;\">sent</span>" +
@@ -1331,29 +1460,28 @@ var SURVEY_CONFIG = {
               "<div class='split-badge-label'>You</div>" +
             "</div>" +
             "<div class='split-cards'>" +
-              // All 4 Clean: the manager strategically picked the
+              // All 3 Clean: the manager strategically picked the
               // cleanest-looking transactions. The auditor sees a
               // company that looks spotless even though there were
               // 4 suspicious transactions in the full set.
               "<div class='transaction-doc clean rule-small'>C</div>" +
               "<div class='transaction-doc clean rule-small'>C</div>" +
               "<div class='transaction-doc clean rule-small'>C</div>" +
-              "<div class='transaction-doc clean rule-small'>C</div>" +
             "</div>" +
-            "<div class='split-caption'>Sees 4 (manager's pick)</div>" +
+            "<div class='split-caption'>Sees 3 (manager's pick)</div>" +
           "</div>" +
         "</div>",
       minTimeSeconds: 5
     },
 
-    // -- Page 26a: Mandate split, screen A -- giant "4" + headline only --
+    // -- Page 26a: Mandate split, screen A -- giant "3" + headline only --
     {
       id: "p3_inst_mandate_a",
       type: "instructions",
       title: "",
       body:
         "<div style='text-align:center; margin:14px 0 26px;'>" +
-          "<div style='font-size:110px; font-weight:800; line-height:1; letter-spacing:-0.05em; color:var(--color-primary);'>4</div>" +
+          "<div style='font-size:110px; font-weight:800; line-height:1; letter-spacing:-0.05em; color:var(--color-primary);'>3</div>" +
           "<div style='font-size:24px; font-weight:700; color:#0f172a; margin-top:6px;'>transactions disclosed</div>" +
           "<div style='font-size:14px; text-transform:uppercase; letter-spacing:1.2px; font-weight:700; color:var(--color-text-slate); margin-top:8px;'>required by law</div>" +
         "</div>" +
@@ -1370,7 +1498,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<div style='text-align:center; margin:14px 0 26px;'>" +
-          "<div style='font-size:110px; font-weight:800; line-height:1; letter-spacing:-0.05em; color:var(--color-primary);'>4</div>" +
+          "<div style='font-size:110px; font-weight:800; line-height:1; letter-spacing:-0.05em; color:var(--color-primary);'>3</div>" +
           "<div style='font-size:24px; font-weight:700; color:#0f172a; margin-top:6px;'>transactions disclosed</div>" +
           "<div style='font-size:14px; text-transform:uppercase; letter-spacing:1.2px; font-weight:700; color:var(--color-text-slate); margin-top:8px;'>required by law</div>" +
         "</div>" +
@@ -1378,7 +1506,7 @@ var SURVEY_CONFIG = {
           "Two rules the manager <strong>cannot</strong> break:" +
         "</p>" +
         "<ol style='font-size:19px; max-width:620px; margin:0 auto 18px; line-height:1.6; padding-left:28px;'>" +
-          "<li style='margin-bottom:10px;'>The manager sends <strong>exactly 4</strong> transactions. Not more, not fewer.</li>" +
+          "<li style='margin-bottom:10px;'>The manager sends <strong>exactly 3</strong> transactions. Not more, not fewer.</li>" +
         "</ol>",
       minTimeSeconds: 3
     },
@@ -1390,7 +1518,7 @@ var SURVEY_CONFIG = {
       title: "",
       body:
         "<div style='text-align:center; margin:14px 0 26px;'>" +
-          "<div style='font-size:110px; font-weight:800; line-height:1; letter-spacing:-0.05em; color:var(--color-primary);'>4</div>" +
+          "<div style='font-size:110px; font-weight:800; line-height:1; letter-spacing:-0.05em; color:var(--color-primary);'>3</div>" +
           "<div style='font-size:24px; font-weight:700; color:#0f172a; margin-top:6px;'>transactions disclosed</div>" +
           "<div style='font-size:14px; text-transform:uppercase; letter-spacing:1.2px; font-weight:700; color:var(--color-text-slate); margin-top:8px;'>required by law</div>" +
         "</div>" +
@@ -1398,7 +1526,7 @@ var SURVEY_CONFIG = {
           "Two rules the manager <strong>cannot</strong> break:" +
         "</p>" +
         "<ol style='font-size:19px; max-width:620px; margin:0 auto 18px; line-height:1.6; padding-left:28px;'>" +
-          "<li style='margin-bottom:10px;'>The manager sends <strong>exactly 4</strong> transactions. Not more, not fewer.</li>" +
+          "<li style='margin-bottom:10px;'>The manager sends <strong>exactly 3</strong> transactions. Not more, not fewer.</li>" +
           "<li>The manager <strong>cannot falsify or forge transactions</strong> to change their types.</li>" +
         "</ol>",
       minTimeSeconds: 5
@@ -1521,7 +1649,7 @@ var SURVEY_CONFIG = {
         "<ul style='list-style:none; text-align:left; font-size:19px; max-width:620px; margin:0 auto; line-height:1.6; padding:0;'>" +
           "<li style='display:flex; align-items:flex-start; gap:14px; margin-bottom:14px;'>" +
             "<span style='display:inline-flex; width:36px; height:36px; border-radius:50%; background:#dbe4ff; color:#3730a3; font-weight:800; font-size:18px; align-items:center; justify-content:center; flex-shrink:0;'>1</span>" +
-            "<span>You earn more when your estimates are <strong>accurate</strong>, summed across all 30 companies you will audit.</span>" +
+            "<span>You earn more when your estimates are <strong>accurate</strong>.</span>" +
           "</li>" +
           "<li style='display:flex; align-items:flex-start; gap:14px; margin-bottom:14px;'>" +
             "<span style='display:inline-flex; width:36px; height:36px; border-radius:50%; background:#dbe4ff; color:#3730a3; font-weight:800; font-size:18px; align-items:center; justify-content:center; flex-shrink:0;'>2</span>" +
@@ -1574,7 +1702,7 @@ var SURVEY_CONFIG = {
             "<div class='answer-num'>2</div>" +
             "<div class='answer-title'>Bet</div>" +
             "<div class='answer-sub'>How confident you are that your estimate is " +
-              "<strong>within 10 percentage points</strong> of the correct answer.</div>" +
+              "<strong>within 5 percentage points</strong> of the correct answer.</div>" +
           "</div>" +
         "</div>" +
         "<p style='text-align:center; font-size:20px; max-width:620px; margin:26px auto 0; font-weight:700;'>" +
@@ -1596,9 +1724,12 @@ var SURVEY_CONFIG = {
         "<p style='text-align:left; font-size:24px; max-width:620px; margin:0 auto 16px; font-weight:700;'>" +
           "The estimate bonus." +
         "</p>" +
+        "<p style='text-align:left; font-size:17px; max-width:620px; margin:0 auto 12px; line-height:1.55; color:#475569;'>" +
+          "On every company you audit:" +
+        "</p>" +
         "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 18px; line-height:1.65; padding-left:22px;'>" +
-          "<li>If your estimate is <strong>within 10 percentage points</strong> of the correct answer, you earn <strong>+10&cent;</strong>.</li>" +
-          "<li>If your estimate is <strong>more than 10 percentage points</strong> away from the correct answer, you earn <strong>0&cent;</strong>.</li>" +
+          "<li>If your estimate is <strong>within 5 percentage points</strong> of the correct answer, you earn <strong>+$1.00</strong>.</li>" +
+          "<li>If your estimate is <strong>more than 5 percentage points</strong> away from the correct answer, you earn <strong>$0.00</strong>.</li>" +
         "</ul>",
       minTimeSeconds: 8
     },
@@ -1636,14 +1767,14 @@ var SURVEY_CONFIG = {
           "<li>The correct answer for this company is <strong>35%</strong>.</li>" +
           "<li>Move your estimate to <strong>60%</strong>.</li>" +
         "</ul>" +
-        "<div class='estimate-sim' data-truth='35' data-target='60' data-band-low='25' data-band-high='45'>" +
+        "<div class='estimate-sim' data-truth='35' data-target='60' data-band-low='30' data-band-high='40'>" +
           
           "<div class='sim-slider-card'>" +
             "<div class='sim-slider-header'>Your estimate: <span class='sim-slider-value' id='est35_val'>50%</span></div>" +
             "<div class='slider-wrapper'>" +
               "<span class='slider-label'>0%</span>" +
               "<div class='slider-range-wrap'>" +
-                "<div class='slider-band' style='left:25%; right:55%;'></div>" +
+                "<div class='slider-band' style='left:30%; right:60%;'></div>" +
                 "<div class='slider-coverage-band' id='est35_cov'></div>" +
                 "<input type='range' class='slider-input' id='est35_slider' min='0' max='100' step='1' value='50' data-display='est35_val' data-coverage-band='est35_cov'>" +
               "</div>" +
@@ -1651,7 +1782,7 @@ var SURVEY_CONFIG = {
             "</div>" +
           "</div>" +
           "<div class='sim-result'>" +
-            "<div class='sim-result-row'>Within 10 percentage points of the correct answer? <span id='est35_within' class='sim-flag-no'>No &#10008;</span></div>" +
+            "<div class='sim-result-row'>Within 5 percentage points of the correct answer? <span id='est35_within' class='sim-flag-no'>No &#10008;</span></div>" +
             "<div class='sim-result-total'>Estimate bonus: <span id='est35_bonus'>0&cent;</span></div>" +
           "</div>" +
         "</div>" +
@@ -1679,16 +1810,16 @@ var SURVEY_CONFIG = {
         "</p>" +
         "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 18px; line-height:1.6; padding-left:22px;'>" +
           "<li>Same correct answer: <strong>35%</strong>.</li>" +
-          "<li>Move your estimate to <strong>30%</strong>.</li>" +
+          "<li>Move your estimate to <strong>33%</strong>.</li>" +
         "</ul>" +
-        "<div class='estimate-sim' data-truth='35' data-target='30' data-band-low='25' data-band-high='45'>" +
+        "<div class='estimate-sim' data-truth='35' data-target='33' data-band-low='30' data-band-high='40'>" +
           
           "<div class='sim-slider-card'>" +
             "<div class='sim-slider-header'>Your estimate: <span class='sim-slider-value' id='est30_val'>50%</span></div>" +
             "<div class='slider-wrapper'>" +
               "<span class='slider-label'>0%</span>" +
               "<div class='slider-range-wrap'>" +
-                "<div class='slider-band' style='left:25%; right:55%;'></div>" +
+                "<div class='slider-band' style='left:30%; right:60%;'></div>" +
                 "<div class='slider-coverage-band' id='est30_cov'></div>" +
                 "<input type='range' class='slider-input' id='est30_slider' min='0' max='100' step='1' value='50' data-display='est30_val' data-coverage-band='est30_cov'>" +
               "</div>" +
@@ -1696,13 +1827,13 @@ var SURVEY_CONFIG = {
             "</div>" +
           "</div>" +
           "<div class='sim-result'>" +
-            "<div class='sim-result-row'>Within 10 percentage points of the correct answer? <span id='est30_within' class='sim-flag-no'>No &#10008;</span></div>" +
+            "<div class='sim-result-row'>Within 5 percentage points of the correct answer? <span id='est30_within' class='sim-flag-no'>No &#10008;</span></div>" +
             "<div class='sim-result-total'>Estimate bonus: <span id='est30_bonus'>0&cent;</span></div>" +
           "</div>" +
         "</div>" +
         "<div class='practice-feedback-card' style='display:none;'>" +
           "<p style='text-align:left; font-size:20px; max-width:620px; margin:22px auto 0; line-height:1.5; font-weight:700; color:#15803d;'>" +
-            "At 30%, you&apos;re within 10 percentage points of 35%. You earn <strong>+10&cent;</strong>." +
+            "At 33%, you&apos;re within 5 percentage points of 35%. You earn <strong>+$1.00</strong>." +
           "</p>" +
         "</div>",
       showCalculator: true,
@@ -1724,13 +1855,13 @@ var SURVEY_CONFIG = {
         "</p>" +
         "<p style='text-align:justify; font-size:18px; max-width:620px; margin:0 auto; line-height:1.6;'>" +
           "Correct answer <strong>35%</strong> &rarr; the bonus pays out for any estimate between " +
-          "<strong>25%</strong> and <strong>45%</strong>." +
+          "<strong>30%</strong> and <strong>40%</strong>." +
         "</p>",
       minTimeSeconds: 6
     },
 
     // -- Page 35b: Attention check -- estimate bonus numeric ----------
-    // Tests the "within 10 percentage points" rule on a fresh number
+    // Tests the "within 5 percentage points" rule on a fresh number
     // (truth = 60%) to check the participant didn't just memorize the
     // 35/25/45 example above.
     {
@@ -1742,15 +1873,15 @@ var SURVEY_CONFIG = {
           "Quick attention check" +
         "</p>" +
         "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:700; line-height:1.5;'>" +
-          "The correct answer is <strong>60%</strong>. You estimate <strong>55%</strong>. " +
+          "The correct answer is <strong>60%</strong>. You estimate <strong>57%</strong>. " +
           "How much would you earn from the estimate?" +
         "</p>" +
-        "<div class='practice-buttons quiz-style' data-correct='ten' data-mode='retry' " +
-             "data-explain='55% is within 10 percentage points of 60% (difference is 5), so the estimate bonus is +10&cent;.'>" +
-          "<button type='button' class='practice-btn' data-val='zero'>0&cent;</button>" +
-          "<button type='button' class='practice-btn' data-val='five'>+5&cent;</button>" +
-          "<button type='button' class='practice-btn' data-val='ten'>+10&cent;</button>" +
-          "<button type='button' class='practice-btn' data-val='minus'>&minus;5&cent;</button>" +
+        "<div class='practice-buttons quiz-style' data-correct='one' data-mode='retry' " +
+             "data-explain='57% is within 5 percentage points of 60% (difference is 3), so the estimate bonus is +$1.00.'>" +
+          "<button type='button' class='practice-btn' data-val='zero'>$0.00</button>" +
+          "<button type='button' class='practice-btn' data-val='half'>+$0.50</button>" +
+          "<button type='button' class='practice-btn' data-val='one'>+$1.00</button>" +
+          "<button type='button' class='practice-btn' data-val='minus'>&minus;$0.50</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
       showCalculator: true,
@@ -1772,7 +1903,7 @@ var SURVEY_CONFIG = {
           "The bet." +
         "</p>" +
         "<p style='text-align:justify; font-size:18px; max-width:620px; margin:0 auto; line-height:1.6;'>" +
-          "In addition to your estimate, you may <strong>bet up to 10&cent;</strong> on whether your estimate is within 10 percentage points of the correct answer." +
+          "In addition to your estimate, you may <strong>bet up to $1.00</strong> on whether your estimate is within 5 percentage points of the correct answer." +
         "</p>",
       minTimeSeconds: 7
     },
@@ -1788,23 +1919,23 @@ var SURVEY_CONFIG = {
           "Answer 2: bet" +
         "</p>" +
         "<p style='text-align:center; font-size:22px; max-width:620px; margin:0 auto 18px; font-weight:700;'>" +
-          "For example, suppose you bet <strong>5&cent;</strong> on your estimate:" +
+          "For example, suppose you bet <strong>$0.50</strong> on your estimate:" +
         "</p>" +
         "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 14px; line-height:1.65; padding-left:22px;'>" +
-          "<li>Within 10 percentage points &rarr; you <strong>win the bet</strong>: <strong>+5&cent;</strong>.</li>" +
-          "<li>More than 10 percentage points away &rarr; you <strong>lose the bet</strong>: <strong>&minus;5&cent;</strong> (deducted from bonus on other companies).</li>" +
+          "<li>Within 5 percentage points &rarr; you <strong>win the bet</strong>: <strong>+$0.50</strong>.</li>" +
+          "<li>More than 5 percentage points away &rarr; you <strong>lose the bet</strong>: <strong>&minus;$0.50</strong> (deducted from your bonus, never from the base pay).</li>" +
         "</ul>",
       minTimeSeconds: 9
     },
 
-    // -- Page 37a: Bet safety -- $5 base pay never affected (highlighted) --
+    // -- Page 37a: Bet safety -- $8 base pay never affected (highlighted) --
     {
       id: "p4_inst_bet_safety",
       type: "instructions",
       title: "",
       body:
         "<div style='max-width:560px; margin:80px auto 0; padding:36px 32px; background:#dcfce7; border-left:6px solid #15803d; border-radius:8px; text-align:center;'>" +
-          "<p style='font-size:24px; font-weight:800; color:#0f172a; margin:0 0 14px;'>Your $5 base pay is never affected.</p>" +
+          "<p style='font-size:24px; font-weight:800; color:#0f172a; margin:0 0 14px;'>Your $8 base pay is never affected.</p>" +
           "<p style='font-size:17px; color:#0f172a; margin:0; line-height:1.6;'>Lost bets only reduce the bonus from other companies, and the total bonus cannot fall below $0.</p>" +
         "</div>",
       minTimeSeconds: 6
@@ -1825,17 +1956,17 @@ var SURVEY_CONFIG = {
         "</p>" +
         "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 18px; line-height:1.6; padding-left:22px;'>" +
           "<li>The correct answer is <strong>35%</strong>.</li>" +
-          "<li>Set your estimate to <strong>30%</strong>.</li>" +
-          "<li>Set your bet to <strong>8&cent;</strong>.</li>" +
+          "<li>Set your estimate to <strong>33%</strong>.</li>" +
+          "<li>Set your bet to <strong>$0.80</strong>.</li>" +
         "</ul>" +
-        "<div class='bonus-sim' data-truth='35' data-target-est='30' data-target-bet='8' data-band-low='25' data-band-high='45'>" +
+        "<div class='bonus-sim' data-truth='35' data-target-est='33' data-target-bet='80' data-band-low='30' data-band-high='40'>" +
           
           "<div class='sim-slider-card'>" +
             "<div class='sim-slider-header'>Your estimate: <span class='sim-slider-value' id='betg_est_display'>50%</span></div>" +
             "<div class='slider-wrapper'>" +
               "<span class='slider-label'>0%</span>" +
               "<div class='slider-range-wrap'>" +
-                "<div class='slider-band' style='left:25%; right:55%;'></div>" +
+                "<div class='slider-band' style='left:30%; right:60%;'></div>" +
                 "<div class='slider-coverage-band' id='betg_cov'></div>" +
                 "<input type='range' class='slider-input' id='betg_estimate' min='0' max='100' step='1' value='50' data-display='betg_est_display' data-coverage-band='betg_cov'>" +
               "</div>" +
@@ -1843,25 +1974,25 @@ var SURVEY_CONFIG = {
             "</div>" +
           "</div>" +
           "<div class='sim-slider-card'>" +
-            "<div class='sim-slider-header'>Your bet: <span class='sim-slider-value' id='betg_conf_display'>0&cent;</span></div>" +
+            "<div class='sim-slider-header'>Your bet: <span class='sim-slider-value' id='betg_conf_display'>$0.00</span></div>" +
             "<div class='slider-wrapper'>" +
-              "<span class='slider-label'>0&cent;</span>" +
+              "<span class='slider-label'>$0</span>" +
               "<div class='slider-range-wrap'>" +
-                "<input type='range' class='slider-input' id='betg_confidence' min='0' max='10' step='1' value='0' data-display='betg_conf_display' data-display-suffix='cents'>" +
+                "<input type='range' class='slider-input' id='betg_confidence' min='0' max='100' step='5' value='0' data-display='betg_conf_display' data-display-suffix='cents'>" +
               "</div>" +
-              "<span class='slider-label'>10&cent;</span>" +
+              "<span class='slider-label'>$1.00</span>" +
             "</div>" +
           "</div>" +
           "<div class='sim-result'>" +
-            "<div class='sim-result-row'>Within 10 percentage points of the correct answer? <span id='betg_within' class='sim-flag-no'>No &#10008;</span></div>" +
-            "<div class='sim-result-row'>Estimate bonus: <span id='betg_answer'>0&cent;</span></div>" +
-            "<div class='sim-result-row'>Bet outcome: <span id='betg_conf_bonus'>0&cent;</span></div>" +
-            "<div class='sim-result-total'>You'd earn: <span id='betg_total'>0&cent;</span></div>" +
+            "<div class='sim-result-row'>Within 5 percentage points of the correct answer? <span id='betg_within' class='sim-flag-no'>No &#10008;</span></div>" +
+            "<div class='sim-result-row'>Estimate bonus: <span id='betg_answer'>$0.00</span></div>" +
+            "<div class='sim-result-row'>Bet outcome: <span id='betg_conf_bonus'>$0.00</span></div>" +
+            "<div class='sim-result-total'>You'd earn: <span id='betg_total'>$0.00</span></div>" +
           "</div>" +
         "</div>" +
         "<div class='practice-feedback-card' style='display:none;'>" +
           "<p style='text-align:left; font-size:20px; max-width:620px; margin:22px auto 0; line-height:1.5; font-weight:700; color:#15803d;'>" +
-            "Within 10 percentage points, bet won. You earn <strong>+18&cent;</strong>." +
+            "Within 5 percentage points, bet won. You earn <strong>+$1.80</strong>." +
           "</p>" +
         "</div>",
       showCalculator: true,
@@ -1884,16 +2015,16 @@ var SURVEY_CONFIG = {
         "<ul style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 18px; line-height:1.6; padding-left:22px;'>" +
           "<li>Same correct answer: <strong>35%</strong>.</li>" +
           "<li>Set your estimate to <strong>50%</strong>.</li>" +
-          "<li>Keep your bet at <strong>8&cent;</strong>.</li>" +
+          "<li>Keep your bet at <strong>$0.80</strong>.</li>" +
         "</ul>" +
-        "<div class='bonus-sim' data-truth='35' data-target-est='50' data-target-bet='8' data-band-low='25' data-band-high='45'>" +
+        "<div class='bonus-sim' data-truth='35' data-target-est='50' data-target-bet='80' data-band-low='30' data-band-high='40'>" +
           
           "<div class='sim-slider-card'>" +
             "<div class='sim-slider-header'>Your estimate: <span class='sim-slider-value' id='betb_est_display'>30%</span></div>" +
             "<div class='slider-wrapper'>" +
               "<span class='slider-label'>0%</span>" +
               "<div class='slider-range-wrap'>" +
-                "<div class='slider-band' style='left:25%; right:55%;'></div>" +
+                "<div class='slider-band' style='left:30%; right:60%;'></div>" +
                 "<div class='slider-coverage-band' id='betb_cov'></div>" +
                 "<input type='range' class='slider-input' id='betb_estimate' min='0' max='100' step='1' value='30' data-display='betb_est_display' data-coverage-band='betb_cov'>" +
               "</div>" +
@@ -1901,28 +2032,28 @@ var SURVEY_CONFIG = {
             "</div>" +
           "</div>" +
           "<div class='sim-slider-card'>" +
-            "<div class='sim-slider-header'>Your bet: <span class='sim-slider-value' id='betb_conf_display'>0&cent;</span></div>" +
+            "<div class='sim-slider-header'>Your bet: <span class='sim-slider-value' id='betb_conf_display'>$0.00</span></div>" +
             "<div class='slider-wrapper'>" +
-              "<span class='slider-label'>0&cent;</span>" +
+              "<span class='slider-label'>$0</span>" +
               "<div class='slider-range-wrap'>" +
-                "<input type='range' class='slider-input' id='betb_confidence' min='0' max='10' step='1' value='0' data-display='betb_conf_display' data-display-suffix='cents'>" +
+                "<input type='range' class='slider-input' id='betb_confidence' min='0' max='100' step='5' value='0' data-display='betb_conf_display' data-display-suffix='cents'>" +
               "</div>" +
-              "<span class='slider-label'>10&cent;</span>" +
+              "<span class='slider-label'>$1.00</span>" +
             "</div>" +
           "</div>" +
           "<div class='sim-result'>" +
-            "<div class='sim-result-row'>Within 10 percentage points of the correct answer? <span id='betb_within' class='sim-flag-yes'>Yes &#10004;</span></div>" +
-            "<div class='sim-result-row'>Estimate bonus: <span id='betb_answer'>+10&cent;</span></div>" +
-            "<div class='sim-result-row'>Bet outcome: <span id='betb_conf_bonus'>0&cent;</span></div>" +
-            "<div class='sim-result-total'>You'd earn: <span id='betb_total'>+10&cent;</span></div>" +
+            "<div class='sim-result-row'>Within 5 percentage points of the correct answer? <span id='betb_within' class='sim-flag-yes'>Yes &#10004;</span></div>" +
+            "<div class='sim-result-row'>Estimate bonus: <span id='betb_answer'>+$1.00</span></div>" +
+            "<div class='sim-result-row'>Bet outcome: <span id='betb_conf_bonus'>$0.00</span></div>" +
+            "<div class='sim-result-total'>You'd earn: <span id='betb_total'>+$1.00</span></div>" +
           "</div>" +
         "</div>" +
         "<div class='practice-feedback-card' style='display:none;'>" +
           "<p style='text-align:left; font-size:20px; max-width:620px; margin:22px auto 0; line-height:1.5; font-weight:700; color:#b91c1c;'>" +
-            "More than 10 percentage points off, bet lost. You earn <strong>&minus;8&cent;</strong>." +
+            "More than 5 percentage points off, bet lost. You earn <strong>&minus;$0.80</strong>." +
           "</p>" +
           "<p style='text-align:left; font-size:17px; max-width:620px; margin:14px auto 0; line-height:1.6;'>" +
-            "Bet <strong>0&cent;</strong> instead, and you'd have earned <strong>0&cent;</strong>, not lost 8&cent;. " +
+            "Bet <strong>$0</strong> instead, and you'd have earned <strong>$0</strong>, not lost $0.80. " +
             "<strong>Only bet when you're confident.</strong>" +
           "</p>" +
         "</div>",
@@ -1932,6 +2063,62 @@ var SURVEY_CONFIG = {
 
     // (Page 39 "Play with the bonus" removed -- redundant with the two
     //  try-it pages above, which already use both sliders live.)
+
+    // -- Page 39b: Bonus formula recap --------------------------------
+    // After the estimate-and-bet practice, summarize the per-trial bonus
+    // as Total = Estimate + Betting. Lottery framing lives on the next
+    // page (39c) as its own beat.
+    {
+      id: "p4_inst_bonus_formula",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Putting it together" +
+        "</p>" +
+        "<p style='text-align:center; font-size:24px; line-height:1.35; max-width:620px; margin:0 auto 28px; font-weight:800; color:#0f172a;'>" +
+          "Total bonus = " +
+          "<span style='color:var(--color-primary);'>Estimate</span> + " +
+          "<span style='color:#b45309;'>Betting</span>." +
+        "</p>" +
+        "<div class='two-answers-row'>" +
+          "<div class='answer-card'>" +
+            "<div class='answer-num'>1</div>" +
+            "<div class='answer-title'>Estimate</div>" +
+            "<div class='answer-sub'><strong>+$1.00</strong> if within 5pp, else <strong>$0</strong>.</div>" +
+          "</div>" +
+          "<div class='answer-card'>" +
+            "<div class='answer-num' style='background:#b45309;'>2</div>" +
+            "<div class='answer-title'>Betting</div>" +
+            "<div class='answer-sub'><strong>+ your bet</strong> if within, <strong>&minus; your bet</strong> if not.</div>" +
+          "</div>" +
+        "</div>",
+      minTimeSeconds: 8
+    },
+
+    // -- Page 39c: Lottery rule on its own page (V7.1) -----------------
+    // Plain instruction styling -- no callout box, no glow. Same
+    // visual language as the other instruction pages.
+    {
+      id: "p4_inst_lottery_rule",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "One more rule" +
+        "</p>" +
+        "<p style='text-align:justify; font-size:22px; line-height:1.5; max-width:620px; margin:0 auto 18px; font-weight:700;'>" +
+          "At the end of the experiment, we will randomly pick " +
+          "<strong>3 of your 60 assessments</strong>. " +
+          "Your bonus is the sum of the Estimate and Betting bonuses " +
+          "on those 3 picks &mdash; nothing else counts." +
+        "</p>" +
+        "<p style='text-align:justify; font-size:18px; line-height:1.6; max-width:620px; margin:0 auto;'>" +
+          "Since you don't know which 3 will be picked, treat " +
+          "<strong>every</strong> assessment as if it could be one of them." +
+        "</p>",
+      minTimeSeconds: 8
+    },
 
     // -- Page 40a: Opposing goals -- reveal YOU (auditor) only ---------
     // Progressive reveal pattern (same trick as Pages 8/9, 53a/b/c):
@@ -2148,10 +2335,10 @@ var SURVEY_CONFIG = {
           "Quiz: question 4 of 14" +
         "</p>" +
         "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600; line-height:1.5;'>" +
-          "The 4 transactions you receive from a company are <strong>randomly picked</strong> from all of its transactions." +
+          "The 3 transactions you receive from a company are <strong>randomly picked</strong> from all of its transactions." +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='false' data-mode='retry' " +
-             "data-explain='False. The manager picks which 4 to send.'>" +
+             "data-explain='False. The manager picks which 5 to send.'>" +
           "<button type='button' class='practice-btn' data-val='true'>True.</button>" +
           "<button type='button' class='practice-btn' data-val='false'>False.</button>" +
         "</div>" +
@@ -2228,14 +2415,14 @@ var SURVEY_CONFIG = {
           "Quiz: question 8 of 14" +
         "</p>" +
         "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
-          "Correct answer: <strong>40%</strong>. Your estimate: <strong>46%</strong>. You bet <strong>0&cent;</strong>. Total bonus?" +
+          "Correct answer: <strong>40%</strong>. Your estimate: <strong>44%</strong>. You bet <strong>0&cent;</strong>. Bonus if this company is picked?" +
         "</p>" +
-        "<div class='practice-buttons quiz-style' data-correct='10' data-mode='retry' " +
-             "data-explain='46 is within 10 percentage points of 40, so the estimate bonus is +10&cent;. Bet 0&cent; means no bet contribution. Total +10&cent;.'>" +
-          "<button type='button' class='practice-btn' data-val='0'>0&cent;.</button>" +
-          "<button type='button' class='practice-btn' data-val='10'>+10&cent;.</button>" +
-          "<button type='button' class='practice-btn' data-val='6'>+6&cent;.</button>" +
-          "<button type='button' class='practice-btn' data-val='-10'>&minus;10&cent;.</button>" +
+        "<div class='practice-buttons quiz-style' data-correct='100' data-mode='retry' " +
+             "data-explain='44 is within 5 percentage points of 40 (difference is 4), so the estimate bonus is +$1.00 if picked. Bet 0&cent; means no bet contribution. Total +$1.00.'>" +
+          "<button type='button' class='practice-btn' data-val='0'>$0.00</button>" +
+          "<button type='button' class='practice-btn' data-val='100'>+$1.00</button>" +
+          "<button type='button' class='practice-btn' data-val='50'>+$0.50</button>" +
+          "<button type='button' class='practice-btn' data-val='-100'>&minus;$1.00</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
       showCalculator: true,
@@ -2250,15 +2437,15 @@ var SURVEY_CONFIG = {
           "Quiz: question 9 of 14" +
         "</p>" +
         "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
-          "Correct answer: <strong>50%</strong>. Estimate: <strong>80%</strong>. Bet: <strong>7&cent;</strong>. " +
-          "Total for this company?" +
+          "Correct answer: <strong>50%</strong>. Estimate: <strong>80%</strong>. Bet: <strong>$0.50</strong>. " +
+          "Bonus if this company is picked?" +
         "</p>" +
-        "<div class='practice-buttons quiz-style' data-correct='-7' data-mode='retry' " +
-             "data-explain='30 percentage points off &rarr; 0&cent; estimate bonus. Bet lost &rarr; &minus;7&cent;.'>" +
-          "<button type='button' class='practice-btn' data-val='17'>+17&cent;.</button>" +
-          "<button type='button' class='practice-btn' data-val='7'>+7&cent;.</button>" +
-          "<button type='button' class='practice-btn' data-val='0'>0&cent;.</button>" +
-          "<button type='button' class='practice-btn' data-val='-7'>&minus;7&cent;.</button>" +
+        "<div class='practice-buttons quiz-style' data-correct='-50' data-mode='retry' " +
+             "data-explain='30 percentage points off &rarr; $0.00 estimate bonus. Bet lost &rarr; &minus;$0.50.'>" +
+          "<button type='button' class='practice-btn' data-val='150'>+$1.50</button>" +
+          "<button type='button' class='practice-btn' data-val='50'>+$0.50</button>" +
+          "<button type='button' class='practice-btn' data-val='0'>$0.00</button>" +
+          "<button type='button' class='practice-btn' data-val='-50'>&minus;$0.50</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
       showCalculator: true,
@@ -2273,11 +2460,11 @@ var SURVEY_CONFIG = {
           "Quiz: question 10 of 14" +
         "</p>" +
         "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
-          "If you lose several bets, can your <strong>$5 base pay</strong> drop below $5?" +
+          "If you lose several bets, can your <strong>$8 base pay</strong> drop below $8?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='no' data-mode='retry' " +
              "data-explain='Correct. Lost bets only reduce the bonus. They never touch the base pay.'>" +
-          "<button type='button' class='practice-btn' data-val='yes'>Yes &mdash; lost bets can pull base pay below $5.</button>" +
+          "<button type='button' class='practice-btn' data-val='yes'>Yes &mdash; lost bets can pull base pay below $8.</button>" +
           "<button type='button' class='practice-btn' data-val='no'>No &mdash; base pay is guaranteed and the bonus floors at $0.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
@@ -2338,10 +2525,10 @@ var SURVEY_CONFIG = {
           "should you bet?" +
         "</p>" +
         "<div class='practice-buttons quiz-style' data-correct='0' data-mode='retry' " +
-             "data-explain='Bet 0. An uncertain estimate is more likely to miss the 10-point band, and losing a bet only costs you.'>" +
-          "<button type='button' class='practice-btn' data-val='10'>10&cent;, to maximize the upside.</button>" +
-          "<button type='button' class='practice-btn' data-val='5'>5&cent;, to hedge your bet.</button>" +
-          "<button type='button' class='practice-btn' data-val='0'>0&cent;, since you only bet if confident.</button>" +
+             "data-explain='Bet 0. An uncertain estimate is more likely to miss the 5-point band, and losing a bet only costs you.'>" +
+          "<button type='button' class='practice-btn' data-val='100'>$1.00, to maximize the upside.</button>" +
+          "<button type='button' class='practice-btn' data-val='50'>$0.50, to hedge your bet.</button>" +
+          "<button type='button' class='practice-btn' data-val='0'>$0, since you only bet if confident.</button>" +
           "<button type='button' class='practice-btn' data-val='must'>Any amount, since betting is mandatory.</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
@@ -2356,15 +2543,15 @@ var SURVEY_CONFIG = {
           "Quiz: question 14 of 14" +
         "</p>" +
         "<p style='text-align:center; font-size:20px; max-width:620px; margin:0 auto 22px; font-weight:600;'>" +
-          "Correct answer: <strong>25%</strong>. Estimate: <strong>30%</strong>. Bet: <strong>6&cent;</strong>. " +
-          "Total for this company?" +
+          "Correct answer: <strong>25%</strong>. Estimate: <strong>28%</strong>. Bet: <strong>$0.50</strong>. " +
+          "Bonus if this company is picked?" +
         "</p>" +
-        "<div class='practice-buttons quiz-style' data-correct='16' data-mode='retry' " +
-             "data-explain='30 is within 10 percentage points of 25 &rarr; +10&cent; estimate bonus. Bet won &rarr; +6&cent;. Total = +16&cent;.'>" +
-          "<button type='button' class='practice-btn' data-val='16'>+16&cent;.</button>" +
-          "<button type='button' class='practice-btn' data-val='10'>+10&cent;.</button>" +
-          "<button type='button' class='practice-btn' data-val='6'>+6&cent;.</button>" +
-          "<button type='button' class='practice-btn' data-val='-6'>&minus;6&cent;.</button>" +
+        "<div class='practice-buttons quiz-style' data-correct='150' data-mode='retry' " +
+             "data-explain='28 is within 5 percentage points of 25 (difference is 3) &rarr; +$1.00 estimate bonus. Bet won &rarr; +$0.50. Total = +$1.50.'>" +
+          "<button type='button' class='practice-btn' data-val='150'>+$1.50</button>" +
+          "<button type='button' class='practice-btn' data-val='100'>+$1.00</button>" +
+          "<button type='button' class='practice-btn' data-val='50'>+$0.50</button>" +
+          "<button type='button' class='practice-btn' data-val='-50'>&minus;$0.50</button>" +
         "</div>" +
         "<div class='practice-feedback'></div>",
       showCalculator: true,
@@ -2385,13 +2572,13 @@ var SURVEY_CONFIG = {
         "</p>" +
         "<ol style='text-align:left; font-size:18px; max-width:620px; margin:0 auto 16px; line-height:1.65; padding-left:22px;'>" +
           "<li><strong>5 warm-up audits.</strong> These help you become familiar with the task. <strong>No bonus</strong> on these.</li>" +
-          "<li><strong>30 scored audits.</strong> These count toward your bonus, <strong>up to $6.00</strong>.</li>" +
+          "<li><strong>60 scored audits.</strong> At the end, <strong>3 are picked at random</strong> &mdash; only those count for the bonus, up to <strong>$6.00</strong>.</li>" +
         "</ol>",
       minTimeSeconds: 6
     },
 
     // ==================================================================
-    //  ACT VI -- THE TRIALS (15 + 15 = 30)
+    //  ACT VI -- THE TRIALS (18 + 30 = 48)
     // ==================================================================
 
     // -- Firm-size intro: step 1 -- small company (10) -----------------
@@ -2414,7 +2601,7 @@ var SURVEY_CONFIG = {
               "<rect x='28' y='60' width='6' height='6' fill='#64748b'/>" +
               "<rect x='38' y='60' width='6' height='6' fill='#64748b'/>" +
             "</svg>" +
-            "<div class='firm-size-number'>10</div>" +
+            "<div class='firm-size-number'>10&ndash;15</div>" +
             "<div class='firm-size-subtext'>transactions<br>(small)</div>" +
           "</div>" +
           // invisible placeholders to reserve space
@@ -2430,7 +2617,7 @@ var SURVEY_CONFIG = {
           "</div>" +
         "</div>" +
         "<p style='text-align:center; font-size:20px; max-width:620px; margin:20px auto 0; line-height:1.5; font-weight:700;'>" +
-          "Some are <strong>small</strong> &mdash; <strong>10 transactions</strong>." +
+          "Some are <strong>small</strong> &mdash; somewhere between <strong>10 and 15 transactions</strong>." +
         "</p>",
       minTimeSeconds: 2
     },
@@ -2455,7 +2642,7 @@ var SURVEY_CONFIG = {
               "<rect x='28' y='60' width='6' height='6' fill='#64748b'/>" +
               "<rect x='38' y='60' width='6' height='6' fill='#64748b'/>" +
             "</svg>" +
-            "<div class='firm-size-number'>10</div>" +
+            "<div class='firm-size-number'>10&ndash;15</div>" +
             "<div class='firm-size-subtext'>transactions<br>(small)</div>" +
           "</div>" +
           "<div class='firm-size-card firm-size-card-medium size-diff-medium'>" +
@@ -2468,7 +2655,7 @@ var SURVEY_CONFIG = {
                 "<rect x='20' y='82' width='7' height='7'/><rect x='33' y='82' width='7' height='7'/><rect x='46' y='82' width='7' height='7'/><rect x='59' y='82' width='7' height='7'/>" +
               "</g>" +
             "</svg>" +
-            "<div class='firm-size-number'>20</div>" +
+            "<div class='firm-size-number'>20&ndash;25</div>" +
             "<div class='firm-size-subtext'>transactions<br>(medium)</div>" +
           "</div>" +
           "<div class='firm-size-card firm-size-card-large size-diff-large' style='visibility:hidden;' aria-hidden='true'>" +
@@ -2478,12 +2665,12 @@ var SURVEY_CONFIG = {
           "</div>" +
         "</div>" +
         "<p style='text-align:center; font-size:20px; max-width:620px; margin:20px auto 0; line-height:1.5; font-weight:700;'>" +
-          "Some are <strong>medium</strong> &mdash; <strong>20 transactions</strong>." +
+          "Some are <strong>medium</strong> &mdash; somewhere between <strong>20 and 25 transactions</strong>." +
         "</p>",
       minTimeSeconds: 2
     },
 
-    // -- Firm-size intro: step 3 -- large (30) + rule reminder ---------
+    // -- Firm-size intro: step 3 -- large (50) + rule reminder ---------
     {
       id: "p6_firm_sizes_c",
       type: "instructions",
@@ -2503,7 +2690,7 @@ var SURVEY_CONFIG = {
               "<rect x='28' y='60' width='6' height='6' fill='#64748b'/>" +
               "<rect x='38' y='60' width='6' height='6' fill='#64748b'/>" +
             "</svg>" +
-            "<div class='firm-size-number'>10</div>" +
+            "<div class='firm-size-number'>10&ndash;15</div>" +
             "<div class='firm-size-subtext'>transactions<br>(small)</div>" +
           "</div>" +
           "<div class='firm-size-card firm-size-card-medium size-diff-medium'>" +
@@ -2516,7 +2703,7 @@ var SURVEY_CONFIG = {
                 "<rect x='20' y='82' width='7' height='7'/><rect x='33' y='82' width='7' height='7'/><rect x='46' y='82' width='7' height='7'/><rect x='59' y='82' width='7' height='7'/>" +
               "</g>" +
             "</svg>" +
-            "<div class='firm-size-number'>20</div>" +
+            "<div class='firm-size-number'>20&ndash;25</div>" +
             "<div class='firm-size-subtext'>transactions<br>(medium)</div>" +
           "</div>" +
           "<div class='firm-size-card firm-size-card-large size-diff-large'>" +
@@ -2531,40 +2718,41 @@ var SURVEY_CONFIG = {
                 "<rect x='20' y='90' width='8' height='8'/><rect x='34' y='90' width='8' height='8'/><rect x='48' y='90' width='8' height='8'/><rect x='62' y='90' width='8' height='8'/><rect x='76' y='90' width='8' height='8'/>" +
               "</g>" +
             "</svg>" +
-            "<div class='firm-size-number'>30</div>" +
+            "<div class='firm-size-number'>45&ndash;50</div>" +
             "<div class='firm-size-subtext'>transactions<br>(large)</div>" +
           "</div>" +
         "</div>" +
         "<p style='text-align:center; font-size:20px; max-width:620px; margin:20px auto 0; line-height:1.5; font-weight:700;'>" +
-          "Some are <strong>large</strong> &mdash; <strong>30 transactions</strong>." +
+          "Some are <strong>large</strong> &mdash; somewhere between <strong>45 and 50 transactions</strong>." +
         "</p>",
       minTimeSeconds: 3
     },
 
     // -- Firm-size intro: rule reminder on its own page for emphasis ---
-    // The reminder used to sit under the three cabinets on 53c. Pulled
-    // onto its own page so the "exactly 4, regardless of size" rule
-    // lands as its own beat -- it's a critical fact for reasoning
-    // about the 30-vs-10 size contrast in the trials.
+    // V7: also flags that we tell the SIZE only, not the exact N within
+    // the range. This is the cognitive setup for stochastic-N reasoning.
     {
       id: "p6_firm_sizes_rule",
       type: "instructions",
       title: "",
       body:
-        "<p style='text-align:center; font-size:26px; line-height:1.4; max-width:620px; margin:60px auto 22px; font-weight:700; color:#0f172a;'>" +
-          "We'll tell you each company's size." +
+        "<p style='text-align:center; font-size:24px; line-height:1.45; max-width:620px; margin:40px auto 18px; font-weight:700; color:#0f172a;'>" +
+          "We will tell you each company's <strong>size</strong> &mdash; small, medium, or large." +
         "</p>" +
-        "<p style='text-align:center; font-size:26px; line-height:1.4; max-width:620px; margin:0 auto; font-weight:700; color:#0f172a;'>" +
+        "<p style='text-align:center; font-size:20px; line-height:1.55; max-width:620px; margin:0 auto 22px; color:#475569;'>" +
+          "We will <strong>not</strong> tell you exactly how many transactions the company has, only that it falls in the size range above." +
+        "</p>" +
+        "<p style='text-align:center; font-size:24px; line-height:1.4; max-width:620px; margin:0 auto; font-weight:700; color:#0f172a;'>" +
           "The law still requires the manager to disclose " +
-          "<strong style='color:#b91c1c;'>exactly 4</strong>, " +
+          "<strong style='color:#b91c1c;'>exactly 3</strong>, " +
           "regardless of size." +
         "</p>",
-      minTimeSeconds: 7
+      minTimeSeconds: 8
     },
 
     // ==================================================================
     //  PRACTICE BLOCK -- 5 unscored warm-up rounds, random sample from
-    //  the phase-1 (K=4) stimuli. Participant is told clearly these
+    //  the phase-1 (K=3) stimuli. Participant is told clearly these
     //  don't count toward the bonus. At the end, a summary page shows
     //  how much they WOULD HAVE earned (aggregate; no per-round feedback
     //  so they can't back out which item was wrong).
@@ -2585,7 +2773,7 @@ var SURVEY_CONFIG = {
           "<li>At the end, we will report how much you <em>would have</em> earned, so you can see your performance before the scored rounds begin.</li>" +
         "</ul>" +
         "<p style='text-align:center; font-size:20px; font-weight:700; max-width:620px; margin:22px auto 0;'>" +
-          "Treat them seriously: the 30 scored audits begin immediately afterward." +
+          "Treat them seriously: the 60 scored audits begin immediately afterward." +
         "</p>",
       minTimeSeconds: 8
     },
@@ -2613,7 +2801,7 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 10
     },
 
-    // -- Handoff to the scored 30 --------------------------------------
+    // -- Handoff to the scored 45 --------------------------------------
     {
       id: "p6_scored_intro",
       type: "instructions",
@@ -2623,7 +2811,8 @@ var SURVEY_CONFIG = {
           "The scored audits begin now." +
         "</p>" +
         "<p style='text-align:justify; font-size:19px; max-width:620px; margin:0 auto 16px; line-height:1.65;'>" +
-          "The following <strong>30 audits</strong> count toward your bonus, " +
+          "The following <strong>60 audits</strong> are scored. At the end, " +
+          "<strong>3 will be picked at random</strong> and only those count toward your bonus &mdash; " +
           "up to <strong>$6.00</strong>." +
         "</p>" +
         "<p style='text-align:justify; font-size:17px; max-width:620px; margin:0 auto; line-height:1.65; color:#334155;'>" +
@@ -2632,9 +2821,9 @@ var SURVEY_CONFIG = {
       minTimeSeconds: 6
     },
 
-    // Phase 1: 15 companies (K=4) -------------------------------------------
+    // Phase 1: 12 companies (K=3) ----------------------------------------
     {
-      id: "block_k4",
+      id: "block_k3",
       type: "trial_block",
       block: 1,
       filterPhase: 1,
@@ -2643,40 +2832,100 @@ var SURVEY_CONFIG = {
       minTimePerTrial: 10
     },
 
-    // -- Rule change (K=4 -> K=8), Page A: announcement ------------------
+    // -- Rule change 1 (K=3 -> K=5), Page A: announcement ----------------
+    // Same split-view graph as Page 25 (manager-picks), with the auditor
+    // side now showing 5 cards instead of 3 to convey the new rule.
     {
-      id: "p6_rule_change_a",
+      id: "p6_rule_change_1a",
       type: "instructions",
       title: "",
       body:
         "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
           "Rule change" +
         "</p>" +
-        "<p style='text-align:center; font-size:28px; line-height:1.3; max-width:620px; margin:0 auto 26px; font-weight:800; color:#0f172a;'>" +
+        "<p style='text-align:center; font-size:28px; line-height:1.3; max-width:620px; margin:0 auto 22px; font-weight:800; color:#0f172a;'>" +
           "Audit regulations just changed." +
         "</p>" +
-        "<div class='forbidden-row'>" +
-          "<div class='forbidden-item'>" +
-            "<div class='forbidden-label'>Old rule</div>" +
-            "<div class='forbidden-num' style='color:#475569; text-decoration:line-through; text-decoration-thickness:3px;'>4</div>" +
+        "<p style='text-align:justify; font-size:20px; line-height:1.4; max-width:620px; margin:0 auto 18px; font-weight:700;'>" +
+          "Managers must now disclose <strong style='color:#15803d;'>5</strong> transactions, not <strong style='color:#b91c1c; text-decoration:line-through;'>3</strong>." +
+        "</p>" +
+        "<div class='split-view'>" +
+          "<div class='split-side'>" +
+            "<div class='split-badge'>" +
+              "<svg viewBox='0 0 120 140' xmlns='http://www.w3.org/2000/svg' aria-hidden='true' width='56'>" +
+                "<defs>" +
+                  "<linearGradient id='mgrGradRC1' x1='0%' y1='0%' x2='0%' y2='100%'>" +
+                    "<stop offset='0%' stop-color='#6366f1'/>" +
+                    "<stop offset='100%' stop-color='#4338ca'/>" +
+                  "</linearGradient>" +
+                "</defs>" +
+                "<rect x='4' y='4' width='112' height='132' rx='22' fill='url(#mgrGradRC1)' stroke='#3730a3' stroke-width='2'/>" +
+                "<circle cx='60' cy='54' r='18' fill='#ffffff'/>" +
+                "<path d='M24 126 C24 96 40 80 60 80 C80 80 96 96 96 126 Z' fill='#ffffff'/>" +
+              "</svg>" +
+              "<div class='split-badge-label'>Manager</div>" +
+            "</div>" +
+            "<div class='split-cards'>" +
+              // V7: manager always sees 15 across all laws (9 C + 6 S).
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc suspicious rule-small'>S</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc suspicious rule-small'>S</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc suspicious rule-small'>S</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc suspicious rule-small'>S</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc suspicious rule-small'>S</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc suspicious rule-small'>S</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+            "</div>" +
+            "<div class='split-caption'>Sees all 15</div>" +
           "</div>" +
-          "<div class='forbidden-arrow'>&rarr;</div>" +
-          "<div class='forbidden-item' style='background:#f0fdf4; border-color:#86efac;'>" +
-            "<div class='forbidden-label' style='color:#15803d;'>New rule</div>" +
-            "<div class='forbidden-num' style='color:#15803d;'>8</div>" +
+          "<div class='split-arrow' style='font-size:64px; display:flex; flex-direction:column; align-items:center;'>" +
+            "<span style=\"font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:#64748b; margin-bottom:-4px; font-weight:700;\">sent</span>" +
+            "&rarr;" +
           "</div>" +
-        "</div>" +
-        "<p style='text-align:center; font-size:26px; line-height:1.4; max-width:620px; margin:34px auto 0; font-weight:800; color:#0f172a;'>" +
-          "Managers must now disclose " +
-          "<strong style='color:#15803d;'>8</strong> transactions, " +
-          "not <strong style='color:#b91c1c; text-decoration:line-through;'>4</strong>." +
-        "</p>",
+          "<div class='split-side'>" +
+            "<div class='split-badge'>" +
+              "<svg viewBox='0 0 100 120' xmlns='http://www.w3.org/2000/svg' aria-hidden='true' width='72'>" +
+                "<defs>" +
+                  "<linearGradient id='auditorMagRC1' x1='0%' y1='0%' x2='0%' y2='100%'>" +
+                    "<stop offset='0%' stop-color='#0ea5a0'/>" +
+                    "<stop offset='100%' stop-color='#0f766e'/>" +
+                  "</linearGradient>" +
+                "</defs>" +
+                "<rect x='16' y='18' width='54' height='72' rx='4' fill='#ffffff' stroke='#0f766e' stroke-width='2'/>" +
+                "<line x1='24' y1='32' x2='62' y2='32' stroke='#94a3b8' stroke-width='2' stroke-linecap='round'/>" +
+                "<line x1='24' y1='42' x2='58' y2='42' stroke='#94a3b8' stroke-width='2' stroke-linecap='round'/>" +
+                "<line x1='24' y1='52' x2='62' y2='52' stroke='#94a3b8' stroke-width='2' stroke-linecap='round'/>" +
+                "<line x1='24' y1='62' x2='50' y2='62' stroke='#94a3b8' stroke-width='2' stroke-linecap='round'/>" +
+                "<circle cx='66' cy='72' r='20' fill='none' stroke='url(#auditorMagRC1)' stroke-width='7'/>" +
+                "<circle cx='66' cy='72' r='16' fill='#ccfbf1' opacity='0.5'/>" +
+                "<line x1='80' y1='86' x2='96' y2='104' stroke='url(#auditorMagRC1)' stroke-width='8' stroke-linecap='round'/>" +
+              "</svg>" +
+              "<div class='split-badge-label'>You</div>" +
+            "</div>" +
+            "<div class='split-cards'>" +
+              // 5 clean cards (manager strategically picks clean)
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+            "</div>" +
+            "<div class='split-caption'>Sees 5 (manager's pick)</div>" +
+          "</div>" +
+        "</div>",
       minTimeSeconds: 10
     },
 
-    // -- Rule change, Page B: everything else stays the same -------------
+    // -- Rule change 1, Page B: same other rules -------------------------
     {
-      id: "p6_rule_change_b",
+      id: "p6_rule_change_1b",
       type: "instructions",
       title: "",
       body:
@@ -2684,17 +2933,138 @@ var SURVEY_CONFIG = {
           "Everything else stays the same: the manager still picks which ones, you still estimate and bet." +
         "</p>" +
         "<p style='text-align:justify; font-size:20px; max-width:620px; margin:24px auto 0; line-height:1.55;'>" +
-          "<strong>15 more companies</strong> under the new rule." +
+          "<strong>16 more companies</strong> under the new rule." +
         "</p>",
       minTimeSeconds: 7
     },
 
-    // Phase 2: 15 companies (K=8) -------------------------------------------
+    // Phase 2: 16 companies (K=5) ------------------------------------------
     {
-      id: "block_k8",
+      id: "block_k5",
       type: "trial_block",
       block: 2,
       filterPhase: 2,
+      randomize: true,
+      askFlaggedEstimate: false,
+      minTimePerTrial: 10
+    },
+
+    // -- Rule change 2 (K=5 -> K=10), Page A: announcement ---------------
+    // Same split-view graph as Page 25, with auditor side now at 10 cards.
+    {
+      id: "p6_rule_change_2a",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:center; font-size:14px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; color:var(--color-primary); margin:0 auto 10px;'>" +
+          "Rule change" +
+        "</p>" +
+        "<p style='text-align:center; font-size:28px; line-height:1.3; max-width:620px; margin:0 auto 22px; font-weight:800; color:#0f172a;'>" +
+          "Audit regulations changed again." +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; line-height:1.4; max-width:620px; margin:0 auto 18px; font-weight:700;'>" +
+          "Managers must now disclose <strong style='color:#15803d;'>10</strong> transactions, not <strong style='color:#b91c1c; text-decoration:line-through;'>5</strong>." +
+        "</p>" +
+        "<div class='split-view'>" +
+          "<div class='split-side'>" +
+            "<div class='split-badge'>" +
+              "<svg viewBox='0 0 120 140' xmlns='http://www.w3.org/2000/svg' aria-hidden='true' width='56'>" +
+                "<defs>" +
+                  "<linearGradient id='mgrGradRC2' x1='0%' y1='0%' x2='0%' y2='100%'>" +
+                    "<stop offset='0%' stop-color='#6366f1'/>" +
+                    "<stop offset='100%' stop-color='#4338ca'/>" +
+                  "</linearGradient>" +
+                "</defs>" +
+                "<rect x='4' y='4' width='112' height='132' rx='22' fill='url(#mgrGradRC2)' stroke='#3730a3' stroke-width='2'/>" +
+                "<circle cx='60' cy='54' r='18' fill='#ffffff'/>" +
+                "<path d='M24 126 C24 96 40 80 60 80 C80 80 96 96 96 126 Z' fill='#ffffff'/>" +
+              "</svg>" +
+              "<div class='split-badge-label'>Manager</div>" +
+            "</div>" +
+            "<div class='split-cards'>" +
+              // V7: manager always sees 15 across all laws (9 C + 6 S).
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc suspicious rule-small'>S</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc suspicious rule-small'>S</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc suspicious rule-small'>S</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc suspicious rule-small'>S</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc suspicious rule-small'>S</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc suspicious rule-small'>S</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+            "</div>" +
+            "<div class='split-caption'>Sees all 15</div>" +
+          "</div>" +
+          "<div class='split-arrow' style='font-size:64px; display:flex; flex-direction:column; align-items:center;'>" +
+            "<span style=\"font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:#64748b; margin-bottom:-4px; font-weight:700;\">sent</span>" +
+            "&rarr;" +
+          "</div>" +
+          "<div class='split-side'>" +
+            "<div class='split-badge'>" +
+              "<svg viewBox='0 0 100 120' xmlns='http://www.w3.org/2000/svg' aria-hidden='true' width='72'>" +
+                "<defs>" +
+                  "<linearGradient id='auditorMagRC2' x1='0%' y1='0%' x2='0%' y2='100%'>" +
+                    "<stop offset='0%' stop-color='#0ea5a0'/>" +
+                    "<stop offset='100%' stop-color='#0f766e'/>" +
+                  "</linearGradient>" +
+                "</defs>" +
+                "<rect x='16' y='18' width='54' height='72' rx='4' fill='#ffffff' stroke='#0f766e' stroke-width='2'/>" +
+                "<line x1='24' y1='32' x2='62' y2='32' stroke='#94a3b8' stroke-width='2' stroke-linecap='round'/>" +
+                "<line x1='24' y1='42' x2='58' y2='42' stroke='#94a3b8' stroke-width='2' stroke-linecap='round'/>" +
+                "<line x1='24' y1='52' x2='62' y2='52' stroke='#94a3b8' stroke-width='2' stroke-linecap='round'/>" +
+                "<line x1='24' y1='62' x2='50' y2='62' stroke='#94a3b8' stroke-width='2' stroke-linecap='round'/>" +
+                "<circle cx='66' cy='72' r='20' fill='none' stroke='url(#auditorMagRC2)' stroke-width='7'/>" +
+                "<circle cx='66' cy='72' r='16' fill='#ccfbf1' opacity='0.5'/>" +
+                "<line x1='80' y1='86' x2='96' y2='104' stroke='url(#auditorMagRC2)' stroke-width='8' stroke-linecap='round'/>" +
+              "</svg>" +
+              "<div class='split-badge-label'>You</div>" +
+            "</div>" +
+            "<div class='split-cards'>" +
+              // 10 clean cards (manager strategically picks clean)
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+              "<div class='transaction-doc clean rule-small'>C</div>" +
+            "</div>" +
+            "<div class='split-caption'>Sees 10 (manager's pick)</div>" +
+          "</div>" +
+        "</div>",
+      minTimeSeconds: 10
+    },
+
+    // -- Rule change 2, Page B: same other rules -------------------------
+    {
+      id: "p6_rule_change_2b",
+      type: "instructions",
+      title: "",
+      body:
+        "<p style='text-align:justify; font-size:22px; max-width:620px; margin:0 auto 18px; line-height:1.55; font-weight:600;'>" +
+          "Everything else stays the same: the manager still picks which ones, you still estimate and bet." +
+        "</p>" +
+        "<p style='text-align:justify; font-size:20px; max-width:620px; margin:24px auto 0; line-height:1.55;'>" +
+          "<strong>32 more companies</strong> under the new rule." +
+        "</p>",
+      minTimeSeconds: 7
+    },
+
+    // Phase 3: 32 companies (K=10) ----------------------------------------
+    {
+      id: "block_k10",
+      type: "trial_block",
+      block: 3,
+      filterPhase: 3,
       randomize: true,
       askFlaggedEstimate: false,
       minTimePerTrial: 10

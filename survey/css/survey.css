@@ -734,7 +734,7 @@ body {
 }
 
 /* Practice summary card -- shown after the 5 warm-up rounds, before
-   the 30 scored rounds. Shows aggregate would-have-earned only. */
+   the 45 scored rounds. Shows aggregate would-have-earned only. */
 .practice-summary-card {
   max-width: 620px;
   margin: 32px auto 0;
@@ -3146,13 +3146,13 @@ body {
   color: #0f172a;
   font-size: 26px;
   line-height: 1.5;
-  font-weight: 600;
+  font-weight: 400;
 }
 .trial-header-bullets li {
   margin-bottom: 4px;
 }
 .trial-header-bullets li strong {
-  font-weight: 800;
+  font-weight: 700;
 }
 
 /* --- Firm size banner (prominent, sits above the transactions card) -- */
@@ -3802,7 +3802,7 @@ body {
   flex-wrap: wrap;
 }
 
-/* ---------- Regime comparison (K=4 vs K=8) ---------- */
+/* ---------- Regime comparison (K=5 vs K=10) ---------- */
 .regime-compare {
   display: flex;
   gap: 24px;

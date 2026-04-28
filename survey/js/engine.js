@@ -39,6 +39,90 @@
     return shuffled;
   }
 
+  // ── Constrained shuffle: same-CELL trials must be >= minGap apart
+  // V7: under the duplicate design (each unique cell appears 2x within
+  // a phase), the constraint is "no two adjacent positions show the same
+  // (size, K, k) cell." We group by the full cell signature, not just k,
+  // so duplicates of the same cell are spaced apart while different cells
+  // sharing only k are free to be adjacent.
+  //
+  // Approach: round-robin / stratified shuffle. Group trials by cell sig;
+  // build "rounds" where each round contains one trial per cell-sig bucket
+  // (so a cell cannot repeat within a round). Concatenate rounds in random
+  // order, retrying shuffle if boundary violations remain. Reliable even
+  // for tight designs where naive rejection sampling fails.
+  function getK(t) {
+    // Cell signature: full (size, K, k). Falls back to just k for legacy
+    // stimuli without a size field.
+    var k = (t.k != null) ? t.k : t.nFlagged;
+    var K = (t.K != null) ? t.K : t.D;
+    var sz = t.size != null ? t.size : (t.N != null ? 'n' + t.N : '');
+    return sz + '|' + K + '|' + k;
+  }
+  function violatesMinGap(arr, minGap) {
+    for (var i = 0; i < arr.length; i++) {
+      var ki = getK(arr[i]);
+      for (var j = i + 1; j <= i + minGap && j < arr.length; j++) {
+        if (getK(arr[j]) === ki) return true;
+      }
+    }
+    return false;
+  }
+  function constrainedShuffle(arr, seed, minGap) {
+    // 1. Bucket by k.
+    var byK = {};
+    arr.forEach(function (t) {
+      var k = getK(t);
+      if (!byK[k]) byK[k] = [];
+      byK[k].push(t);
+    });
+    var ks = Object.keys(byK);
+    var maxCount = 0;
+    ks.forEach(function (k) { if (byK[k].length > maxCount) maxCount = byK[k].length; });
+
+    // 2. Shuffle each bucket so we pick a random representative each round.
+    ks.forEach(function (k) {
+      byK[k] = seededShuffle(byK[k], hashString('rr_bucket_' + k + '_' + seed));
+    });
+
+    // 3. Build rounds: round r contains byK[k][r] for each k with len > r.
+    var rounds = [];
+    for (var r = 0; r < maxCount; r++) {
+      var round = [];
+      ks.forEach(function (k) { if (byK[k][r] != null) round.push(byK[k][r]); });
+      round = seededShuffle(round, hashString('rr_round_' + r + '_' + seed));
+      rounds.push(round);
+    }
+
+    // 4. Concatenate rounds in a random order, retry on boundary violations.
+    var maxAttempts = 100;
+    for (var a = 0; a < maxAttempts; a++) {
+      var orderIdx = [];
+      for (var ri = 0; ri < rounds.length; ri++) orderIdx.push(ri);
+      orderIdx = seededShuffle(orderIdx, hashString('rr_order_' + a + '_' + seed));
+      var combined = [];
+      orderIdx.forEach(function (idx) { combined = combined.concat(rounds[idx]); });
+      if (!violatesMinGap(combined, minGap)) return combined;
+
+      // Re-shuffle the contents of each round and retry.
+      for (var inner = 0; inner < 10; inner++) {
+        var newRounds = rounds.map(function (rd, ri) {
+          return seededShuffle(rd, hashString('rr_reshuf_' + ri + '_' + a + '_' + inner + '_' + seed));
+        });
+        var combined2 = [];
+        orderIdx.forEach(function (idx) { combined2 = combined2.concat(newRounds[idx]); });
+        if (!violatesMinGap(combined2, minGap)) return combined2;
+      }
+    }
+
+    // Fallback: plain shuffle (should never happen with maxCount-rounds layout)
+    if (typeof console !== 'undefined' && console.warn) {
+      console.warn('constrainedShuffle: round-robin failed to satisfy minGap=' +
+                   minGap + ' for n=' + arr.length + '. Using plain shuffle.');
+    }
+    return seededShuffle(arr, seed);
+  }
+
   // ── Utility: simple HTML escaping ──────────────────────────────────────
   function esc(str) {
     var div = document.createElement('div');
@@ -365,9 +449,11 @@
           // Shuffle the ORDER so k isn't presented 0,1,2,3,4 monotonic.
           trials = seededShuffle(trials, hashString(seed + '_practice_order'));
         } else if (page.randomize && self.prolificPID) {
-          // Non-practice block: straight shuffle of the full filtered set.
+          // Non-practice block: shuffle the full filtered set with the
+          // 3-trial same-k spacing constraint (v6) so identical k values
+          // can't appear within 3 positions of each other.
           var baseSeed = hashString(self.prolificPID + '_trials_b' + block);
-          trials = seededShuffle(trials, baseSeed);
+          trials = constrainedShuffle(trials, baseSeed, 3);
         }
 
         // Read DV flags from trial_block config
@@ -611,6 +697,14 @@
       // Display format: "X% to Y%" (e.g., "40% to 50%").
       // A companion .slider-range-band div is positioned at left=V% to
       // visualize the selected range as a moving highlighted band.
+      //
+      // V6: The coverage-band half-width follows the bonus tolerance from
+      // config.bonus.accuracyThreshold (default 0.05 = 5 pp). Earlier
+      // versions hardcoded 10 pp -- change there if the tolerance changes.
+      var bonusCfgForCov = (self.config && self.config.bonus) ? self.config.bonus : {};
+      var coverageHalfPp = Math.round(
+        (bonusCfgForCov.accuracyThreshold != null ? bonusCfgForCov.accuracyThreshold : 0.05) * 100
+      );
       var sliders = document.querySelectorAll('input[type="range"]');
       sliders.forEach(function (slider) {
         var displayId = slider.getAttribute('data-display');
@@ -627,7 +721,15 @@
           var sliderMax = parseFloat(slider.max);
           if (display) {
             if (displaySuffix === 'cents') {
-              display.textContent = Math.round(val) + '\u00a2';
+              // V6: format as dollars when slider max >= 100 cents (i.e.,
+              // bet slider that now ranges 0..$1.00). Smaller-range cents
+              // sliders still show "0\u00a2" .. "Nc".
+              var c = Math.round(val);
+              if (sliderMax >= 100) {
+                display.textContent = '$' + (c / 100).toFixed(2);
+              } else {
+                display.textContent = c + '\u00a2';
+              }
             } else if (sliderMax === 90) {
               var lo = Math.round(val);
               var hi = lo + 10;
@@ -641,17 +743,17 @@
           if (band && sliderMax === 90) {
             band.style.left = val + '%';
           }
-          // Coverage band: shows the 10 points window around the current value.
-          // Window is [val-10, val+10], clamped to [0, 100].
+          // Coverage band: shows the +/- coverageHalfPp window around the
+          // current value. Window is [val-h, val+h], clamped to [0, 100].
           if (covBand && sliderMax === 100) {
-            var lo2 = Math.max(0, val - 10);
-            var hi2 = Math.min(100, val + 10);
+            var lo2 = Math.max(0, val - coverageHalfPp);
+            var hi2 = Math.min(100, val + coverageHalfPp);
             covBand.style.left = lo2 + '%';
             covBand.style.width = (hi2 - lo2) + '%';
           }
           if (covText && sliderMax === 100) {
-            var lo3 = Math.max(0, val - 10);
-            var hi3 = Math.min(100, val + 10);
+            var lo3 = Math.max(0, val - coverageHalfPp);
+            var hi3 = Math.min(100, val + coverageHalfPp);
             covText.textContent = '(covers ' + Math.round(lo3) + '% to ' +
                                   Math.round(hi3) + '%)';
           }
@@ -677,8 +779,8 @@
         }
         // Initial coverage-band position.
         if (covBand && parseFloat(slider.max) === 100) {
-          var initLo = Math.max(0, parseFloat(slider.value) - 10);
-          var initHi = Math.min(100, parseFloat(slider.value) + 10);
+          var initLo = Math.max(0, parseFloat(slider.value) - coverageHalfPp);
+          var initHi = Math.min(100, parseFloat(slider.value) + coverageHalfPp);
           covBand.style.left = initLo + '%';
           covBand.style.width = (initHi - initLo) + '%';
         }
@@ -846,6 +948,23 @@
     var sims = document.querySelectorAll('.bonus-sim, .estimate-sim');
     if (!sims.length) return;
 
+    // Pull threshold + answer cents from config so simulators stay in sync
+    // when the bonus scheme changes (V6: 5pp band, $1 estimate bonus, lottery).
+    var bonusCfg = (self.config && self.config.bonus) ? self.config.bonus : {};
+    var thresholdPp = (bonusCfg.accuracyThreshold != null ? bonusCfg.accuracyThreshold : 0.10) * 100;
+    var answerCents = bonusCfg.answerCents != null ? bonusCfg.answerCents : 10;
+
+    function fmtCents(n) {
+      // Format a signed cent amount: use dollars if >= 100\u00a2 in absolute value,
+      // else cents. Always show a sign prefix when nonzero.
+      var abs = Math.abs(n);
+      var sign = n < 0 ? '\u2212' : (n > 0 ? '+' : '');
+      if (abs >= 100 || answerCents >= 100) {
+        return sign + '$' + (abs / 100).toFixed(2);
+      }
+      return sign + abs + '\u00a2';
+    }
+
     sims.forEach(function (sim) {
       var truth = parseFloat(sim.getAttribute('data-truth'));
       var ranges = sim.querySelectorAll('input[type=range]');
@@ -867,8 +986,8 @@
       function update(isInitial) {
         var pHat = parseFloat(estSlider.value);
         var bet = confSlider ? parseFloat(confSlider.value) : 0;
-        var within = Math.abs(pHat - truth) <= 10;
-        var answerBonus = within ? 10 : 0;
+        var within = Math.abs(pHat - truth) <= thresholdPp;
+        var answerBonus = within ? answerCents : 0;
         var betOutcome = within ? bet : -bet;
         var total = answerBonus + betOutcome;
 
@@ -877,16 +996,14 @@
           withinEl.className = within ? 'sim-flag-yes' : 'sim-flag-no';
         }
         if (ansEl) {
-          ansEl.textContent = (answerBonus > 0 ? '+' : '') + answerBonus + '\u00a2';
+          ansEl.textContent = answerBonus === 0 ? '$0.00' : fmtCents(answerBonus);
         }
         if (confBEl && confSlider) {
-          var sign = betOutcome < 0 ? '\u2212' : (betOutcome > 0 ? '+' : '');
-          confBEl.textContent = sign + Math.abs(betOutcome) + '\u00a2';
+          confBEl.textContent = betOutcome === 0 ? '0\u00a2' : fmtCents(betOutcome);
           confBEl.className = betOutcome < 0 ? 'sim-flag-no' : (betOutcome > 0 ? 'sim-flag-yes' : '');
         }
         if (totalEl) {
-          var totalSign = total < 0 ? '\u2212' : '+';
-          totalEl.textContent = totalSign + Math.abs(total) + '\u00a2';
+          totalEl.textContent = total === 0 ? '$0.00' : fmtCents(total);
           totalEl.className = total < 0 ? 'sim-flag-no' : 'sim-flag-yes';
         }
 
@@ -2305,7 +2422,7 @@
     flat.raw_json = JSON.stringify({
       // Form responses (demographics, Likert, etc.)
       responses: this.responses,
-      // 30 scored trials: per-trial id, block, fraud slider value,
+      // 45 scored trials: per-trial id, block, fraud slider value,
       // bet value, N, K, k, θ* ground-truth.
       trialResponses: this.trialResponses,
       // 5 warm-up trials (not bonused).
@@ -2476,33 +2593,31 @@
   };
 
   // ── Bonus Calculation ──────────────────────────────────────────────────
-  // Bet-on-accuracy scheme (Enke et al., 2023 style).
+  // V6: LOTTERY scheme. At the end we pick `lotteryCount` trials at random
+  // (PID-seeded so the same participant always gets the same picks if they
+  // resume). Only those picked trials contribute to the bonus. Pre-V6
+  // sum-all-trials behavior is preserved when selectionMethod === 'sum_all_trials'.
   //
   //   let within = |p_hat - theta_true| <= accuracyThreshold
   //   let bet    = cents wagered on being within (slider 0..betMaxCents)
   //
-  //   if within:
-  //     b_answer = answerCents        (e.g., 10¢ for a correct estimate)
-  //     b_bet    = +bet               (participant wins the bet)
+  //   per-trial:
+  //     within     -> b = +answerCents + bet
+  //     not within -> b = 0            - bet
   //
-  //   if not within:
-  //     b_answer = 0
-  //     b_bet    = -bet               (participant loses the bet)
-  //
-  //   per-trial total = b_answer + b_bet
-  //   grand total     = sum over trials, floored at 0 (can't owe money)
-  //
-  // Range per trial: [-betMaxCents, answerCents + betMaxCents] cents.
-  // With defaults 10¢ answer + 10¢ max bet: [-10¢, +20¢] per trial.
+  //   grand total  -> sum over PICKED trials (lottery) or ALL (sum_all_trials),
+  //                   floored at 0, capped at maxBonus.
   SurveyEngine.prototype.calculateBonus = function () {
     var bonusCfg = this.config.bonus;
     if (!bonusCfg || !bonusCfg.enabled) { this.bonusInfo = { enabled: false }; return; }
 
-    var answerCents  = bonusCfg.answerCents      != null ? bonusCfg.answerCents      : 10;
-    var betMaxCents  = bonusCfg.betMaxCents      != null ? bonusCfg.betMaxCents      : 10;
-    var threshold    = bonusCfg.accuracyThreshold != null ? bonusCfg.accuracyThreshold : 0.10;
-    var maxBonus     = bonusCfg.maxBonus         != null ? bonusCfg.maxBonus         : 5.00;
-    var floor        = bonusCfg.floor            != null ? bonusCfg.floor            : 0;
+    var answerCents     = bonusCfg.answerCents      != null ? bonusCfg.answerCents      : 10;
+    var betMaxCents     = bonusCfg.betMaxCents      != null ? bonusCfg.betMaxCents      : 10;
+    var threshold       = bonusCfg.accuracyThreshold != null ? bonusCfg.accuracyThreshold : 0.10;
+    var maxBonus        = bonusCfg.maxBonus         != null ? bonusCfg.maxBonus         : 5.00;
+    var floor           = bonusCfg.floor            != null ? bonusCfg.floor            : 0;
+    var selectionMethod = bonusCfg.selectionMethod  || 'sum_all_trials';
+    var lotteryCount    = bonusCfg.lotteryCount     != null ? bonusCfg.lotteryCount     : 2;
 
     var trialIds = Object.keys(this.trialResponses);
     if (trialIds.length === 0) {
@@ -2511,18 +2626,15 @@
       return;
     }
 
-    var totalAnswer = 0;   // cents
-    var totalBet    = 0;   // cents (can be negative)
-    var correctCount = 0;
+    // Per-trial scoring (ALL trials, including bonus contributions if picked).
     var perTrial = [];
-
     for (var ti = 0; ti < trialIds.length; ti++) {
       var tr = this.trialResponses[trialIds[ti]] || {};
       if (tr.fraudProb == null || tr.confidence == null || tr.thetaTrue == null) continue;
 
       var pHat      = tr.fraudProb / 100;
       var thetaTrue = tr.thetaTrue;
-      // The "confidence" field now carries the bet amount in cents (0..betMaxCents).
+      // The "confidence" field carries the bet amount in cents (0..betMaxCents).
       var bet = tr.confidence;
       if (bet < 0) bet = 0;
       if (bet > betMaxCents) bet = betMaxCents;
@@ -2531,15 +2643,40 @@
       var aCents = within ? answerCents : 0;
       var bCents = within ? +bet : -bet;
 
-      totalAnswer += aCents;
-      totalBet    += bCents;
-      if (within) correctCount++;
       perTrial.push({
-        trialId: tr.trialId, pHat: pHat, thetaTrue: thetaTrue,
+        trialId: tr.trialId || trialIds[ti], pHat: pHat, thetaTrue: thetaTrue,
         bet: bet, within: within ? 1 : 0,
         answerCents: aCents, betCents: bCents
       });
     }
+
+    // Decide which trials are PICKED for payment.
+    var pickedIdx = [];
+    if (selectionMethod === 'lottery') {
+      // PID-seeded reproducible random selection without replacement.
+      var seed = hashString((this.prolificPID || 'preview') + '_lottery_' + perTrial.length);
+      var indices = perTrial.map(function (_, i) { return i; });
+      indices = seededShuffle(indices, seed);
+      pickedIdx = indices.slice(0, Math.min(lotteryCount, indices.length));
+      pickedIdx.sort(function (a, b) { return a - b; });
+    } else {
+      // sum_all_trials (legacy)
+      pickedIdx = perTrial.map(function (_, i) { return i; });
+    }
+    var pickedSet = {};
+    pickedIdx.forEach(function (i) { pickedSet[i] = true; });
+
+    // Sum picked-only contributions.
+    var totalAnswer = 0, totalBet = 0, correctCountPicked = 0, correctCountAll = 0;
+    perTrial.forEach(function (entry, i) {
+      if (entry.within) correctCountAll++;
+      entry.picked = !!pickedSet[i];
+      if (pickedSet[i]) {
+        totalAnswer += entry.answerCents;
+        totalBet    += entry.betCents;
+        if (entry.within) correctCountPicked++;
+      }
+    });
 
     // Convert to dollars, cap and floor.
     var amountDollars = (totalAnswer + totalBet) / 100;
@@ -2549,14 +2686,21 @@
 
     this.bonusInfo = {
       enabled: true,
-      method: 'bet_on_accuracy',
+      method: selectionMethod === 'lottery' ? 'lottery_bet_on_accuracy' : 'bet_on_accuracy',
+      selectionMethod: selectionMethod,
+      lotteryCount: selectionMethod === 'lottery' ? lotteryCount : null,
+      pickedTrialIndices: pickedIdx,
+      pickedTrialIds: pickedIdx.map(function (i) { return perTrial[i].trialId; }),
       answerCentsSum: totalAnswer,
       betCentsSum:    totalBet,
-      // Keep pointBonus/calibBonus for the existing debrief labels.
       pointBonus: Math.round(totalAnswer) / 100,
       calibBonus: Math.round(totalBet) / 100,
-      correctTrials: correctCount,
+      correctTrialsPicked: correctCountPicked,
+      correctTrialsAll: correctCountAll,
+      totalTrialsPicked: pickedIdx.length,
       totalTrials: perTrial.length,
+      // Keep these field names so existing debrief plumbing still works.
+      correctTrials: correctCountPicked,
       amount: amountDollars,
       currency: bonusCfg.currency || 'USD',
       perTrial: perTrial
@@ -2684,21 +2828,31 @@
   SurveyEngine.prototype.renderFailCompletion = function () { return ''; };
 
   // ── Trial Intro ────────────────────────────────────────────────────────
-  SurveyEngine.prototype.getFirmSizeLabel = function (N) {
-    if (N <= 10) return 'Small';
-    if (N <= 20) return 'Medium';
+  // V7: stimuli no longer carry a single N. They carry size + (nLo, nHi).
+  // The label comes from the size string when available, with a backwards-
+  // compat fallback to N-based bucketing for any legacy stimulus.
+  SurveyEngine.prototype.getFirmSizeLabel = function (sizeOrN) {
+    if (typeof sizeOrN === 'string') {
+      return sizeOrN.charAt(0).toUpperCase() + sizeOrN.slice(1);
+    }
+    // V7 ranges: small N <= 15, medium 16-25, large 26-50.
+    var N = sizeOrN;
+    if (N <= 15) return 'Small';
+    if (N <= 25) return 'Medium';
     return 'Large';
   };
 
-  SurveyEngine.prototype.getFirmSizeBadgeClass = function (N) {
-    if (N <= 10) return 'firm-size-badge-small';
-    if (N <= 20) return 'firm-size-badge-medium';
-    return 'firm-size-badge-large';
+  SurveyEngine.prototype.getFirmSizeBadgeClass = function (sizeOrN) {
+    var s = (typeof sizeOrN === 'string') ? sizeOrN : (
+      sizeOrN <= 15 ? 'small' : (sizeOrN <= 25 ? 'medium' : 'large')
+    );
+    return 'firm-size-badge-' + s;
   };
 
   SurveyEngine.prototype.renderTrialIntro = function (page) {
     var trial = page.trial;
-    var sizeLabel = this.getFirmSizeLabel(trial.N);
+    var sizeLabel = this.getFirmSizeLabel(trial.size != null ? trial.size : trial.N);
+    var nLo = trial.nLo, nHi = trial.nHi;
     var counterText = page.practice
       ? 'Practice ' + (page.trialIndex + 1) + ' of ' + page.totalTrials
       : 'Company ' + (page.trialIndex + 1) + ' of ' + page.totalTrials;
@@ -2706,48 +2860,43 @@
       ? 'Practice ' + (page.trialIndex + 1)
       : 'Company ' + (page.trialIndex + 1);
 
-    // Clean black-on-white splash. No softer gray subtext; no "manager
-    // will show 4" line (redundant with the next page which already
-    // shows the 4 cards). Just: counter, big page name, a single
-    // size-disambiguating line.
+    // V7: pre-trial splash shows the size category and the N range
+    // (range, NOT a specific N -- because under stochastic-N the exact
+    // total is hidden by design, only the range is known).
     var html = '<div class="trial-intro-splash">';
     html += '<div class="trial-intro-counter">' + counterText + '</div>';
     html += '<div class="trial-intro-main">';
     html += '<div class="trial-intro-line">' + headline + '</div>';
     html += '<div class="trial-intro-detail">';
-    html += 'This company is <strong>' + sizeLabel + '</strong> ';
-    html += '(<strong>' + trial.N + ' transactions</strong> in total).';
+    html += 'This company is <strong>' + sizeLabel + '</strong>';
+    if (nLo != null && nHi != null) {
+      html += ' (somewhere between <strong>' + nLo + ' and ' + nHi +
+              ' transactions</strong> in total).';
+    } else if (trial.N != null) {
+      html += ' (<strong>' + trial.N + ' transactions</strong> in total).';
+    } else {
+      html += '.';
+    }
     html += '</div></div></div>';
     return html;
   };
 
   // ── Practice Summary Renderer ─────────────────────────────────────────
-  // Shows aggregate would-have-earned after the 5 warm-up rounds. NO
-  // per-round feedback (the participant can't reverse-engineer which
-  // trials were within 10pp and which weren't). This is intentional:
-  // the point is calibration on effort, not on specific items.
+  // V6: NO would-have-earned feedback. The page is now a simple transition
+  // marker that tells the participant the warm-up is over and the scored
+  // rounds start next. We deliberately do NOT reveal practice performance
+  // (aggregate or per-round) so participants don't recalibrate their bet
+  // strategy based on warm-up accuracy. We still call calculatePracticeBonus
+  // so the value is logged in the data export, but it is not shown.
   SurveyEngine.prototype.renderPracticeSummary = function (page) {
-    var info = this.calculatePracticeBonus();
-    var maxCents = (info.n * 20);  // best possible: +20¢ per trial
-    var pct = maxCents > 0 ? Math.round(100 * info.amountCents / maxCents) : 0;
-    var dollars = info.amountDollars.toFixed(2);
-    var cur = info.currency || 'USD';
-
-    var maxDollars = (maxCents / 100).toFixed(2);
+    this.calculatePracticeBonus();  // ensure logged in data export
     var html = '<div class="practice-summary-card">';
     html += '<div class="practice-summary-kicker">Warm-up complete</div>';
     html += '<div class="practice-summary-title">You finished the 5 warm-up audits.</div>';
-    html += '<div class="practice-summary-amount-wrap">';
-    html += '<div class="practice-summary-amount-label">If these had counted, you would have earned:</div>';
-    html += '<div class="practice-summary-amount">' + cur + ' $' + dollars +
-            '<span class="practice-summary-amount-of">/ $' + maxDollars + '</span></div>';
-    if (info.n > 0) {
-      html += '<div class="practice-summary-amount-sub">' + pct + '% of the maximum</div>';
-    }
-    html += '</div>';
-    html += '<div class="practice-summary-note">';
-    html += '<strong>Reminder:</strong> these 5 rounds <strong>don\'t count</strong> toward your real bonus. ';
-    html += 'We won\'t tell you which specific rounds you got right &mdash; the scored rounds are next, and your accuracy on those is what pays.';
+    html += '<div class="practice-summary-note" style="margin-top:18px;">';
+    html += 'The scored rounds start next.<br><br>';
+    html += '<strong>Reminder:</strong> the 5 warm-up rounds <strong>don\'t count</strong> toward your real bonus. ';
+    html += 'Your accuracy on the next 45 audits is what pays.';
     html += '</div>';
     html += '</div>';
     return html;
@@ -2765,9 +2914,10 @@
     var K = (trial.K != null) ? trial.K : trial.D;
     var k = (trial.k != null) ? trial.k : trial.nFlagged;
     var nClean = K - k;
-    var N = trial.N;
-    var hidden = N - K;
-    var regimeClass = (K === 4) ? 'regime-light' : 'regime-heavy';
+    // V7: N is stochastic within the size category. Use trial.size if set,
+    // else fall back to trial.N for legacy stimuli.
+    var sizeKey = trial.size != null ? trial.size : trial.N;
+    var regimeClass = (K === 5) ? 'regime-light' : 'regime-heavy';
     var html = '';
 
     // Single-column layout (no reference panel for the linear-mapping design)
@@ -2793,11 +2943,16 @@
     // Plain bullet list (no colored banner): company size, then a line
     // making the selection agent explicit ("the manager sent the
     // following K transactions:"), with K swapped in so the participant
-    // sees 4 in block 1 and 8 in block 2 without needing to remember.
-    var sizeLabel = this.getFirmSizeLabel(N);
+    // sees 5 in block 1 and 10 in block 2 without needing to remember.
+    //
+    // v7: N is genuinely STOCHASTIC within the size category. Trial page
+    // shows only the size category. The pre-trial intro splash already
+    // showed the N range for that size. Reasoning is in proportions over
+    // the whole size-conditional N distribution.
+    var sizeLabel = this.getFirmSizeLabel(sizeKey);
     html += '<ul class="trial-header-bullets">';
-    html += '<li><strong>Company Size:</strong> ' + sizeLabel + ' (' + N + ' transactions)</li>';
-    html += '<li>The manager sent the following <strong>' + K + '</strong> transactions:</li>';
+    html += '<li><strong>Company Size:</strong> ' + sizeLabel + '</li>';
+    html += '<li>The manager sent the following ' + K + ' transactions:</li>';
     html += '</ul>';
 
     // Build disclosed-cards array (C for clean, S for suspicious) and
@@ -2828,13 +2983,20 @@
     html += '</div>';
 
     // DV1: Point-estimate slider (0-100, step 1). Features:
-    //  - coverage band (follows the slider, shows the 10 points window the guess
-    //    covers).
+    //  - coverage band (follows the slider, shows the +/-tolerance window
+    //    the guess covers; tolerance comes from config.bonus.accuracyThreshold).
     //  - data-touched=false -- requires actual drag before Next unlocks.
+    var bonusCfgT = (this.config && this.config.bonus) ? this.config.bonus : {};
+    var halfPpT = Math.round(
+      (bonusCfgT.accuracyThreshold != null ? bonusCfgT.accuracyThreshold : 0.05) * 100
+    );
+    var initLoT = Math.max(0, 50 - halfPpT);
+    var initHiT = Math.min(100, 50 + halfPpT);
     html += '<div class="dv-card">';
     html += '<div class="question-prompt">What is this company\'s fraud estimate?<span class="question-required">*</span></div>';
     html += '<div class="slider-sentence">Your estimate: <span class="slider-sentence-value" id="fraud_prob_display">50%</span> ';
-    html += '<span class="slider-coverage-text" id="fraud_prob_coverage">(covers 40% to 60%)</span></div>';
+    html += '<span class="slider-coverage-text" id="fraud_prob_coverage">(covers ' +
+            initLoT + '% to ' + initHiT + '%)</span></div>';
     html += '<div class="slider-endpoint-labels">';
     html += '<span class="slider-endpoint-label clean">0% clean</span>';
     html += '<span class="slider-endpoint-label fraud">100% fraudulent</span>';
@@ -2853,19 +3015,17 @@
     html += '<div class="field-error" id="error_fraud_prob"></div>';
     html += '</div>';
 
-    // DV2: Bet slider (0..10 cents). Stored in the confidence field for
-    // backward compat; the UI presents it as "your bet."
+    // DV2: Bet slider (0..$1.00 = 0..100 cents in 5¢ steps). Stored in
+    // the "confidence" field for backward compat; UI calls it "your bet."
     html += '<div class="dv-card">';
-    html += '<div class="question-prompt">Your bet on being within 10 percentage points of the correct answer.<span class="question-required">*</span></div>';
-    html += '<div class="slider-sentence">You bet: <span class="slider-sentence-value" id="confidence_display">0&cent;</span></div>';
-    // Bet-slider endpoint labels removed (the 0¢/10¢ numbers under the
-    // slider track already carry the range). Less visual noise on trial pages.
+    html += '<div class="question-prompt">Your bet on being within 5 percentage points of the correct answer.<span class="question-required">*</span></div>';
+    html += '<div class="slider-sentence">You bet: <span class="slider-sentence-value" id="confidence_display">$0.00</span></div>';
     html += '<div class="slider-wrapper">';
-    html += '<span class="slider-label">0&cent;</span>';
+    html += '<span class="slider-label">$0</span>';
     html += '<div class="slider-range-wrap">';
-    html += '<input type="range" class="slider-input" id="confidence" name="confidence" min="0" max="10" step="1" value="0" data-touched="true" data-display="confidence_display" data-display-suffix="cents">';
+    html += '<input type="range" class="slider-input" id="confidence" name="confidence" min="0" max="100" step="5" value="0" data-touched="true" data-display="confidence_display" data-display-suffix="cents">';
     html += '</div>';
-    html += '<span class="slider-label">10&cent;</span>';
+    html += '<span class="slider-label">$1.00</span>';
     html += '</div>';
     html += '<div class="field-error" id="error_confidence"></div>';
     html += '</div>';
@@ -2910,25 +3070,26 @@
   SurveyEngine.prototype.renderTrialAttention = function (page) {
     var trial = page.trial;
     var K = (trial.K != null) ? trial.K : trial.D;
-    var html = '<h1 class="page-title">Attention Check</h1>';
-    html += '<p>Please answer these questions about the company you just evaluated.</p>';
+    var html = '<h1 class="page-title" style="text-align:center;">Attention Check</h1>';
+    html += '<p class="page-body" style="text-align:center; font-size:17px;">' +
+            'Please answer these questions about the company you just evaluated.</p>';
 
-    // Q1: Total transactions (N)
+    // Q1: Size category (V7: N is stochastic; ask for size, not exact N).
     var sizeOptions = [
-      { value: 10, label: '10 transactions' },
-      { value: 20, label: '20 transactions' },
-      { value: 30, label: '30 transactions' }
+      { value: 'small', label: 'Small' },
+      { value: 'medium', label: 'Medium' },
+      { value: 'large', label: 'Large' }
     ];
-    html += '<div class="question-block" data-required="true" data-field-name="attn_n" data-field-type="radio">';
-    html += '<div class="question-prompt">How many transactions did this company have in total?</div>';
+    html += '<div class="question-block" data-required="true" data-field-name="attn_size" data-field-type="radio">';
+    html += '<div class="question-prompt">What size was this company?</div>';
     html += '<div class="option-list">';
     sizeOptions.forEach(function (opt) {
-      html += '<div class="option-card"><input type="radio" name="attn_n" value="' + opt.value + '"><span class="option-label">' + opt.label + '</span></div>';
+      html += '<div class="option-card"><input type="radio" name="attn_size" value="' + opt.value + '"><span class="option-label">' + opt.label + '</span></div>';
     });
-    html += '</div><div class="field-error" id="error_attn_n"></div></div>';
+    html += '</div><div class="field-error" id="error_attn_size"></div></div>';
 
-    // Q2: Disclosed transactions (K)
-    var dOptions = this.buildAttentionOptions(K, [4, 8]);
+    // Q2: Disclosed transactions (K) — V6: K is in {5, 10}
+    var dOptions = this.buildAttentionOptions(K, [5, 10]);
     html += '<div class="question-block" data-required="true" data-field-name="attn_d" data-field-type="radio">';
     html += '<div class="question-prompt">How many transactions did the manager disclose?</div>';
     html += '<div class="option-list">';
@@ -3116,19 +3277,33 @@
       var totalPay  = fixedBase + this.bonusInfo.amount;
       var maxTotal  = fixedBase + maxBonus;
       var pctOfMax  = maxTotal > 0 ? Math.round(100 * totalPay / maxTotal) : 0;
-      var pointSum  = this.bonusInfo.pointBonus != null ? this.bonusInfo.pointBonus : 0;
-      var calibSum  = this.bonusInfo.calibBonus != null ? this.bonusInfo.calibBonus : 0;
-      var cc        = this.bonusInfo.correctTrials != null ? this.bonusInfo.correctTrials : '-';
-      var tt        = this.bonusInfo.totalTrials   != null ? this.bonusInfo.totalTrials   : '-';
+      var pointSum    = this.bonusInfo.pointBonus != null ? this.bonusInfo.pointBonus : 0;
+      var calibSum    = this.bonusInfo.calibBonus != null ? this.bonusInfo.calibBonus : 0;
+      var cc          = this.bonusInfo.correctTrialsPicked != null ? this.bonusInfo.correctTrialsPicked
+                       : (this.bonusInfo.correctTrials != null ? this.bonusInfo.correctTrials : '-');
+      var tt          = this.bonusInfo.totalTrialsPicked != null ? this.bonusInfo.totalTrialsPicked
+                       : (this.bonusInfo.totalTrials != null ? this.bonusInfo.totalTrials : '-');
+      var ttAll       = this.bonusInfo.totalTrials != null ? this.bonusInfo.totalTrials : '-';
+      var pickedTrialIds = this.bonusInfo.pickedTrialIds || [];
+      var isLottery   = this.bonusInfo.method === 'lottery_bet_on_accuracy';
+
       html += '<div class="bonus-display">';
       html += '<div class="bonus-amount">' + this.bonusInfo.currency + ' $' + totalPay.toFixed(2) +
               '<span class="bonus-amount-of"> / $' + maxTotal.toFixed(2) + '</span></div>';
       html += '<div class="bonus-amount-sub">' + pctOfMax + '% of the maximum</div>';
       html += '<div class="bonus-detail">Fixed base: ' + this.bonusInfo.currency + ' $' + fixedBase.toFixed(2) +
               ' &nbsp;|&nbsp; Performance bonus: ' + this.bonusInfo.currency + ' $' + this.bonusInfo.amount.toFixed(2) + '</div>';
-      html += '<div class="bonus-detail">Estimate bonus: $' + pointSum.toFixed(2) +
-              ' &nbsp;|&nbsp; Betting bonus: $' + calibSum.toFixed(2) +
-              ' &nbsp;|&nbsp; Trials within 10 points: ' + cc + ' / ' + tt + '</div>';
+      if (isLottery) {
+        html += '<div class="bonus-detail">Companies picked at random: <strong>' + tt + '</strong> of ' + ttAll +
+                (pickedTrialIds.length ? ' (' + pickedTrialIds.join(', ') + ')' : '') + '</div>';
+        html += '<div class="bonus-detail">Estimate bonus on picked: $' + pointSum.toFixed(2) +
+                ' &nbsp;|&nbsp; Betting bonus on picked: $' + calibSum.toFixed(2) +
+                ' &nbsp;|&nbsp; Within 5 points on picked: ' + cc + ' / ' + tt + '</div>';
+      } else {
+        html += '<div class="bonus-detail">Estimate bonus: $' + pointSum.toFixed(2) +
+                ' &nbsp;|&nbsp; Betting bonus: $' + calibSum.toFixed(2) +
+                ' &nbsp;|&nbsp; Trials within threshold: ' + cc + ' / ' + tt + '</div>';
+      }
       html += '</div>';
     }
 
